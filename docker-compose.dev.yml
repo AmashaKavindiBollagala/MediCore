@@ -1,0 +1,26 @@
+
+
+services:
+  auth-service:
+    volumes:
+      - ./auth-service:/app
+      - /app/node_modules
+    command: npx nodemon src/index.js
+
+  patient-service:
+    volumes:
+      - ./patient-service:/app
+      - /app/node_modules
+    command: npx nodemon src/index.js
+
+  doctor-service:
+    volumes:
+      - ./doctor-service:/app
+      - /app/node_modules
+    command: npx nodemon src/index.js
+
+  appointment-service:
+    volumes:
+      - ./appointment-service:/app
+      - /app/node_modules
+    command: npx nodemon src/index.js
