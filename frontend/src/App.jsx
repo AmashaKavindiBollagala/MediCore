@@ -2,6 +2,9 @@ import React from 'react';
 import { BrowserRouter as Router, Routes, Route, Link } from 'react-router-dom';
 import DushaniBookAppointment from './pages/dushani-BookAppointment';
 import DushaniMyAppointments from './pages/dushani-MyAppointments';
+import Login from './pages/amasha-Login';
+import Register from './pages/amasha-Register';
+
 
 function App() {
   return (
@@ -9,7 +12,7 @@ function App() {
       <div className="min-h-screen bg-gray-50">
         <nav className="bg-white shadow-md">
           <div className="max-w-7xl mx-auto px-4">
-            <div className="flex justify-between items-center py-4">
+            {/* <div className="flex justify-between items-center py-4">
               <Link to="/" className="text-2xl font-bold text-blue-600">
                 MediCore
               </Link>
@@ -26,7 +29,7 @@ function App() {
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
                 </svg>
               </button>
-            </div>
+            </div> */}
           </div>
         </nav>
 
@@ -34,6 +37,10 @@ function App() {
           <Route path="/" element={<Home />} />
           <Route path="/appointments" element={<DushaniMyAppointments />} />
           <Route path="/appointments/book" element={<DushaniBookAppointment />} />
+           <Route path="/login" element={<Login />} />
+           <Route path="/register" element={<Register />} />
+         
+
         </Routes>
       </div>
     </Router>
