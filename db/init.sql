@@ -32,11 +32,29 @@ CREATE TABLE IF NOT EXISTS doctors.profiles (
 
 CREATE TABLE IF NOT EXISTS appointments.bookings (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  patient_id UUID,
-  doctor_id UUID,
-  scheduled_at TIMESTAMP,
-  status VARCHAR(20) DEFAULT 'pending',
+  patient_id UUID NOT NULL,
+  doctor_id UUID NOT NULL,
+  specialty VARCHAR(100),
+  scheduled_at TIMESTAMP NOT NULL,
+  duration_minutes INTEGER DEFAULT 30,
+  status VARCHAR(30) DEFAULT 'PENDING_PAYMENT' CHECK (status IN ('PENDING_PAYMENT', 'CONFIRMED', 'CANCELLED', 'COMPLETED', 'REJECTED')),
+  consultation_type VARCHAR(20) DEFAULT 'video' CHECK (consultation_type IN ('video', 'in-person')),
+  symptoms TEXT,
+  payment_id UUID,
+  cancelled_by VARCHAR(20) CHECK (cancelled_by IN ('patient', 'doctor')),
+  cancellation_reason TEXT,
+  created_at TIMESTAMP DEFAULT NOW(),
+  updated_at TIMESTAMP DEFAULT NOW()
+);
+
+CREATE TABLE IF NOT EXISTS payments.transactions (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  appointment_id UUID REFERENCES appointments.bookings(id),
+  patient_id UUID NOT NULL,
+  amount DECIMAL(10, 2) NOT NULL,
+  payment_method VARCHAR(50) DEFAULT 'card',
+  status VARCHAR(20) DEFAULT 'pending' CHECK (status IN ('pending', 'completed', 'failed', 'refunded')),
+  transaction_type VARCHAR(20) DEFAULT 'payment' CHECK (transaction_type IN ('payment', 'refund')),
   created_at TIMESTAMP DEFAULT NOW()
 );
-```
 
