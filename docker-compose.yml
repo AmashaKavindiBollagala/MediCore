@@ -1,4 +1,4 @@
-
+name: medicore 
 
 services:
   frontend:
@@ -27,6 +27,8 @@ services:
     ports:
       - "3001:3000"
     env_file: .env
+    volumes:
+      - ./shared:/app/shared
     depends_on:
       - postgres
 
@@ -35,6 +37,8 @@ services:
     ports:
       - "3002:3000"
     env_file: .env
+    volumes:
+      - ./shared:/app/shared
     depends_on:
       - postgres
 
@@ -42,7 +46,10 @@ services:
     build: ./doctor-service
     ports:
       - "3003:3000"
-    env_file: .env
+    env_file: ./doctor-service/.env
+    volumes:
+      - ./shared:/app/shared
+      - ./doctor-service/uploads:/app/uploads
     depends_on:
       - postgres
 
@@ -51,6 +58,8 @@ services:
     ports:
       - "3004:3000"
     env_file: .env
+    volumes:
+      - ./shared:/app/shared
     depends_on:
       - postgres
 
@@ -59,6 +68,8 @@ services:
     ports:
       - "3005:3000"
     env_file: .env
+    volumes:
+      - ./shared:/app/shared
     depends_on:
       - postgres
 
@@ -67,18 +78,24 @@ services:
     ports:
       - "3006:3000"
     env_file: .env
+    volumes:
+      - ./shared:/app/shared
 
   telemedicine-service:
     build: ./telemedicine-service
     ports:
       - "3007:3000"
     env_file: .env
+    volumes:
+      - ./shared:/app/shared
 
   ai-symptom-service:
     build: ./ai-symptom-service
     ports:
       - "3008:3000"
     env_file: .env
+    volumes:
+      - ./shared:/app/shared
 
   postgres:
     image: postgres:15-alpine
