@@ -30,8 +30,14 @@ export default function Register() {
   const [selectedRole, setSelectedRole] = useState('patient');
 
   const handleContinue = () => {
-    // Pass selected role forward however your app needs
-    navigate(`/register/details?role=${selectedRole}`);
+    // Navigate based on selected role
+    if (selectedRole === 'doctor') {
+      // Redirect to doctor-specific registration page
+      navigate('/doctor-register');
+    } else {
+      // Redirect to patient registration details
+      navigate(`/register/details?role=${selectedRole}`);
+    }
   };
 
   return (
