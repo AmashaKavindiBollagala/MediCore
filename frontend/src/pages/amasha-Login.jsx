@@ -18,16 +18,23 @@ export default function Login() {
     setLoading(true);
     setError('');
     try {
-      const res = await fetch('http://localhost:3000/login', {
+      const res = await fetch(`${import.meta.env.VITE_API_URL}/api/auth/login`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(form),
+        body: JSON.stringify({ email: form.email, password: form.password }),
       });
       const data = await res.json();
-      if (!res.ok) throw new Error(data.error || 'Login failed');
+      if (!res.ok) throw new Error(data.message || data.error || 'Login failed');
+
+      // Store JWT token and user info
       localStorage.setItem('token', data.token);
       localStorage.setItem('user', JSON.stringify(data.user));
-      navigate('/');
+
+      // Redirect based on role
+      const role = data.user?.role;
+      if (role === 'doctor') navigate('/doctor/dashboard');
+      else if (role === 'admin') navigate('/admin/dashboard');
+      else navigate('/dashboard');
     } catch (err) {
       setError(err.message);
     } finally {
@@ -175,37 +182,23 @@ export default function Login() {
               {/* Submit */}
               <button type="submit" disabled={loading}
                 className="w-full py-4 rounded-xl font-semibold text-white text-sm tracking-wide transition-all mt-2"
-                style={{ background: loading ? '#67C090' : 'linear-gradient(135deg, #124170 0%, #26667F 60%, #67C090 100%)', fontFamily: "'DM Sans', sans-serif", letterSpacing: '0.5px' }}>
+                style={{
+                  background: loading ? '#67C090' : 'linear-gradient(135deg, #124170 0%, #26667F 60%, #67C090 100%)',
+                  fontFamily: "'DM Sans', sans-serif",
+                  letterSpacing: '0.5px',
+                  cursor: loading ? 'not-allowed' : 'pointer',
+                }}>
                 {loading ? (
                   <span className="flex items-center justify-center gap-2">
-                    <svg className="animate-spin" width="18" height="18" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="10" stroke="rgba(255,255,255,0.3)" strokeWidth="3"/><path d="M12 2a10 10 0 010 20" stroke="white" strokeWidth="3" strokeLinecap="round"/></svg>
+                    <svg className="animate-spin" width="18" height="18" viewBox="0 0 24 24" fill="none">
+                      <circle cx="12" cy="12" r="10" stroke="rgba(255,255,255,0.3)" strokeWidth="3"/>
+                      <path d="M12 2a10 10 0 010 20" stroke="white" strokeWidth="3" strokeLinecap="round"/>
+                    </svg>
                     Signing in...
                   </span>
                 ) : 'Sign In to MediCore'}
               </button>
             </form>
-
-            {/* Divider */}
-            {/* <div className="flex items-center gap-4 my-6">
-              <div className="flex-1 h-px" style={{ background: '#DDF4E7' }} />
-              <span className="text-xs" style={{ color: '#67C090' }}>or continue with</span>
-              <div className="flex-1 h-px" style={{ background: '#DDF4E7' }} />
-            </div> */}
-
-            {/* Social */}
-            {/* <div className="grid grid-cols-2 gap-3">
-              {[
-                { label: 'Google', icon: 'G' },
-                { label: 'Microsoft', icon: 'M' },
-              ].map((s) => (
-                <button key={s.label}
-                  className="flex items-center justify-center gap-2 py-3 rounded-xl text-sm font-medium transition-all"
-                  style={{ border: '1.5px solid #DDF4E7', color: '#26667F', background: '#F8FFFE', fontFamily: "'DM Sans', sans-serif" }}>
-                  <span className="font-bold" style={{ color: '#124170' }}>{s.icon}</span>
-                  {s.label}
-                </button>
-              ))}
-            </div> */}
 
             {/* Register link */}
             <p className="text-center text-sm mt-6" style={{ color: '#26667F', fontFamily: "'DM Sans', sans-serif" }}>

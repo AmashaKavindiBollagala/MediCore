@@ -2,6 +2,7 @@ import React from 'react';
 import { BrowserRouter as Router, Routes, Route, Link } from 'react-router-dom';
 import DushaniBookAppointment from './pages/dushani-BookAppointment';
 import DushaniMyAppointments from './pages/dushani-MyAppointments';
+import DushaniDoctorAppointments from './pages/dushani-DoctorAppointments';
 import Login from './pages/amasha-Login';
 import Register from './pages/amasha-Register';
 import DilsharaAdminRoute               from './components/dilshara-AdminRoute';
@@ -48,6 +49,9 @@ function App() {
           <Route path="/appointments/book" element={<DushaniBookAppointment />} />
            <Route path="/login" element={<Login />} />
            <Route path="/register" element={<Register />} />
+          <Route path="/doctor-register" element={<KaveeshaDoctorRegister />} />
+          <Route path="/doctor-dashboard" element={<KaveeshaDoctorDashboard />} />
+          <Route path="/doctor-appointments" element={<DushaniDoctorAppointments />} />
          
           {/* Admin Routes - Protected */}
           <Route path="/admin" element={<DilsharaAdminRoute><DilsharaAdminDashboard /></DilsharaAdminRoute>} />
