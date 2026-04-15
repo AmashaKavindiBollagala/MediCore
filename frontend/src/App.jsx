@@ -2,6 +2,7 @@ import React from 'react';
 import { BrowserRouter as Router, Routes, Route, Link } from 'react-router-dom';
 import DushaniBookAppointment from './pages/dushani-BookAppointment';
 import DushaniMyAppointments from './pages/dushani-MyAppointments';
+import DushaniDoctorAppointments from './pages/dushani-DoctorAppointments';
 import Login from './pages/amasha-Login';
 import Register from './pages/amasha-Register';
 import KaveeshaDoctorRegister from './pages/kaveesha-DoctorRegister';
@@ -43,6 +44,7 @@ function App() {
            <Route path="/register" element={<Register />} />
           <Route path="/doctor-register" element={<KaveeshaDoctorRegister />} />
           <Route path="/doctor-dashboard" element={<KaveeshaDoctorDashboard />} />
+          <Route path="/doctor-appointments" element={<DushaniDoctorAppointments />} />
          
 
         </Routes>
