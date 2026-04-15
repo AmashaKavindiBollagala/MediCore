@@ -165,8 +165,12 @@ export default function KaveeshaDoctorDashboard() {
         <nav style={{ flex: 1, padding: '12px 10px' }}>
           {NAV_ITEMS.map(({ id, label, icon }) => {
             const active = activeTab === id;
+            // Navigate to appointments page when clicking Appointments in sidebar
+            const handleClick = id === 'appointments' 
+              ? () => navigate('/doctor-appointments') 
+              : () => setActiveTab(id);
             return (
-              <button key={id} onClick={() => setActiveTab(id)}
+              <button key={id} onClick={handleClick}
                 style={{
                   display: 'flex', alignItems: 'center', gap: 12, width: '100%',
                   padding: '10px 12px', borderRadius: 10, border: 'none', cursor: 'pointer',
@@ -241,7 +245,7 @@ export default function KaveeshaDoctorDashboard() {
                   {doctor?.specialty} · {doctor?.hospital}
                 </p>
                 <div style={{ display: 'flex', gap: 12 }}>
-                  <button onClick={() => setActiveTab('appointments')} style={{ background: 'rgba(255,255,255,0.2)', border: '1px solid rgba(255,255,255,0.3)', borderRadius: 10, padding: '8px 18px', color: 'white', fontSize: 13, fontWeight: 600, cursor: 'pointer' }}>
+                  <button onClick={() => navigate('/doctor-appointments')} style={{ background: 'rgba(255,255,255,0.2)', border: '1px solid rgba(255,255,255,0.3)', borderRadius: 10, padding: '8px 18px', color: 'white', fontSize: 13, fontWeight: 600, cursor: 'pointer' }}>
                     View Appointments →
                   </button>
                   <button onClick={() => setActiveTab('availability')} style={{ background: 'rgba(103,192,144,0.3)', border: '1px solid rgba(103,192,144,0.4)', borderRadius: 10, padding: '8px 18px', color: 'white', fontSize: 13, fontWeight: 600, cursor: 'pointer' }}>

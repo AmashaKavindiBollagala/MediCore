@@ -1,157 +1,98 @@
 import React, { useState, useEffect } from 'react';
 
-// FIX: use env variable so this works in Docker (not hardcoded localhost)
 const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:3000';
 
 const DushaniRescheduleModal = ({ appointment, onClose, onReschedule }) => {
   const [selectedDate, setSelectedDate] = useState('');
   const [selectedTime, setSelectedTime] = useState('');
   const [availability, setAvailability] = useState([]);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState('');
 
   useEffect(() => {
-    if (selectedDate) {
-      fetchAvailability();
-    }
+    if (selectedDate) fetchAvailability();
   }, [selectedDate]);
 
   const fetchAvailability = async () => {
-    setLoading(true);
-    setError('');
-    setSelectedTime('');
-
-    try {
-      const token = localStorage.getItem('token');
-      const response = await fetch(
-        `${API_BASE}/appointments/doctors/${appointment.doctor_id}/availability?date=${selectedDate}`,
-        { headers: { Authorization: `Bearer ${token}` } }
-      );
-
-      const data = await response.json();
-
-      if (data.success) {
-        setAvailability(data.data);
-        if (data.data.length === 0) {
-          setError('No available slots for this date. Please choose another day.');
-        }
-      } else {
-        setError(data.error || 'Failed to fetch availability');
-      }
-    } catch (err) {
-      setError('Network error. Please try again.');
-    } finally {
-      setLoading(false);
-    }
+    const res = await fetch(
+      `${API_BASE}/appointments/doctors/${appointment.doctor_id}/availability?date=${selectedDate}`
+    );
+    const data = await res.json();
+    if (data.success) setAvailability(data.data);
   };
 
   const handleReschedule = () => {
-    if (!selectedDate || !selectedTime) {
-      setError('Please select both date and time');
-      return;
-    }
-    const newScheduledAt = `${selectedDate}T${selectedTime}:00`;
-    onReschedule(appointment.id, newScheduledAt);
+    if (!selectedDate || !selectedTime) return;
+    onReschedule(appointment.id, `${selectedDate}T${selectedTime}:00`);
   };
-
-  // Generate 30-minute time slots from a start/end window
-  const generateTimeSlots = (startTime, endTime) => {
-    const slots = [];
-    const start = new Date(`2000-01-01T${startTime}`);
-    const end = new Date(`2000-01-01T${endTime}`);
-
-    while (start < end) {
-      slots.push(start.toTimeString().slice(0, 5));
-      start.setMinutes(start.getMinutes() + 30);
-    }
-
-    return slots;
-  };
-
-  const today = new Date().toISOString().split('T')[0];
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-lg shadow-xl max-w-md w-full max-h-[90vh] overflow-y-auto">
-        <div className="p-6">
-          <div className="flex justify-between items-center mb-6">
-            <h2 className="text-2xl font-bold text-gray-800">Reschedule Appointment</h2>
-            <button
-              onClick={onClose}
-              className="text-gray-500 hover:text-gray-700 transition-colors"
-            >
-              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-              </svg>
-            </button>
-          </div>
+    <div className="fixed inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center p-4 z-50">
+      <div className="bg-white rounded-2xl w-full max-w-md p-5 md:p-6 shadow-2xl animate-in fade-in zoom-in duration-200">
 
-          {error && (
-            <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg mb-4">
-              {error}
-            </div>
-          )}
+        <div className="flex justify-between items-center mb-5">
+          <h2 className="text-xl font-bold text-[#184E77]">Reschedule Appointment</h2>
+          <button 
+            onClick={onClose}
+            className="text-gray-400 hover:text-gray-600 transition-colors p-1 rounded-lg hover:bg-gray-100"
+          >
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
+              <path d="M18 6L6 18M6 6l12 12" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+            </svg>
+          </button>
+        </div>
 
-          <div className="space-y-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">Select Date</label>
-              <input
-                type="date"
-                value={selectedDate}
-                onChange={(e) => setSelectedDate(e.target.value)}
-                min={today}
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-              />
-            </div>
+        <label className="block mb-2">
+          <span className="text-sm font-semibold text-[#184E77] mb-1 block">Select Date:</span>
+          <input
+            type="date"
+            className="w-full border-2 border-slate-200 rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:border-[#34A0A4] transition-colors"
+            onChange={(e) => setSelectedDate(e.target.value)}
+            min={new Date().toISOString().split('T')[0]}
+          />
+        </label>
 
-            {loading && (
-              <div className="text-center py-4">
-                <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600" />
-                <p className="mt-2 text-sm text-gray-600">Loading available slots...</p>
-              </div>
-            )}
-
-            {!loading && selectedDate && availability.length > 0 && (
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Available Time Slots
-                </label>
-                <div className="grid grid-cols-3 gap-2 max-h-48 overflow-y-auto">
-                  {availability.flatMap((slot, index) =>
-                    generateTimeSlots(slot.start_time, slot.end_time).map((time) => (
-                      <button
-                        key={`${index}-${time}`}
-                        onClick={() => setSelectedTime(time)}
-                        className={`px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
-                          selectedTime === time
-                            ? 'bg-blue-600 text-white'
-                            : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                        }`}
-                      >
-                        {time}
-                      </button>
-                    ))
-                  )}
-                </div>
+        {selectedDate && (
+          <div className="mt-4">
+            <p className="text-sm font-semibold text-[#184E77] mb-3">Available Time Slots:</p>
+            {availability.length === 0 ? (
+              <p className="text-sm text-gray-500 text-center py-4">No available slots for this date</p>
+            ) : (
+              <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 max-h-48 overflow-y-auto">
+                {availability.map((slot, i) => (
+                  <button
+                    key={i}
+                    onClick={() => setSelectedTime(slot.start_time)}
+                    className={`p-2.5 rounded-lg border-2 text-xs md:text-sm font-semibold transition-all duration-200 ${
+                      selectedTime === slot.start_time
+                        ? 'bg-[#184E77] text-white border-[#184E77] shadow-md'
+                        : 'border-slate-200 text-[#184E77] hover:border-[#34A0A4] hover:bg-blue-50'
+                    }`}
+                  >
+                    {slot.start_time}
+                  </button>
+                ))}
               </div>
             )}
           </div>
+        )}
 
-          <div className="flex gap-4 mt-6">
-            <button
-              onClick={onClose}
-              className="flex-1 bg-gray-200 hover:bg-gray-300 text-gray-800 font-medium py-2 px-4 rounded-lg transition-colors"
-            >
-              Cancel
-            </button>
-            <button
-              onClick={handleReschedule}
-              disabled={!selectedDate || !selectedTime || loading}
-              className="flex-1 bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 px-4 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              Confirm Reschedule
-            </button>
-          </div>
+        <div className="flex gap-3 mt-6">
+          <button 
+            onClick={onClose} 
+            className="flex-1 bg-gray-100 text-gray-700 px-4 py-2.5 rounded-lg font-semibold hover:bg-gray-200 transition-colors text-sm"
+          >
+            Cancel
+          </button>
+          <button 
+            onClick={handleReschedule} 
+            disabled={!selectedDate || !selectedTime}
+            className={`flex-1 px-4 py-2.5 rounded-lg font-semibold text-sm transition-all duration-200 ${
+              selectedDate && selectedTime
+                ? 'bg-[#184E77] text-white hover:bg-[#124170] shadow-md'
+                : 'bg-gray-300 text-gray-500 cursor-not-allowed'
+            }`}
+          >
+            Confirm Reschedule
+          </button>
         </div>
       </div>
     </div>
