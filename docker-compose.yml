@@ -96,6 +96,15 @@ services:
     volumes:
       - ./shared:/app/shared
 
+  admin-service:
+    build: ./admin-service
+    ports:
+      - "3009:3000"
+    env_file: .env
+    depends_on:
+      postgres:
+        condition: service_healthy
+
   postgres:
     image: postgres:15-alpine
     restart: always
@@ -109,6 +118,12 @@ services:
     volumes:
       - pgdata:/var/lib/postgresql/data
       - ./db/init.sql:/docker-entrypoint-initdb.d/init.sql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USER:-postgres} -d ${DB_NAME:-medicore}"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
 
 volumes:
   pgdata:

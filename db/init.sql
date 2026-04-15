@@ -58,3 +58,19 @@ CREATE TABLE IF NOT EXISTS payments.transactions (
   created_at TIMESTAMP DEFAULT NOW()
 );
 
+CREATE SCHEMA IF NOT EXISTS admin;
+
+CREATE TABLE IF NOT EXISTS admin.verification_events (
+  id           UUID         PRIMARY KEY DEFAULT gen_random_uuid(),
+  doctor_id    UUID         NOT NULL,
+  doctor_email VARCHAR(255) NOT NULL,
+  status       VARCHAR(20)  NOT NULL CHECK (status IN ('approved', 'rejected')),
+  admin_note   TEXT,
+  decided_by   UUID         NOT NULL,
+  decided_at   TIMESTAMP    NOT NULL DEFAULT NOW(),
+  emailed      BOOLEAN      DEFAULT FALSE,
+  emailed_at   TIMESTAMP
+);
+
+CREATE INDEX IF NOT EXISTS idx_verification_events_doctor_id ON admin.verification_events(doctor_id);
+CREATE INDEX IF NOT EXISTS idx_verification_events_emailed   ON admin.verification_events(emailed);

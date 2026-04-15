@@ -4,6 +4,15 @@ import DushaniBookAppointment from './pages/dushani-BookAppointment';
 import DushaniMyAppointments from './pages/dushani-MyAppointments';
 import Login from './pages/amasha-Login';
 import Register from './pages/amasha-Register';
+import DilsharaAdminRoute               from './components/dilshara-AdminRoute';
+import DilsharaAdminDashboard           from './pages/dilshara-AdminDashboard';
+import DilsharaDoctorVerificationList   from './pages/dilshara-DoctorVerificationList';
+import DilsharaDoctorVerificationDetail from './pages/dilshara-DoctorVerificationDetail';
+import DilsharaAdminUsers               from './pages/dilshara-AdminUsers';
+import {
+  DilsharaAdminPayments,
+  DilsharaAdminAvailability,
+} from './pages/dilshara-AdminPlaceholders';
 
 
 function App() {
@@ -40,6 +49,13 @@ function App() {
            <Route path="/login" element={<Login />} />
            <Route path="/register" element={<Register />} />
          
+          {/* Admin Routes - Protected */}
+          <Route path="/admin" element={<DilsharaAdminRoute><DilsharaAdminDashboard /></DilsharaAdminRoute>} />
+          <Route path="/admin/doctors" element={<DilsharaAdminRoute><DilsharaDoctorVerificationList /></DilsharaAdminRoute>} />
+          <Route path="/admin/doctors/:id" element={<DilsharaAdminRoute><DilsharaDoctorVerificationDetail /></DilsharaAdminRoute>} />
+          <Route path="/admin/users" element={<DilsharaAdminRoute><DilsharaAdminUsers /></DilsharaAdminRoute>} />
+          <Route path="/admin/payments" element={<DilsharaAdminRoute><DilsharaAdminPayments /></DilsharaAdminRoute>} />
+          <Route path="/admin/availability" element={<DilsharaAdminRoute><DilsharaAdminAvailability /></DilsharaAdminRoute>} />
 
         </Routes>
       </div>
