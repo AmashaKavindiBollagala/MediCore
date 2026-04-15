@@ -7,7 +7,10 @@ import Login from './pages/amasha-Login';
 import Register from './pages/amasha-Register';
 import KaveeshaDoctorRegister from './pages/kaveesha-DoctorRegister';
 import KaveeshaDoctorDashboard from './pages/kaveesha-DoctorDashboard';
-
+import RegisterDetails from './pages/amasha-patientRegister';
+import PatientDashboard from './pages/amasha-patientDashboard';
+import PatientProfile from './pages/amasha-patientProfile';
+import MedicalReports from './pages/amasha-medicalReportsPage';
 
 function App() {
   return (
@@ -42,14 +45,51 @@ function App() {
           <Route path="/appointments/book" element={<DushaniBookAppointment />} />
            <Route path="/login" element={<Login />} />
            <Route path="/register" element={<Register />} />
+            <Route path="/register/patient" element={<RegisterDetails />} />
           <Route path="/doctor-register" element={<KaveeshaDoctorRegister />} />
           <Route path="/doctor-dashboard" element={<KaveeshaDoctorDashboard />} />
           <Route path="/doctor-appointments" element={<DushaniDoctorAppointments />} />
+
+          <Route
+          path="/patient-dashboard"
+          element={
+            <PatientLayout>
+              <PatientDashboard />
+            </PatientLayout>
+          }
+        />
+
+        <Route
+          path="/patient-profile"
+          element={
+            <PatientLayout>
+              <PatientProfile />
+            </PatientLayout>
+          }
+        />
+
+        <Route
+          path="/patient-reports"
+          element={
+            <PatientLayout>
+              <MedicalReports />
+            </PatientLayout>
+          }
+        />
+
          
 
         </Routes>
       </div>
     </Router>
+  );
+}
+
+function PatientLayout({ children }) {
+  return (
+    <div className="flex min-h-screen bg-[#F1FAEE]">
+      {children}
+    </div>
   );
 }
 

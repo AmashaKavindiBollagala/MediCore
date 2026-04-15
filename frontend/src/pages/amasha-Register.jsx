@@ -36,7 +36,7 @@ export default function Register() {
       navigate('/doctor-register');
     } else {
       // Redirect to patient registration details
-      navigate(`/register/details?role=${selectedRole}`);
+      navigate('/register/patient');
     }
   };
 

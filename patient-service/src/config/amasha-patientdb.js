@@ -10,8 +10,7 @@ const pool = new Pool({
 });
 
 pool.connect()
-  .then(() => console.log("✅ Auth DB connected"))
-  .catch((err) => console.error("❌ Auth DB error:", err));
-
+  .then(() => console.log('Patient DB connected'))
+  .catch(err => console.error('Patient DB connection error:', err));
 
 module.exports = pool;
