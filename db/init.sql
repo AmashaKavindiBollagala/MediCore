@@ -24,73 +24,10 @@ CREATE TABLE IF NOT EXISTS patients.profiles (
 CREATE TABLE IF NOT EXISTS doctors.profiles (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   user_id UUID REFERENCES auth.users(id),
-  first_name VARCHAR(100),
-  last_name VARCHAR(100),
   full_name VARCHAR(255),
-  email VARCHAR(255),
-  phone VARCHAR(20),
   specialty VARCHAR(100),
-  sub_specialty VARCHAR(100),
-  hospital VARCHAR(255),
-  medical_license_number VARCHAR(100),
-  years_of_experience INTEGER,
-  bio TEXT,
-  consultation_fee_online DECIMAL(10, 2) DEFAULT 0,
-  consultation_fee_physical DECIMAL(10, 2) DEFAULT 0,
-  profile_photo_url VARCHAR(500),
-  id_card_url VARCHAR(500),
-  medical_license_url VARCHAR(500),
-  medical_id_url VARCHAR(500),
-  verification_status VARCHAR(20) DEFAULT 'pending' CHECK (verification_status IN ('pending', 'approved', 'rejected')),
   verified BOOLEAN DEFAULT FALSE,
-  created_at TIMESTAMP DEFAULT NOW(),
-  updated_at TIMESTAMP DEFAULT NOW()
-);
-
--- Doctor availability schedule
-CREATE TABLE IF NOT EXISTS doctors.availability (
-  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  doctor_id UUID REFERENCES doctors.profiles(id) ON DELETE CASCADE,
-  day_of_week INTEGER CHECK (day_of_week BETWEEN 0 AND 6),
-  start_time TIME NOT NULL,
-  end_time TIME NOT NULL,
-  slot_duration_minutes INTEGER DEFAULT 30,
-  consultation_type VARCHAR(20) DEFAULT 'online' CHECK (consultation_type IN ('online', 'physical', 'both')),
-  is_active BOOLEAN DEFAULT TRUE,
   created_at TIMESTAMP DEFAULT NOW()
-);
-
--- Doctor exception dates (blocked dates)
-CREATE TABLE IF NOT EXISTS doctors.availability_exceptions (
-  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  doctor_id UUID REFERENCES doctors.profiles(id) ON DELETE CASCADE,
-  exception_date DATE NOT NULL,
-  reason TEXT,
-  created_at TIMESTAMP DEFAULT NOW(),
-  UNIQUE(doctor_id, exception_date)
-);
-
--- Patient uploaded reports
-CREATE TABLE IF NOT EXISTS doctors.patient_reports (
-  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  appointment_id UUID REFERENCES appointments.bookings(id),
-  patient_id UUID NOT NULL,
-  doctor_id UUID REFERENCES doctors.profiles(id),
-  report_url VARCHAR(500) NOT NULL,
-  report_type VARCHAR(100),
-  description TEXT,
-  uploaded_at TIMESTAMP DEFAULT NOW()
-);
-
--- Digital prescriptions
-CREATE TABLE IF NOT EXISTS doctors.prescriptions (
-  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  appointment_id UUID REFERENCES appointments.bookings(id),
-  doctor_id UUID REFERENCES doctors.profiles(id),
-  patient_id UUID NOT NULL,
-  prescription_data JSONB NOT NULL,
-  notes TEXT,
-  issued_at TIMESTAMP DEFAULT NOW()
 );
 
 CREATE TABLE IF NOT EXISTS appointments.bookings (
@@ -121,3 +58,19 @@ CREATE TABLE IF NOT EXISTS payments.transactions (
   created_at TIMESTAMP DEFAULT NOW()
 );
 
+CREATE SCHEMA IF NOT EXISTS admin;
+
+CREATE TABLE IF NOT EXISTS admin.verification_events (
+  id           UUID         PRIMARY KEY DEFAULT gen_random_uuid(),
+  doctor_id    UUID         NOT NULL,
+  doctor_email VARCHAR(255) NOT NULL,
+  status       VARCHAR(20)  NOT NULL CHECK (status IN ('approved', 'rejected')),
+  admin_note   TEXT,
+  decided_by   UUID         NOT NULL,
+  decided_at   TIMESTAMP    NOT NULL DEFAULT NOW(),
+  emailed      BOOLEAN      DEFAULT FALSE,
+  emailed_at   TIMESTAMP
+);
+
+CREATE INDEX IF NOT EXISTS idx_verification_events_doctor_id ON admin.verification_events(doctor_id);
+CREATE INDEX IF NOT EXISTS idx_verification_events_emailed   ON admin.verification_events(emailed);
