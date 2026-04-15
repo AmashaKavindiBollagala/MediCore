@@ -1,6 +1,9 @@
 import React from 'react';
+import { useNavigate } from 'react-router-dom';
 
 const DushaniAppointmentCard = ({ appointment, onCancel, onReschedule, userRole }) => {
+  const navigate = useNavigate();
+  
   const getStatusColor = (status) => {
     const colors = {
       PENDING_PAYMENT: 'bg-yellow-100 text-yellow-800',
@@ -24,6 +27,10 @@ const DushaniAppointmentCard = ({ appointment, onCancel, onReschedule, userRole 
 
   const isActive =
     appointment.status === 'PENDING_PAYMENT' || appointment.status === 'CONFIRMED';
+
+  const handlePayNow = () => {
+    navigate(`/payment/checkout/${appointment.id}`);
+  };
 
   return (
     <div className="bg-white rounded-lg shadow-md p-4 sm:p-6 hover:shadow-lg transition-shadow border border-gray-100">
@@ -79,6 +86,17 @@ const DushaniAppointmentCard = ({ appointment, onCancel, onReschedule, userRole 
       {/* Actions */}
       {isActive && (
         <div className="space-y-2">
+          {userRole === 'patient' && appointment.status === 'PENDING_PAYMENT' && (
+            <button
+              onClick={handlePayNow}
+              className="w-full bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 text-white font-bold py-3 px-4 rounded-lg transition-all transform hover:scale-105 shadow-md text-sm flex items-center justify-center gap-2"
+            >
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z" />
+              </svg>
+              Pay Now
+            </button>
+          )}
           {userRole === 'patient' && (
             <button
               onClick={() => onReschedule(appointment)}

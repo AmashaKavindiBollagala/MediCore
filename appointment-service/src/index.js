@@ -337,7 +337,30 @@ app.delete('/api/appointments/:appointmentId/cancel', authenticateToken, async (
 
     await client.query('COMMIT');
 
-    // TODO: trigger refund if doctor cancels (payment service)
+    // If appointment was paid, trigger refund via payment service
+    if (appointment.payment_id && appointment.status === 'CONFIRMED') {
+      try {
+        const fetch = (await import('node-fetch')).default;
+        const paymentServiceUrl = process.env.PAYMENT_SERVICE_URL || 'http://payment-service:3000';
+        
+        await fetch(`${paymentServiceUrl}/api/payments/${appointment.payment_id}/refund`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': req.headers.authorization,
+          },
+          body: JSON.stringify({
+            reason: req.body.reason || `Appointment cancelled by ${userRole}`,
+          }),
+        });
+        
+        console.log('Refund triggered for appointment:', appointmentId);
+      } catch (refundError) {
+        console.error('Failed to trigger refund:', refundError.message);
+        // Don't fail the cancellation if refund fails - it can be processed manually
+      }
+    }
+
     // TODO: send notification (notification service)
 
     res.json({

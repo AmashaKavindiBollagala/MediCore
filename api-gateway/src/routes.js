@@ -103,4 +103,48 @@ router.get('/appointments/:appointmentId', (req, res) => {
   proxyRequest(req, res, SERVICES.appointment, `/api/appointments/${req.params.appointmentId}`);
 });
 
+// ─── PAYMENT SERVICE ROUTES ─────────────────────────────────────────────────
+
+// Initiate payment (create payment and get PayHere config)
+router.post('/payments/initiate', (req, res) => {
+  proxyRequest(req, res, SERVICES.payment, '/api/payments/initiate');
+});
+
+// Get payment status
+router.get('/payments/:paymentId/status', (req, res) => {
+  proxyRequest(req, res, SERVICES.payment, `/api/payments/${req.params.paymentId}/status`);
+});
+
+// Get payment details
+router.get('/payments/:paymentId', (req, res) => {
+  proxyRequest(req, res, SERVICES.payment, `/api/payments/${req.params.paymentId}`);
+});
+
+// Get patient's payment history
+router.get('/payments/patient/my-payments', (req, res) => {
+  const query = new URLSearchParams(req.query).toString();
+  proxyRequest(req, res, SERVICES.payment, `/api/payments/patient/my-payments?${query}`);
+});
+
+// Get doctor's earnings
+router.get('/payments/doctor/my-earnings', (req, res) => {
+  const query = new URLSearchParams(req.query).toString();
+  proxyRequest(req, res, SERVICES.payment, `/api/payments/doctor/my-earnings?${query}`);
+});
+
+// Process refund
+router.post('/payments/:paymentId/refund', (req, res) => {
+  proxyRequest(req, res, SERVICES.payment, `/api/payments/${req.params.paymentId}/refund`);
+});
+
+// Cancel appointment with refund
+router.post('/payments/cancel-with-refund', (req, res) => {
+  proxyRequest(req, res, SERVICES.payment, '/api/payments/cancel-with-refund');
+});
+
+// PayHere webhook (no auth required)
+router.post('/payments/webhook/payhere', (req, res) => {
+  proxyRequest(req, res, SERVICES.payment, '/api/payments/webhook/payhere');
+});
+
 module.exports = router;
