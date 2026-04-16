@@ -12,7 +12,7 @@ services:
     build: ./api-gateway
     ports:
       - "8080:8080"
-    env_file: .env
+    env_file: ./api-gateway/.env       
     depends_on:
       - auth-service
       - patient-service
@@ -26,11 +26,10 @@ services:
     build: ./auth-service
     ports:
       - "3001:3000"
-    env_file: ./auth-service/.env 
+    env_file: ./auth-service/.env
     volumes:
       - ./shared:/app/shared
-    depends_on:
-      - postgres
+    
 
   patient-service:
     build: ./patient-service
@@ -39,8 +38,7 @@ services:
     env_file: ./patient-service/.env
     volumes:
       - ./shared:/app/shared
-    depends_on:
-      - postgres
+    
 
   doctor-service:
     build: ./doctor-service
@@ -50,34 +48,30 @@ services:
     volumes:
       - ./shared:/app/shared
       - ./doctor-service/uploads:/app/uploads
-    depends_on:
-      - postgres
+   
 
   appointment-service:
     build: ./appointment-service
     ports:
       - "3004:3000"
-    env_file: .env
+    env_file: ./appointment-service/.env  
     volumes:
       - ./shared:/app/shared
-    depends_on:
-      - postgres
+    
 
   payment-service:
     build: ./payment-service
     ports:
       - "3005:3000"
-    env_file: .env
+    env_file: ./payment-service/.env       # ← was: .env (root)
     volumes:
       - ./shared:/app/shared
-    depends_on:
-      - postgres
 
   notification-service:
     build: ./notification-service
     ports:
       - "3006:3000"
-    env_file: .env
+    env_file: ./notification-service/.env  
     volumes:
       - ./shared:/app/shared
 
@@ -85,7 +79,7 @@ services:
     build: ./telemedicine-service
     ports:
       - "3007:3000"
-    env_file: .env
+    env_file: ./telemedicine-service/.env  
     volumes:
       - ./shared:/app/shared
 
@@ -93,23 +87,16 @@ services:
     build: ./ai-symptom-service
     ports:
       - "3008:3000"
-    env_file: .env
+    env_file: ./ai-symptom-service/.env   
     volumes:
       - ./shared:/app/shared
 
-  postgres:
-    image: postgres:15-alpine
-    restart: always
-    env_file: .env
-    environment:
-      POSTGRES_USER: ${DB_USER}
-      POSTGRES_PASSWORD: ${DB_PASSWORD}
-      POSTGRES_DB: ${DB_NAME}
+  pgadmin:
+    image: dpage/pgadmin4
     ports:
-      - "5432:5432"
-    volumes:
-      - pgdata:/var/lib/postgresql/data
-      - ./db/init.sql:/docker-entrypoint-initdb.d/init.sql
+      - "5050:80"
+    environment:
+      PGADMIN_DEFAULT_EMAIL: admin@admin.com
+      PGADMIN_DEFAULT_PASSWORD: admin
 
-volumes:
-  pgdata:
+ 
