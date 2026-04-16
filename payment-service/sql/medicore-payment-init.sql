@@ -1,6 +1,7 @@
 -- ============================================
--- Payment Service SQL Schema
--- Creates table: public.transactions
+-- Payment Service Database Initialization
+-- Database: medicore_payment
+-- Schema: public
 -- ============================================
 
 -- Enable UUID support

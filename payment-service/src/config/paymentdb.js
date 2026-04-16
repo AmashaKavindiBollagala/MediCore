@@ -1,11 +1,23 @@
 const { Pool } = require('pg');
-const config = require('./paymentdatabase');
+require('dotenv').config();
 
 const pool = new Pool({
-  connectionString: config.databaseUrl,
-  ssl: process.env.NODE_ENV === 'production' 
-    ? { rejectUnauthorized: false } 
-    : false // Disable SSL in local development to avoid connection errors
+  user: process.env.DB_USER,
+  host: process.env.DB_HOST,
+  database: process.env.DB_NAME,
+  password: process.env.DB_PASSWORD,
+  port: process.env.DB_PORT || 5432,
+  ssl: process.env.DB_SSL === 'true' ? {
+    rejectUnauthorized: false
+  } : false,
+});
+
+pool.on('connect', () => {
+  console.log('✅ Payment service connected to Neon PostgreSQL');
+});
+
+pool.on('error', (err) => {
+  console.error('❌ PostgreSQL pool error:', err.message);
 });
 
 module.exports = pool;

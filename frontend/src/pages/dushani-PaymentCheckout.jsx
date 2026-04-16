@@ -2,15 +2,23 @@ import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 
 const PaymentCheckout = () => {
-  const { appointmentId } = useParams();
+  const { appointmentId: urlAppointmentId } = useParams();
   const navigate = useNavigate();
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [paymentData, setPaymentData] = useState(null);
   const [appointmentData, setAppointmentData] = useState(null);
+  
+  // Get appointment ID from URL or localStorage
+  const appointmentId = urlAppointmentId || localStorage.getItem('pendingAppointmentId');
 
   useEffect(() => {
-    initiatePayment();
+    if (appointmentId) {
+      initiatePayment();
+    } else {
+      setError('No appointment found. Please book an appointment first.');
+      setLoading(false);
+    }
   }, [appointmentId]);
 
   const initiatePayment = async () => {
@@ -40,8 +48,8 @@ const PaymentCheckout = () => {
       const appointmentResult = await appointmentResponse.json();
       setAppointmentData(appointmentResult.data);
 
-      // Calculate amount (you can adjust this based on your pricing logic)
-      const amount = 1500.00; // Example: LKR 1500
+      // Calculate amount from localStorage or default
+      const amount = parseFloat(localStorage.getItem('pendingAppointmentAmount')) || 1500.00;
 
       // Initiate payment
       const response = await fetch('/api/payments/initiate', {
@@ -209,6 +217,18 @@ const PaymentCheckout = () => {
                       <p className="font-semibold text-gray-800 capitalize">{appointmentData.consultation_type}</p>
                     </div>
                   </div>
+
+                  {appointmentData.consultation_fee && (
+                    <div className="flex items-start space-x-3">
+                      <svg className="w-6 h-6 flex-shrink-0 mt-1" style={{color: '#34A0A4'}} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                      </svg>
+                      <div>
+                        <p className="text-sm text-gray-500">Consultation Fee</p>
+                        <p className="font-bold text-lg" style={{color: '#76C893'}}>LKR {appointmentData.consultation_fee}</p>
+                      </div>
+                    </div>
+                  )}
                 </>
               )}
             </div>
@@ -223,16 +243,16 @@ const PaymentCheckout = () => {
               <div className="space-y-3">
                 <div className="flex justify-between items-center">
                   <span className="text-gray-600">Consultation Fee</span>
-                  <span className="font-semibold text-gray-800">LKR 1,200.00</span>
-                </div>
-                <div className="flex justify-between items-center">
-                  <span className="text-gray-600">Service Charge</span>
-                  <span className="font-semibold text-gray-800">LKR 300.00</span>
+                  <span className="font-semibold text-gray-800">
+                    LKR {parseFloat(localStorage.getItem('pendingAppointmentAmount') || 1500).toLocaleString('en-US', {minimumFractionDigits: 2})}
+                  </span>
                 </div>
                 <div className="border-t-2 border-gray-200 pt-3 mt-3">
                   <div className="flex justify-between items-center">
                     <span className="text-lg font-bold text-gray-800">Total Amount</span>
-                    <span className="text-2xl font-bold" style={{color: '#76C893'}}>LKR 1,500.00</span>
+                    <span className="text-2xl font-bold" style={{color: '#76C893'}}>
+                      LKR {parseFloat(localStorage.getItem('pendingAppointmentAmount') || 1500).toLocaleString('en-US', {minimumFractionDigits: 2})}
+                    </span>
                   </div>
                 </div>
               </div>

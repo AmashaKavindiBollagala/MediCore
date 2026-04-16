@@ -1,4 +1,5 @@
 import React from 'react';
+import { useNavigate } from 'react-router-dom';
 
 const STATUS_CONFIG = {
   PENDING_PAYMENT: { bg: 'bg-yellow-100', color: 'text-yellow-800', dot: 'bg-yellow-500', label: 'Pending Payment' },
@@ -9,6 +10,7 @@ const STATUS_CONFIG = {
 };
 
 const DushaniAppointmentCard = ({ appointment, onCancel, onReschedule, userRole }) => {
+  const navigate = useNavigate();
   const statusConfig = STATUS_CONFIG[appointment.status] || STATUS_CONFIG.PENDING_PAYMENT;
   const date = new Date(appointment.scheduled_at);
   const isVideo = appointment.consultation_type === 'video';
@@ -20,6 +22,17 @@ const DushaniAppointmentCard = ({ appointment, onCancel, onReschedule, userRole 
     new Date(d).toLocaleDateString('en-US', {
       weekday: 'short', month: 'short', day: 'numeric', year: 'numeric',
     });
+
+  const handlePayment = () => {
+    // Store appointment details for payment
+    localStorage.setItem('pendingAppointmentId', appointment.id);
+    // Use the appointment's consultation fee
+    const amount = appointment.consultation_fee || 1000;
+    localStorage.setItem('pendingAppointmentAmount', amount.toString());
+    
+    // Navigate to payment checkout
+    navigate('/payment/checkout');
+  };
 
   return (
     <div className="bg-white rounded-2xl p-4 md:p-6 border-2 border-teal-200/50 shadow-sm hover:shadow-lg transition-all duration-200">
@@ -62,7 +75,7 @@ const DushaniAppointmentCard = ({ appointment, onCancel, onReschedule, userRole 
           </div>
 
           {/* Meta */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mt-4 pt-4 border-t border-slate-100">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 mt-4 pt-4 border-t border-slate-100">
             {appointment.specialty && (
               <div>
                 <p className="text-xs text-gray-400 mb-1">Specialty</p>
@@ -75,34 +88,86 @@ const DushaniAppointmentCard = ({ appointment, onCancel, onReschedule, userRole 
                 <p className="text-sm text-[#184E77] font-medium">{appointment.symptoms}</p>
               </div>
             )}
+            {appointment.patient_name && userRole === 'doctor' && (
+              <div>
+                <p className="text-xs text-gray-400 mb-1">Patient Name</p>
+                <p className="text-sm text-[#184E77] font-medium">{appointment.patient_name}</p>
+              </div>
+            )}
+            {appointment.patient_age && userRole === 'doctor' && (
+              <div>
+                <p className="text-xs text-gray-400 mb-1">Patient Age</p>
+                <p className="text-sm text-[#184E77] font-medium">{appointment.patient_age} years</p>
+              </div>
+            )}
+            {appointment.consultation_fee && (
+              <div>
+                <p className="text-xs text-gray-400 mb-1">Consultation Fee</p>
+                <p className="text-sm text-[#76C893] font-bold">LKR {appointment.consultation_fee}</p>
+              </div>
+            )}
           </div>
 
           {/* Actions */}
           <div className="flex flex-wrap gap-2.5 mt-4">
-            {appointment.status === 'CONFIRMED' && (
+            {/* Patient Actions */}
+            {userRole === 'patient' && (
               <>
-                <button
-                  onClick={() => onReschedule(appointment)}
-                  className="bg-[#184E77] text-white px-4 py-2.5 rounded-lg text-sm font-semibold hover:bg-[#124170] transition-colors"
-                >
-                  📅 Reschedule
-                </button>
-                <button
-                  onClick={() => onCancel(appointment.id)}
-                  className="bg-red-100 text-red-800 px-4 py-2.5 rounded-lg text-sm font-semibold hover:bg-red-200 transition-colors"
-                >
-                  ✕ Cancel
-                </button>
+                {/* Payment button for PENDING_PAYMENT status */}
+                {appointment.status === 'PENDING_PAYMENT' && (
+                  <button
+                    onClick={handlePayment}
+                    className="bg-gradient-to-r from-[#76C893] to-[#34A0A4] text-white px-5 py-2.5 rounded-lg text-sm font-semibold hover:shadow-lg transition-all duration-200 flex items-center gap-2"
+                  >
+                    💳 Pay Now
+                  </button>
+                )}
+
+                {/* Reschedule for PENDING_PAYMENT and CONFIRMED */}
+                {(appointment.status === 'PENDING_PAYMENT' || appointment.status === 'CONFIRMED') && (
+                  <button
+                    onClick={() => onReschedule(appointment)}
+                    className="bg-[#184E77] text-white px-4 py-2.5 rounded-lg text-sm font-semibold hover:bg-[#124170] transition-colors"
+                  >
+                    📅 Reschedule
+                  </button>
+                )}
+
+                {/* Cancel button - Available anytime except CANCELLED, COMPLETED, REJECTED */}
+                {appointment.status !== 'CANCELLED' && appointment.status !== 'COMPLETED' && appointment.status !== 'REJECTED' && (
+                  <button
+                    onClick={() => onCancel(appointment.id)}
+                    className="bg-red-100 text-red-800 px-4 py-2.5 rounded-lg text-sm font-semibold hover:bg-red-200 transition-colors"
+                  >
+                    ✕ Cancel
+                  </button>
+                )}
               </>
             )}
 
-            {appointment.status !== 'CONFIRMED' && appointment.status !== 'COMPLETED' && appointment.status !== 'CANCELLED' && (
-              <button
-                onClick={() => onCancel(appointment.id)}
-                className="bg-red-100 text-red-800 px-4 py-2.5 rounded-lg text-sm font-semibold hover:bg-red-200 transition-colors"
-              >
-                ✕ Cancel
-              </button>
+            {/* Doctor Actions */}
+            {userRole === 'doctor' && (
+              <>
+                {/* Cancel button - Available anytime except CANCELLED, COMPLETED, REJECTED */}
+                {appointment.status !== 'CANCELLED' && appointment.status !== 'COMPLETED' && appointment.status !== 'REJECTED' && (
+                  <button
+                    onClick={() => onCancel(appointment.id)}
+                    className="bg-red-100 text-red-800 px-4 py-2.5 rounded-lg text-sm font-semibold hover:bg-red-200 transition-colors"
+                  >
+                    ✕ Cancel Booking
+                  </button>
+                )}
+
+                {/* Reschedule for CONFIRMED */}
+                {appointment.status === 'CONFIRMED' && (
+                  <button
+                    onClick={() => onReschedule(appointment)}
+                    className="bg-[#184E77] text-white px-4 py-2.5 rounded-lg text-sm font-semibold hover:bg-[#124170] transition-colors"
+                  >
+                    📅 Reschedule
+                  </button>
+                )}
+              </>
             )}
           </div>
         </div>

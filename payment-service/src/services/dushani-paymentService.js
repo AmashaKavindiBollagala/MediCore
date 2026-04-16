@@ -42,11 +42,9 @@ class PaymentService {
   async getPaymentById(paymentId, userId, userRole) {
     let query = `
       SELECT p.*, 
-             a.scheduled_at, a.status as appointment_status,
-             d.full_name as doctor_name, d.specialty
+             a.scheduled_at, a.status as appointment_status
       FROM public.transactions p
       JOIN public.appointments a ON p.appointment_id = a.id
-      JOIN doctors.profiles d ON p.doctor_id = d.id
       WHERE p.id = $1
     `;
     
@@ -65,11 +63,9 @@ class PaymentService {
   async getPatientPayments(patientId, status) {
     let query = `
       SELECT p.*, 
-             a.scheduled_at, a.status as appointment_status,
-             d.full_name as doctor_name, d.specialty
+             a.scheduled_at, a.status as appointment_status
       FROM public.transactions p
       JOIN public.appointments a ON p.appointment_id = a.id
-      JOIN doctors.profiles d ON p.doctor_id = d.id
       WHERE p.patient_id = $1 AND p.transaction_type = 'payment'
     `;
     
@@ -92,11 +88,9 @@ class PaymentService {
     
     let query = `
       SELECT p.*, 
-             a.scheduled_at, a.status as appointment_status,
-             p2.full_name as patient_name
+             a.scheduled_at, a.status as appointment_status
       FROM public.transactions p
       JOIN public.appointments a ON p.appointment_id = a.id
-      JOIN patients.profiles p2 ON p.patient_id = p2.id
       WHERE p.doctor_id = $1 AND p.transaction_type = 'payment'
     `;
     
