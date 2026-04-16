@@ -12,7 +12,7 @@ services:
     build: ./api-gateway
     ports:
       - "8080:8080"
-    env_file: .env
+    env_file: ./api-gateway/.env       
     depends_on:
       - auth-service
       - patient-service
@@ -80,7 +80,7 @@ services:
     build: ./notification-service
     ports:
       - "3006:3000"
-    env_file: .env
+    env_file: ./notification-service/.env  
     volumes:
       - ./shared:/app/shared
 
@@ -88,7 +88,7 @@ services:
     build: ./telemedicine-service
     ports:
       - "3007:3000"
-    env_file: .env
+    env_file: ./telemedicine-service/.env  
     volumes:
       - ./shared:/app/shared
 
@@ -96,7 +96,7 @@ services:
     build: ./ai-symptom-service
     ports:
       - "3008:3000"
-    env_file: .env
+    env_file: ./ai-symptom-service/.env   
     volumes:
       - ./shared:/app/shared
 
