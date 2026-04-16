@@ -72,8 +72,7 @@ exports.getDoctorById = async (req, res) => {
 //
 // Flow:
 //  1. Update doctors.profiles  → sets verification_status + verified flag + rejection_reason (if rejected)
-//  2. If approved → update auth.users  → set verified = true so doctor can log in
-//  3. Write to admin.verification_events → notification team reads this to send email
+//  2. Write to admin.verification_events → notification team reads this to send email
 exports.verifyDoctor = async (req, res) => {
   const { id } = req.params;
   const { status, note = '' } = req.body;
@@ -106,37 +105,41 @@ exports.verifyDoctor = async (req, res) => {
 
     // 2. Update doctors.profiles
     //    If rejected, save the note as rejection_reason in the profiles table
-    await client.query(
+    console.log(`Updating doctor ${id} with status: ${status}`);
+    const updateResult = await client.query(
       `UPDATE profiles
        SET verification_status = $1,
            verified            = $2,
            rejection_reason    = $3,
            updated_at          = NOW()
-       WHERE id = $4`,
+       WHERE id = $4
+       RETURNING id, full_name, verification_status, verified`,
       [status, status === 'approved', status === 'rejected' ? note : null, id]
     );
+    
+    console.log('Update result:', updateResult.rows[0]);
 
-    // 3. If approved, unlock the auth.users account so doctor can log in
-    //    (auth-service owns auth.users — we only flip the 'verified' flag)
-    if (status === 'approved' && doctor.user_id) {
-      await client.query(
-        `UPDATE auth.users SET verified = TRUE WHERE id = $1`,
-        [doctor.user_id]
-      );
-    }
+    // 3. Commit the transaction for the profile update
+    await client.query('COMMIT');
+    console.log('Transaction committed successfully');
 
     // 4. Write verification event — notification-service reads this table to send email
-    await client.query(
-      `INSERT INTO admin.verification_events
-         (doctor_id, doctor_email, status, admin_note, decided_by, decided_at)
-       VALUES ($1, $2, $3, $4, $5, NOW())`,
-      [id, doctor.email, status, note, req.user.id]
-    );
-
-    await client.query('COMMIT');
+    //    Note: admin.verification_events table may not exist in medicore_doctor database
+    //    So we'll skip this if the table doesn't exist (outside the main transaction)
+    try {
+      await pool.query(
+        `INSERT INTO admin.verification_events
+           (doctor_id, doctor_email, status, admin_note, decided_by, decided_at)
+         VALUES ($1, $2, $3, $4, $5, NOW())`,
+        [id, doctor.email, status, note, req.user?.id || 'admin']
+      );
+      console.log('Verification event created');
+    } catch (err) {
+      console.log('Note: admin.verification_events table not available, skipping notification event');
+    }
 
     res.json({
-      message: `Doctor ${status} successfully. Notification event created.`,
+      message: `Doctor ${status} successfully.`,
       doctor_id: id,
       status,
     });

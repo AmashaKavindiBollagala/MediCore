@@ -41,9 +41,9 @@ export default function Login() {
 
       // Redirect based on role
       const role = data.user?.role;
-      if (role === 'doctor') navigate('/doctor/dashboard');
-      else if (role === 'admin') navigate('/admin/dashboard');
-      else navigate('/dashboard');
+      if (role === 'doctor') navigate('/doctor-dashboard');
+      else if (role === 'admin') navigate('/admin');
+      else navigate('/patient-dashboard');
     } catch (err) {
       setError(err.message);
     } finally {
