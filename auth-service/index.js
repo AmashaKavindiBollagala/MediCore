@@ -7,7 +7,7 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
-app.use('/api/auth', require('./routes/amasha-authroutes'));
+app.use('/api/auth', require('./src/routes/amasha-authroutes'));
 
 // Health check
 app.get('/health', (req, res) => res.json({ status: 'auth-service OK' }));

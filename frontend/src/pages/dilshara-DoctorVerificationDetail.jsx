@@ -78,12 +78,20 @@ export default function DilsharaDoctorVerificationDetail() {
     }
     
     if (!window.confirm(`Are you sure you want to ${status} this doctor?${status === 'rejected' ? '\n\nRejection reason will be sent to the doctor.' : ''}`)) return;
+    
+    console.log('=== VERIFY DOCTOR ===');
+    console.log('Doctor ID:', id);
+    console.log('Status:', status);
+    console.log('Note:', note);
+    
     setSubmitting(true);
     try {
-      await verifyDoctor(id, status, note);
+      const result = await verifyDoctor(id, status, note);
+      console.log('Verification successful:', result);
       setDone(status);
     } catch (err) {
-      alert(err.message);
+      console.error('Verification failed:', err);
+      alert(`Failed to ${status} doctor: ${err.message}`);
     } finally {
       setSubmitting(false);
     }

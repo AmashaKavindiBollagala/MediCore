@@ -1,12 +1,35 @@
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const { findByEmail, createUser, findById } = require('../models/amasha-usermodel');
+const { Pool } = require('pg');
+
+// Doctor database connection
+const doctorPool = new Pool({
+  connectionString: process.env.DOCTOR_DATABASE_URL,
+  ssl: { rejectUnauthorized: false }
+});
+
+// Find doctor by email in medicore_doctor database
+const findDoctorByEmail = async (email) => {
+  try {
+    const result = await doctorPool.query(
+      'SELECT * FROM profiles WHERE email = $1',
+      [email.toLowerCase()]
+    );
+    return result.rows[0];
+  } catch (error) {
+    console.error('Error finding doctor:', error.message);
+    return null;
+  }
+};
 
 // Import patient service to sync patient data
 const createPatientProfile = async (userId, name, email, phone) => {
   try {
-    const patientServiceUrl = process.env.PATIENT_SERVICE_URL || 'http://patient-service:3000';
-    console.log(`Attempting to sync patient profile to: ${patientServiceUrl}/api/patients/sync`);
+    const patientServiceUrl = process.env.PATIENT_SERVICE_URL || 'http://localhost:3002';
+    console.log(`\n=== SYNCING PATIENT PROFILE ===`);
+    console.log(`Patient Service URL: ${patientServiceUrl}`);
+    console.log(`Endpoint: ${patientServiceUrl}/api/patients/sync`);
     console.log('Patient data:', { user_id: userId, name, email, phone });
     
     const response = await fetch(`${patientServiceUrl}/api/patients/sync`, {
@@ -25,6 +48,7 @@ const createPatientProfile = async (userId, name, email, phone) => {
     }
     
     console.log('Patient profile synced successfully');
+    console.log('=== END SYNC ===\n');
     return true;
   } catch (error) {
     console.error('Error syncing patient profile:', error.message);
@@ -69,11 +93,57 @@ const login = async (req, res) => {
   }
 
   try {
-    const user = await findByEmail(email);
+    // First, try to find user in auth-service database (patients, admins, etc.)
+    let user = await findByEmail(email);
+    let isDoctor = false;
+
+    // If not found in users table, check doctors table
     if (!user) {
+      const doctor = await findDoctorByEmail(email);
+      if (doctor) {
+        // Check if doctor is verified
+        if (!doctor.verified) {
+          return res.status(401).json({ 
+            message: 'Your account is pending verification. Please wait for admin approval.' 
+          });
+        }
+
+        // Verify doctor password
+        const isMatch = await bcrypt.compare(password, doctor.password);
+        if (!isMatch) {
+          return res.status(401).json({ message: 'Invalid email or password.' });
+        }
+
+        // Create token for doctor
+        const token = jwt.sign(
+          { 
+            id: doctor.id, 
+            email: doctor.email, 
+            role: 'doctor',
+            name: doctor.full_name 
+          },
+          process.env.JWT_SECRET,
+          { expiresIn: '7d' }
+        );
+
+        return res.json({
+          message: 'Login successful.',
+          token,
+          user: { 
+            id: doctor.id, 
+            name: doctor.full_name, 
+            email: doctor.email, 
+            role: 'doctor',
+            specialty: doctor.specialty
+          }
+        });
+      }
+      
+      // Doctor not found either
       return res.status(401).json({ message: 'Invalid email or password.' });
     }
 
+    // User found in users table - verify password
     const isMatch = await bcrypt.compare(password, user.password);
     if (!isMatch) {
       return res.status(401).json({ message: 'Invalid email or password.' });

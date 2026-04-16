@@ -1,3 +1,14 @@
+-- Initialize Auth Service Tables
+CREATE TABLE IF NOT EXISTS users (
+  id SERIAL PRIMARY KEY,
+  name VARCHAR(100) NOT NULL,
+  email VARCHAR(150) UNIQUE NOT NULL,
+  password VARCHAR(255) NOT NULL,
+  role VARCHAR(20) NOT NULL DEFAULT 'patient',
+  created_at TIMESTAMP DEFAULT NOW()
+);
+
+-- Initialize Patient Service Tables
 CREATE TABLE IF NOT EXISTS patients (
   id SERIAL PRIMARY KEY,
   user_id INT NOT NULL UNIQUE,

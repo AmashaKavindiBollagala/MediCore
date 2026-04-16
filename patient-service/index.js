@@ -1,15 +1,13 @@
 const express = require('express');
 const cors = require('cors');
-const path = require('path');
 require('dotenv').config();
 
 const app = express();
 
 app.use(cors({ origin: 'http://localhost:3000', credentials: true }));
 app.use(express.json());
-app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
-app.use('/api/patients', require('./routes/amasha-patientRoutes'));
+app.use('/api/patients', require('./src/routes/amasha-patientRoutes'));
 
 app.get('/health', (req, res) => res.json({ status: 'patient-service OK' }));
 
