@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import KaveeshaDoctorAvailability from './kaveesha-DoctorAvailability';
+import KaveeshaDoctorProfile from './kaveesha-doctorProfile';
 
 const NAV_ITEMS = [
   { id: 'overview', label: 'Overview', icon: <svg width="18" height="18" viewBox="0 0 24 24" fill="none"><rect x="3" y="3" width="7" height="7" rx="2" stroke="currentColor" strokeWidth="1.8"/><rect x="14" y="3" width="7" height="7" rx="2" stroke="currentColor" strokeWidth="1.8"/><rect x="3" y="14" width="7" height="7" rx="2" stroke="currentColor" strokeWidth="1.8"/><rect x="14" y="14" width="7" height="7" rx="2" stroke="currentColor" strokeWidth="1.8"/></svg> },
@@ -296,7 +297,7 @@ export default function KaveeshaDoctorDashboard() {
 
         {/* ── Profile tab ───────────────────────────────────────────────────────── */}
         {activeTab === 'profile' && (
-          <ProfilePanel doctor={doctor} onRefresh={fetchProfile} token={token} />
+          <KaveeshaDoctorProfile doctor={doctor} onRefresh={fetchProfile} token={token} />
         )}
       </main>
     </div>

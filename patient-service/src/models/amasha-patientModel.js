@@ -5,6 +5,15 @@ const findByUserId = async (userId) => {
   return result.rows[0];
 };
 
+const createPatientFromAuth = async (userId, name, email, phone) => {
+  const result = await pool.query(
+    `INSERT INTO patients (user_id, name, email, phone)
+     VALUES ($1, $2, $3, $4) RETURNING *`,
+    [userId, name, email, phone]
+  );
+  return result.rows[0];
+};
+
 const upsertPatient = async (userId, data) => {
   const { name, email, phone, dob, address, blood_group, emergency_contact } = data;
   const existing = await findByUserId(userId);
@@ -54,6 +63,7 @@ const getPrescriptionsByPatientId = async (patientId) => {
 
 module.exports = {
   findByUserId,
+  createPatientFromAuth,
   upsertPatient,
   getReportsByPatientId,
   insertReport,

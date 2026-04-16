@@ -1,8 +1,7 @@
 const express = require('express');
 const router = express.Router();
 
-// Use Node 18+ built-in fetch (NO node-fetch needed)
-const fetch = global.fetch;
+// Node 18+ has global fetch available by default
 
 // ─────────────────────────────────────────────
 // SERVICE URLS (Docker internal names)
@@ -38,8 +37,21 @@ const proxyRequest = async (req, res, serviceUrl, path) => {
     });
 
     const text = await response.text();
+    
+    // Try to parse JSON, but handle non-JSON responses gracefully
+    let data;
+    try {
+      data = text ? JSON.parse(text) : {};
+    } catch (parseError) {
+      console.error('JSON parse error:', parseError.message);
+      console.error('Response text:', text);
+      return res.status(response.status).json({ 
+        error: 'Invalid response from service',
+        detail: text.substring(0, 200) 
+      });
+    }
 
-    res.status(response.status).send(text ? JSON.parse(text) : {});
+    res.status(response.status).json(data);
   } catch (error) {
     console.error(`Proxy error -> ${serviceUrl}${path}:`, error.message);
     res.status(502).json({

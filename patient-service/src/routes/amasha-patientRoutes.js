@@ -4,7 +4,8 @@ const multer = require('multer');
 const { verifyToken, authorizeRole } = require('../middleware/amasha-authmiddleware');
 const {
   getProfile, saveProfile,
-  uploadReport, getReports, getPrescriptions
+  uploadReport, getReports, getPrescriptions,
+  syncPatientProfile
 } = require('../controllers/amasha-patientController');
 
 const storage = multer.diskStorage({
@@ -19,6 +20,9 @@ const upload = multer({
     allowed.includes(file.mimetype) ? cb(null, true) : cb(new Error('Invalid file type'));
   }
 });
+
+// Sync patient profile (called from auth-service after registration)
+router.post('/sync', syncPatientProfile);
 
 router.get('/profile',       verifyToken, authorizeRole('patient', 'admin'), getProfile);
 router.post('/profile',      verifyToken, authorizeRole('patient'), saveProfile);
