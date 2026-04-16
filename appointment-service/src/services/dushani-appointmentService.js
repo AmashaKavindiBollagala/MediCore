@@ -1,34 +1,76 @@
 const pool = require('../config/appointmentdb');
 
 class AppointmentService {
-  // Search doctors by specialty
+  // Search doctors by specialty - calls doctor service API
   async searchDoctorsBySpecialty(specialty) {
-    const query = `
-      SELECT d.id, d.full_name, d.specialty, d.verified,
-             a.day_of_week, a.start_time, a.end_time, a.is_available
-      FROM doctors.profiles d
-      LEFT JOIN doctors.availability a ON d.id = a.doctor_id
-      WHERE d.specialty ILIKE $1 AND d.verified = true
-      ORDER BY d.full_name
-    `;
-
-    const result = await pool.query(query, [`%${specialty}%`]);
-    return result.rows;
+    try {
+      // Call doctor service API to get approved doctors
+      const doctorServiceUrl = process.env.DOCTOR_SERVICE_URL || 'http://localhost:3003';
+      
+      const response = await fetch(
+        `${doctorServiceUrl}/api/doctors?specialty=${encodeURIComponent(specialty)}`
+      );
+      
+      if (!response.ok) {
+        console.error('Failed to fetch doctors from doctor service');
+        return [];
+      }
+      
+      const doctors = await response.json();
+      
+      // For each doctor, fetch their availability
+      const doctorsWithAvailability = await Promise.all(
+        doctors.map(async (doctor) => {
+          try {
+            const availResponse = await fetch(
+              `${doctorServiceUrl}/api/doctors/${doctor.id}/availability`
+            );
+            
+            if (availResponse.ok) {
+              const availability = await availResponse.json();
+              return {
+                ...doctor,
+                availability: availability
+              };
+            }
+          } catch (err) {
+            console.error(`Failed to fetch availability for doctor ${doctor.id}:`, err);
+          }
+          
+          return {
+            ...doctor,
+            availability: []
+          };
+        })
+      );
+      
+      return doctorsWithAvailability;
+    } catch (error) {
+      console.error('Search doctors error:', error);
+      return [];
+    }
   }
 
   // Get doctor availability for a specific date
   async getDoctorAvailability(doctorId, date) {
-    const dateObj = new Date(date);
-    const dayOfWeek = dateObj.getDay(); // 0 = Sunday, 6 = Saturday
-
-    const query = `
-      SELECT day_of_week, start_time, end_time, is_available
-      FROM doctors.availability
-      WHERE doctor_id = $1 AND day_of_week = $2 AND is_available = true
-    `;
-
-    const result = await pool.query(query, [doctorId, dayOfWeek]);
-    return result.rows;
+    try {
+      const doctorServiceUrl = process.env.DOCTOR_SERVICE_URL || 'http://localhost:3003';
+      
+      const response = await fetch(
+        `${doctorServiceUrl}/api/doctors/${doctorId}/availability?date=${encodeURIComponent(date)}`
+      );
+      
+      if (!response.ok) {
+        console.error('Failed to fetch doctor availability');
+        return [];
+      }
+      
+      const availability = await response.json();
+      return availability;
+    } catch (error) {
+      console.error('Get availability error:', error);
+      return [];
+    }
   }
 
   // Book a new appointment
@@ -38,7 +80,7 @@ class AppointmentService {
     try {
       await client.query('BEGIN');
 
-      const { doctor_id, scheduled_at, consultation_type, symptoms, specialty } = appointmentData;
+      const { doctor_id, scheduled_at, consultation_type, symptoms, specialty, patient_name, patient_age, consultation_fee } = appointmentData;
 
       // Check if slot is already booked
       const conflictQuery = `
@@ -56,8 +98,8 @@ class AppointmentService {
 
       const insertQuery = `
         INSERT INTO public.appointments
-          (patient_id, doctor_id, scheduled_at, consultation_type, symptoms, specialty, status)
-        VALUES ($1, $2, $3, $4, $5, $6, 'PENDING_PAYMENT')
+          (patient_id, doctor_id, scheduled_at, consultation_type, symptoms, specialty, patient_name, patient_age, consultation_fee, status)
+        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, 'PENDING_PAYMENT')
         RETURNING *
       `;
 
@@ -68,6 +110,9 @@ class AppointmentService {
         consultation_type || 'video',
         symptoms || '',
         specialty || '',
+        patient_name || '',
+        patient_age ? parseInt(patient_age) : null,
+        consultation_fee ? parseFloat(consultation_fee) : null,
       ]);
 
       await client.query('COMMIT');
@@ -107,10 +152,8 @@ class AppointmentService {
   // Get patient's appointments
   async getPatientAppointments(patientId, status) {
     let query = `
-      SELECT a.*,
-             d.full_name as doctor_name, d.specialty
+      SELECT a.*
       FROM public.appointments a
-      JOIN doctors.profiles d ON a.doctor_id = d.id
       WHERE a.patient_id = $1
     `;
 
@@ -132,10 +175,8 @@ class AppointmentService {
     const { status, date } = filters;
 
     let query = `
-      SELECT a.*,
-             p.full_name as patient_name, p.phone as patient_phone
+      SELECT a.*
       FROM public.appointments a
-      JOIN patients.profiles p ON a.patient_id = p.id
       WHERE a.doctor_id = $1
     `;
 
@@ -160,12 +201,8 @@ class AppointmentService {
   // Get single appointment by ID
   async getAppointmentById(appointmentId) {
     const query = `
-      SELECT a.*,
-             d.full_name as doctor_name, d.specialty,
-             p.full_name as patient_name, p.phone as patient_phone
+      SELECT a.*
       FROM public.appointments a
-      LEFT JOIN doctors.profiles d ON a.doctor_id = d.id
-      LEFT JOIN patients.profiles p ON a.patient_id = p.id
       WHERE a.id = $1
     `;
 
@@ -198,6 +235,7 @@ class AppointmentService {
         return { error: 'Not authorized', status: 403 };
       }
 
+      // Update appointment status
       const updateQuery = `
         UPDATE public.appointments
         SET status = 'CANCELLED', cancelled_by = $2, cancellation_reason = $3, updated_at = NOW()
@@ -210,6 +248,35 @@ class AppointmentService {
         userRole,
         reason || '',
       ]);
+
+      // If payment was confirmed, trigger refund via payment service
+      if (appointment.payment_id && appointment.status === 'CONFIRMED') {
+        try {
+          const paymentServiceUrl = process.env.PAYMENT_SERVICE_URL || 'http://localhost:3005';
+          
+          const refundResponse = await fetch(
+            `${paymentServiceUrl}/api/payments/${appointment.payment_id}/refund`,
+            {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+              },
+              body: JSON.stringify({
+                reason: reason || `Appointment cancelled by ${userRole}`,
+              }),
+            }
+          );
+
+          if (refundResponse.ok) {
+            console.log(`Refund processed for appointment ${appointmentId}, payment ${appointment.payment_id}`);
+          } else {
+            console.error(`Failed to process refund for payment ${appointment.payment_id}`);
+          }
+        } catch (refundError) {
+          console.error('Error processing refund:', refundError);
+          // Don't fail the cancellation if refund fails - it can be processed manually
+        }
+      }
 
       await client.query('COMMIT');
       return { success: true, data: result.rows[0] };

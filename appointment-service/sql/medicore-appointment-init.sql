@@ -1,6 +1,7 @@
 -- ============================================
--- Appointment Service SQL Schema
--- Creates table: public.appointments
+-- Appointment Service Database Initialization
+-- Database: medicore_appointment
+-- Schema: public
 -- ============================================
 
 -- Enable UUID support
@@ -12,13 +13,23 @@ CREATE TABLE IF NOT EXISTS public.appointments (
     patient_id UUID NOT NULL,
     doctor_id UUID NOT NULL,
     scheduled_at TIMESTAMP NOT NULL,
-    consultation_type VARCHAR(50) DEFAULT 'video',
+    
+    consultation_type VARCHAR(50) 
+    CHECK (consultation_type IN ('video', 'physical')) 
+    DEFAULT 'video',
+
     symptoms TEXT,
     specialty VARCHAR(100),
     status VARCHAR(50) DEFAULT 'PENDING_PAYMENT',
     payment_id UUID,
+
+    patient_name VARCHAR(255) NOT NULL,
+    patient_age INTEGER,
+    consultation_fee DECIMAL(10, 2) NOT NULL,
+
     cancelled_by VARCHAR(50),
     cancellation_reason TEXT,
+
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
