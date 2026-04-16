@@ -46,11 +46,10 @@ services:
     build: ./doctor-service
     ports:
       - "3003:3000"
-    env_file: .env
+    env_file: ./doctor-service/.env
     volumes:
       - ./shared:/app/shared
-    depends_on:
-      - postgres
+    # No depends_on - using external Neon database
 
   appointment-service:
     build: ./appointment-service

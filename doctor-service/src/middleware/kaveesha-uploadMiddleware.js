@@ -1,27 +1,15 @@
 const multer = require('multer');
+const cloudinary = require('../config/kaveesha-cloudinary');
 const path = require('path');
-const fs = require('fs');
 
-// ─── Storage config for doctor registration ────────────────────────────────────
-const storage = multer.diskStorage({
-  destination: (req, file, cb) => {
-    const uploadDir = path.join('/app/uploads', 'doctors');
-    if (!fs.existsSync(uploadDir)) {
-      fs.mkdirSync(uploadDir, { recursive: true });
-    }
-    cb(null, uploadDir);
-  },
-  filename: (req, file, cb) => {
-    const ext = path.extname(file.originalname).toLowerCase();
-    const uniqueName = `${file.fieldname}-${Date.now()}-${Math.round(Math.random() * 1e6)}${ext}`;
-    cb(null, uniqueName);
-  },
-});
+// ─── Memory storage for Cloudinary upload ────────────────────────────────────
+const storage = multer.memoryStorage();
 
-// ─── Storage config for patient reports ────────────────────────────────────────
+// ─── Disk storage for patient reports (temporary) ───────────────────────────
 const reportStorage = multer.diskStorage({
   destination: (req, file, cb) => {
     const uploadDir = path.join('/app/uploads', 'reports');
+    const fs = require('fs');
     if (!fs.existsSync(uploadDir)) {
       fs.mkdirSync(uploadDir, { recursive: true });
     }
@@ -36,23 +24,22 @@ const reportStorage = multer.diskStorage({
 
 // ─── File type filter ──────────────────────────────────────────────────────────
 const fileFilter = (req, file, cb) => {
-  const allowedTypes = /jpeg|jpg|png|pdf/;
-  const extOk = allowedTypes.test(path.extname(file.originalname).toLowerCase());
-  const mimeOk = allowedTypes.test(file.mimetype.replace('image/', '').replace('application/', ''));
-  if (extOk && mimeOk) {
+  const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'application/pdf'];
+  if (allowedTypes.includes(file.mimetype)) {
     cb(null, true);
   } else {
     cb(new Error(`File type not allowed: ${file.originalname}. Only JPG, PNG, PDF allowed.`), false);
   }
 };
 
-// ─── Upload instances ──────────────────────────────────────────────────────────
+// ─── Upload instance ──────────────────────────────────────────────────────────
 const upload = multer({
   storage,
   limits: { fileSize: 5 * 1024 * 1024 }, // 5MB per file
   fileFilter,
 });
 
+// ─── Report upload instance ───────────────────────────────────────────────────
 const reportUpload = multer({
   storage: reportStorage,
   limits: { fileSize: 10 * 1024 * 1024 }, // 10MB per file for reports
@@ -62,10 +49,34 @@ const reportUpload = multer({
 // ─── Multi-field upload for doctor registration ────────────────────────────────
 const doctorRegisterUpload = upload.fields([
   { name: 'profile_photo', maxCount: 1 },
-  { name: 'id_card', maxCount: 1 },
+  { name: 'id_card_front', maxCount: 1 },
+  { name: 'id_card_back', maxCount: 1 },
   { name: 'medical_license', maxCount: 1 },
-  { name: 'medical_id', maxCount: 1 },
+  { name: 'degree_certificates', maxCount: 1 },
 ]);
+
+// ─── Upload to Cloudinary helper ───────────────────────────────────────────────
+const uploadToCloudinary = (fileBuffer, folder) => {
+  return new Promise((resolve, reject) => {
+    const uploadStream = cloudinary.uploader.upload_stream(
+      {
+        folder: `medicore/${folder}`,
+        resource_type: 'auto',
+      },
+      (error, result) => {
+        if (error) reject(error);
+        else resolve(result.secure_url);
+      }
+    );
+    
+    // Convert buffer to stream and upload
+    const Readable = require('stream').Readable;
+    const bufferStream = new Readable();
+    bufferStream.push(fileBuffer);
+    bufferStream.push(null);
+    bufferStream.pipe(uploadStream);
+  });
+};
 
 // ─── Error handler wrapper ─────────────────────────────────────────────────────
 const handleUpload = (middleware) => (req, res, next) => {
@@ -83,4 +94,4 @@ const handleUpload = (middleware) => (req, res, next) => {
   });
 };
 
-module.exports = { doctorRegisterUpload, reportUpload, handleUpload };
+module.exports = { doctorRegisterUpload, reportUpload, handleUpload, uploadToCloudinary };
