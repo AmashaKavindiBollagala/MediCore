@@ -42,7 +42,7 @@ class AppointmentService {
 
       // Check if slot is already booked
       const conflictQuery = `
-        SELECT id FROM appointments.bookings
+        SELECT id FROM public.appointments
         WHERE doctor_id = $1
           AND scheduled_at = $2
           AND status IN ('PENDING_PAYMENT', 'CONFIRMED')
@@ -55,7 +55,7 @@ class AppointmentService {
       }
 
       const insertQuery = `
-        INSERT INTO appointments.bookings
+        INSERT INTO public.appointments
           (patient_id, doctor_id, scheduled_at, consultation_type, symptoms, specialty, status)
         VALUES ($1, $2, $3, $4, $5, $6, 'PENDING_PAYMENT')
         RETURNING *
@@ -89,7 +89,7 @@ class AppointmentService {
     }
 
     const query = `
-      UPDATE appointments.bookings
+      UPDATE public.appointments
       SET status = $1, payment_id = $2, updated_at = NOW()
       WHERE id = $3
       RETURNING *
@@ -109,7 +109,7 @@ class AppointmentService {
     let query = `
       SELECT a.*,
              d.full_name as doctor_name, d.specialty
-      FROM appointments.bookings a
+      FROM public.appointments a
       JOIN doctors.profiles d ON a.doctor_id = d.id
       WHERE a.patient_id = $1
     `;
@@ -134,7 +134,7 @@ class AppointmentService {
     let query = `
       SELECT a.*,
              p.full_name as patient_name, p.phone as patient_phone
-      FROM appointments.bookings a
+      FROM public.appointments a
       JOIN patients.profiles p ON a.patient_id = p.id
       WHERE a.doctor_id = $1
     `;
@@ -163,7 +163,7 @@ class AppointmentService {
       SELECT a.*,
              d.full_name as doctor_name, d.specialty,
              p.full_name as patient_name, p.phone as patient_phone
-      FROM appointments.bookings a
+      FROM public.appointments a
       LEFT JOIN doctors.profiles d ON a.doctor_id = d.id
       LEFT JOIN patients.profiles p ON a.patient_id = p.id
       WHERE a.id = $1
@@ -199,7 +199,7 @@ class AppointmentService {
       }
 
       const updateQuery = `
-        UPDATE appointments.bookings
+        UPDATE public.appointments
         SET status = 'CANCELLED', cancelled_by = $2, cancellation_reason = $3, updated_at = NOW()
         WHERE id = $1
         RETURNING *
@@ -244,7 +244,7 @@ class AppointmentService {
 
       // Check new slot availability
       const conflictQuery = `
-        SELECT id FROM appointments.bookings
+        SELECT id FROM public.appointments
         WHERE doctor_id = $1
           AND scheduled_at = $2
           AND status IN ('PENDING_PAYMENT', 'CONFIRMED')
@@ -262,7 +262,7 @@ class AppointmentService {
       }
 
       const result = await client.query(
-        `UPDATE appointments.bookings
+        `UPDATE public.appointments
          SET scheduled_at = $2, updated_at = NOW()
          WHERE id = $1
          RETURNING *`,
@@ -283,7 +283,7 @@ class AppointmentService {
   // Reject appointment (doctor only)
   async rejectAppointment(appointmentId, doctorId) {
     const query = `
-      UPDATE appointments.bookings
+      UPDATE public.appointments
       SET status = 'REJECTED', updated_at = NOW()
       WHERE id = $1 AND doctor_id = $2 AND status = 'PENDING_PAYMENT'
       RETURNING *
