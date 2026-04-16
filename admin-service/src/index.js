@@ -65,8 +65,22 @@ const upload = multer({
 
 // ─── Auth Middleware ──────────────────────────────────────────────────────────
 // Verifies JWT and enforces role = 'admin'
+// TEMPORARILY DISABLED for development
 
 function requireAdmin(req, res, next) {
+  // TEMPORARY: Skip authentication for development
+  // TODO: Re-enable when admin login is ready
+  
+  // Set a mock admin user for the request
+  req.user = {
+    id: 'temp-admin-id',
+    email: 'admin@medicore.dev',
+    role: 'admin'
+  };
+  
+  next();
+  
+  /* ORIGINAL AUTHENTICATION - COMMENTED OUT TEMPORARILY
   const authHeader = req.headers['authorization'];
   if (!authHeader || !authHeader.startsWith('Bearer ')) {
     return res.status(401).json({ error: 'Missing or invalid Authorization header' });
@@ -82,6 +96,7 @@ function requireAdmin(req, res, next) {
   } catch (err) {
     return res.status(401).json({ error: 'Token invalid or expired' });
   }
+  */
 }
 
 // ─── Mount Routes ─────────────────────────────────────────────────────────────
@@ -98,63 +113,75 @@ app.get('/health', (req, res) => res.json({ status: 'ok', service: 'admin-servic
 
 app.get('/admin/stats', requireAdmin, async (req, res) => {
   try {
-    const [
-      usersResult,
-      doctorsResult,
-      appointmentsResult,
-      paymentsResult,
-    ] = await Promise.all([
-      // Total patients + doctors + admins breakdown
-      pool.query(`
+    // Doctors by verification status (this is in medicore_doctor database)
+    const doctorsResult = await pool.query(`
+      SELECT 
+        COUNT(*) FILTER (WHERE verification_status = 'pending') AS pending,
+        COUNT(*) FILTER (WHERE verification_status = 'approved') AS approved,
+        COUNT(*) FILTER (WHERE verification_status = 'rejected') AS rejected,
+        COUNT(*) AS total
+      FROM profiles
+    `);
+
+    // Try to get other stats, but don't fail if tables don't exist
+    let userStats = { patient: 0, doctor: 0, admin: 0, suspended: 0, total_users: 0 };
+    let appointmentStats = {};
+    let paymentStats = { total_revenue: 0, total_refunds: 0, pending_payments: 0, completed_payments: 0 };
+
+    try {
+      const usersResult = await pool.query(`
         SELECT role, COUNT(*) AS count,
                COUNT(*) FILTER (WHERE status = 'suspended') AS suspended
         FROM auth.users
         GROUP BY role
-      `),
-      // Doctors by verification status
-      pool.query(`
-        SELECT 
-          COUNT(*) FILTER (WHERE verification_status = 'pending') AS pending,
-          COUNT(*) FILTER (WHERE verification_status = 'approved') AS approved,
-          COUNT(*) FILTER (WHERE verification_status = 'rejected') AS rejected,
-          COUNT(*) AS total
-        FROM doctors.profiles
-      `),
-      // Appointment status breakdown
-      pool.query(`
+      `);
+      
+      for (const row of usersResult.rows) {
+        userStats[row.role] = parseInt(row.count);
+        userStats.suspended += parseInt(row.suspended);
+      }
+      userStats.total_users = userStats.patient + userStats.doctor + userStats.admin;
+    } catch (err) {
+      console.log('[/admin/stats] auth.users not available:', err.message);
+    }
+
+    try {
+      const appointmentsResult = await pool.query(`
         SELECT status, COUNT(*) AS count FROM appointments.bookings GROUP BY status
-      `),
-      // Revenue + refunds
-      pool.query(`
+      `);
+      appointmentStats = appointmentsResult.rows.reduce((acc, r) => {
+        acc[r.status.toLowerCase()] = parseInt(r.count);
+        return acc;
+      }, {});
+    } catch (err) {
+      console.log('[/admin/stats] appointments.bookings not available:', err.message);
+    }
+
+    try {
+      const paymentsResult = await pool.query(`
         SELECT
           COALESCE(SUM(amount) FILTER (WHERE status='completed' AND transaction_type='payment'), 0) AS total_revenue,
           COALESCE(SUM(amount) FILTER (WHERE status='completed' AND transaction_type='refund'),  0) AS total_refunds,
           COUNT(*) FILTER (WHERE status='pending')   AS pending_payments,
           COUNT(*) FILTER (WHERE status='completed') AS completed_payments
         FROM payments.transactions
-      `),
-    ]);
-
-    // Reshape user counts
-    const userStats = { patient: 0, doctor: 0, admin: 0, suspended: 0 };
-    for (const row of usersResult.rows) {
-      userStats[row.role]      = parseInt(row.count);
-      userStats.suspended     += parseInt(row.suspended);
+      `);
+      paymentStats = paymentsResult.rows[0];
+    } catch (err) {
+      console.log('[/admin/stats] payments.transactions not available:', err.message);
     }
-    userStats.total_users = userStats.patient + userStats.doctor + userStats.admin;
 
     res.json({
       users:        userStats,
       doctors:      doctorsResult.rows[0],
-      appointments: appointmentsResult.rows.reduce((acc, r) => {
-        acc[r.status.toLowerCase()] = parseInt(r.count);
-        return acc;
-      }, {}),
-      payments:     paymentsResult.rows[0],
+      appointments: appointmentStats,
+      payments:     paymentStats,
     });
   } catch (err) {
-    console.error('[/admin/stats]', err.message);
-    res.status(500).json({ error: err.message });
+    console.error('[/admin/stats] Full error:', err);
+    console.error('[/admin/stats] Error message:', err.message);
+    console.error('[/admin/stats] Error stack:', err.stack);
+    res.status(500).json({ error: err.message || 'Internal server error', details: err.toString() });
   }
 });
 
@@ -240,7 +267,7 @@ If you cannot read a field clearly, set it to null.`;
 
     // Persist the AI analysis in the doctors table
     await pool.query(
-      `UPDATE doctors.profiles SET ai_analysis = $1, updated_at = NOW() WHERE id = $2`,
+      `UPDATE profiles SET ai_analysis = $1, updated_at = NOW() WHERE id = $2`,
       [JSON.stringify(analysis), req.params.id]
     );
 

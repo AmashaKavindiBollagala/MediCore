@@ -27,7 +27,7 @@ const Badge = ({ status }) => {
 export default function DilsharaDoctorVerificationList() {
   const navigate = useNavigate();
   const [doctors, setDoctors]   = useState([]);
-  const [tab, setTab]           = useState('pending');
+  const [tab, setTab]           = useState('all');
   const [loading, setLoading]   = useState(true);
   const [search, setSearch]     = useState('');
 

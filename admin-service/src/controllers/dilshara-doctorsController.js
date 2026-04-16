@@ -21,11 +21,11 @@ exports.getDoctors = async (req, res) => {
         id, user_id, first_name, last_name,
         COALESCE(first_name || ' ' || last_name, full_name) AS full_name,
         email, phone, specialty, sub_specialty,
-        hospital, medical_license_number, years_of_experience,
-        bio, consultation_fee_online, consultation_fee_physical,
-        profile_photo_url, id_card_url, medical_license_url, medical_id_url,
-        verification_status, verified, created_at
-       FROM doctors.profiles
+        hospital, hospital_address, medical_license_number, license_issuing_authority,
+        years_of_experience, bio, consultation_fee_online, consultation_fee_physical,
+        profile_photo_url, id_card_front_url, id_card_back_url, medical_license_url, degree_certificates_url,
+        verification_status, verified, rejection_reason, created_at, updated_at
+       FROM profiles
        ${whereClause}
        ORDER BY created_at DESC`,
       params
@@ -47,11 +47,11 @@ exports.getDoctorById = async (req, res) => {
         id, user_id, first_name, last_name,
         COALESCE(first_name || ' ' || last_name, full_name) AS full_name,
         email, phone, specialty, sub_specialty,
-        hospital, medical_license_number, years_of_experience,
-        bio, consultation_fee_online, consultation_fee_physical,
-        profile_photo_url, id_card_url, medical_license_url, medical_id_url,
-        verification_status, verified, created_at
-       FROM doctors.profiles
+        hospital, hospital_address, medical_license_number, license_issuing_authority,
+        years_of_experience, bio, consultation_fee_online, consultation_fee_physical,
+        profile_photo_url, id_card_front_url, id_card_back_url, medical_license_url, degree_certificates_url,
+        verification_status, verified, rejection_reason, created_at, updated_at
+       FROM profiles
        WHERE id = $1`,
       [id]
     );
@@ -71,7 +71,7 @@ exports.getDoctorById = async (req, res) => {
 // Body: { status: 'approved' | 'rejected', note?: string }
 //
 // Flow:
-//  1. Update doctors.profiles  → sets verification_status + verified flag
+//  1. Update doctors.profiles  → sets verification_status + verified flag + rejection_reason (if rejected)
 //  2. If approved → update auth.users  → set verified = true so doctor can log in
 //  3. Write to admin.verification_events → notification team reads this to send email
 exports.verifyDoctor = async (req, res) => {
@@ -88,7 +88,7 @@ exports.verifyDoctor = async (req, res) => {
 
     // 1. Fetch doctor to get email + current state
     const doctorRes = await client.query(
-      `SELECT id, email, user_id, verification_status FROM doctors.profiles WHERE id = $1`,
+      `SELECT id, email, user_id, verification_status FROM profiles WHERE id = $1`,
       [id]
     );
     if (doctorRes.rows.length === 0) {
@@ -105,13 +105,15 @@ exports.verifyDoctor = async (req, res) => {
     }
 
     // 2. Update doctors.profiles
+    //    If rejected, save the note as rejection_reason in the profiles table
     await client.query(
-      `UPDATE doctors.profiles
+      `UPDATE profiles
        SET verification_status = $1,
            verified            = $2,
+           rejection_reason    = $3,
            updated_at          = NOW()
-       WHERE id = $3`,
-      [status, status === 'approved', id]
+       WHERE id = $4`,
+      [status, status === 'approved', status === 'rejected' ? note : null, id]
     );
 
     // 3. If approved, unlock the auth.users account so doctor can log in

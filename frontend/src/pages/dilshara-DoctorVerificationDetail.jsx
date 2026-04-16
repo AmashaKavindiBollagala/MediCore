@@ -28,11 +28,13 @@ const DocViewer = ({ label, url }) => {
       <div style={{ fontSize: 11, fontWeight: 700, color: 'rgba(255,255,255,0.3)', textTransform: 'uppercase', letterSpacing: 1.5, marginBottom: 8 }}>{label}</div>
       <a href={url} target="_blank" rel="noreferrer" style={{ display: 'block', borderRadius: 12, overflow: 'hidden', border: '1px solid rgba(255,255,255,0.1)', textDecoration: 'none' }}>
         {isPdf ? (
-          <div style={{ background: 'rgba(255,255,255,0.05)', padding: '20px', textAlign: 'center', color: '#67C090', fontSize: 13, fontWeight: 600 }}>
-            📄 View PDF
+          <div style={{ background: 'rgba(255,255,255,0.05)', padding: '40px 20px', textAlign: 'center', color: '#67C090' }}>
+            <div style={{ fontSize: 48, marginBottom: 8 }}>📄</div>
+            <div style={{ fontSize: 14, fontWeight: 600 }}>Click to view PDF</div>
+            <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.4)', marginTop: 4 }}>Opens in new tab</div>
           </div>
         ) : (
-          <img src={url} alt={label} style={{ width: '100%', display: 'block', maxHeight: 200, objectFit: 'cover' }} />
+          <img src={url} alt={label} style={{ width: '100%', display: 'block', maxHeight: 300, objectFit: 'contain', background: 'rgba(0,0,0,0.3)' }} />
         )}
       </a>
     </div>
@@ -69,7 +71,13 @@ export default function DilsharaDoctorVerificationDetail() {
   }, [id]);
 
   const handleVerify = async (status) => {
-    if (!window.confirm(`Are you sure you want to ${status} this doctor?`)) return;
+    // If rejecting, ensure a reason is provided
+    if (status === 'rejected' && !note.trim()) {
+      alert('Please provide a rejection reason. This will be sent to the doctor.');
+      return;
+    }
+    
+    if (!window.confirm(`Are you sure you want to ${status} this doctor?${status === 'rejected' ? '\n\nRejection reason will be sent to the doctor.' : ''}`)) return;
     setSubmitting(true);
     try {
       await verifyDoctor(id, status, note);
@@ -221,6 +229,15 @@ export default function DilsharaDoctorVerificationDetail() {
                 <Field label="Physical Fee" value={doctor.consultation_fee_physical ? `LKR ${doctor.consultation_fee_physical}` : null} />
               </div>
 
+              {doctor.rejection_reason && (
+                <div style={{ marginTop: 16 }}>
+                  <div style={{ fontSize: 11, fontWeight: 700, color: 'rgba(255,255,255,0.3)', textTransform: 'uppercase', letterSpacing: 1.5, marginBottom: 6 }}>Previous Rejection Reason</div>
+                  <div style={{ fontSize: 13, color: '#EF4444', lineHeight: 1.7, background: 'rgba(239,68,68,0.1)', padding: 12, borderRadius: 8, border: '1px solid rgba(239,68,68,0.2)' }}>
+                    {doctor.rejection_reason}
+                  </div>
+                </div>
+              )}
+
               {doctor.bio && (
                 <div style={{ marginTop: 8 }}>
                   <div style={{ fontSize: 11, fontWeight: 700, color: 'rgba(255,255,255,0.3)', textTransform: 'uppercase', letterSpacing: 1.5, marginBottom: 6 }}>Bio</div>
@@ -335,13 +352,13 @@ export default function DilsharaDoctorVerificationDetail() {
                 <>
                   <div style={{ marginBottom: 16 }}>
                     <label style={{ fontSize: 12, color: 'rgba(255,255,255,0.4)', display: 'block', marginBottom: 6, textTransform: 'uppercase', letterSpacing: 1, fontWeight: 700 }}>
-                      Admin Note (optional)
+                      {note.includes('reject') || note.includes('Reject') ? 'Rejection Reason (Required)' : 'Admin Note (Optional)'}
                     </label>
                     <textarea
                       value={note}
                       onChange={(e) => setNote(e.target.value)}
-                      placeholder="e.g. License verified manually. Approved."
-                      rows={3}
+                      placeholder={doctor.verification_status === 'pending' ? 'Enter reason for rejection (this will be sent to the doctor via email)' : 'e.g. License verified manually. Approved.'}
+                      rows={4}
                       style={{
                         width: '100%', padding: '10px 14px', borderRadius: 10, fontSize: 13,
                         background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)',
