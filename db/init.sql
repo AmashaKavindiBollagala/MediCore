@@ -51,11 +51,17 @@ CREATE TABLE IF NOT EXISTS payments.transactions (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   appointment_id UUID REFERENCES appointments.bookings(id),
   patient_id UUID NOT NULL,
+  doctor_id UUID,
   amount DECIMAL(10, 2) NOT NULL,
+  currency VARCHAR(10) DEFAULT 'LKR',
   payment_method VARCHAR(50) DEFAULT 'card',
-  status VARCHAR(20) DEFAULT 'pending' CHECK (status IN ('pending', 'completed', 'failed', 'refunded')),
+  payment_gateway VARCHAR(50) DEFAULT 'payhere',
+  gateway_transaction_id VARCHAR(255),
+  status VARCHAR(20) DEFAULT 'PENDING' CHECK (status IN ('PENDING', 'SUCCESS', 'FAILED', 'REFUNDED')),
   transaction_type VARCHAR(20) DEFAULT 'payment' CHECK (transaction_type IN ('payment', 'refund')),
-  created_at TIMESTAMP DEFAULT NOW()
+  refund_reason TEXT,
+  created_at TIMESTAMP DEFAULT NOW(),
+  updated_at TIMESTAMP DEFAULT NOW()
 );
 
 CREATE SCHEMA IF NOT EXISTS admin;
