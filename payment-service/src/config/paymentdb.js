@@ -1,5 +1,5 @@
 const { Pool } = require('pg');
-const config = require('./appointmentdatabase');
+const config = require('./paymentdatabase');
 
 const pool = new Pool({
   connectionString: config.databaseUrl,

@@ -2,6 +2,10 @@ import React from 'react';
 import { BrowserRouter as Router, Routes, Route, Link } from 'react-router-dom';
 import DushaniBookAppointment from './pages/dushani-BookAppointment';
 import DushaniMyAppointments from './pages/dushani-MyAppointments';
+import DushaniPaymentCheckout from './pages/dushani-PaymentCheckout';
+import DushaniPaymentSuccess from './pages/dushani-PaymentSuccess';
+import DushaniPaymentCancel from './pages/dushani-PaymentCancel';
+import DushaniPaymentHistory from './pages/dushani-PaymentHistory';
 import DushaniDoctorAppointments from './pages/dushani-DoctorAppointments';
 import Login from './pages/amasha-Login';
 import Register from './pages/amasha-Register';
@@ -21,7 +25,6 @@ import {
   DilsharaAdminAvailability,
 } from './pages/dilshara-AdminPlaceholders';
 
-
 function App() {
   return (
     <Router>
@@ -33,8 +36,14 @@ function App() {
                 MediCore
               </Link>
               <div className="hidden sm:flex gap-6">
+                <Link to="/" className="text-gray-700 hover:text-blue-600 font-medium">
+                  Home
+                </Link>
                 <Link to="/appointments" className="text-gray-700 hover:text-blue-600 font-medium">
                   My Appointments
+                </Link>
+                <Link to="/payments" className="text-gray-700 hover:text-blue-600 font-medium">
+                  Payment History
                 </Link>
                 <Link to="/appointments/book" className="bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 px-4 rounded-lg transition-colors">
                   Book Appointment
@@ -53,6 +62,16 @@ function App() {
           <Route path="/" element={<Home />} />
           <Route path="/appointments" element={<DushaniMyAppointments />} />
           <Route path="/appointments/book" element={<DushaniBookAppointment />} />
+          <Route path="/payment/checkout/:appointmentId" element={<DushaniPaymentCheckout />} />
+          <Route path="/payment/success" element={<DushaniPaymentSuccess />} />
+          <Route path="/payment/cancel" element={<DushaniPaymentCancel />} />
+          <Route path="/payments" element={<DushaniPaymentHistory />} />
+          <Route path="/payments/:paymentId" element={<DushaniPaymentHistory />} />
+          <Route path="/login" element={<Login />} />
+          <Route path="/register" element={<Register />} />
+          <Route path="/doctor-register" element={<KaveeshaDoctorRegister />} />
+          <Route path="/doctor-dashboard" element={<KaveeshaDoctorDashboard />} />
+          <Route path="/doctor-appointments" element={<DushaniDoctorAppointments />} />
            <Route path="/login" element={<Login />} />
            <Route path="/register" element={<Register />} />
             <Route path="/register/patient" element={<RegisterDetails />} />
