@@ -2,6 +2,7 @@ require('dotenv').config();
 const express = require('express');
 const cors = require('cors');
 const path = require('path');
+const pool = require('./src/config/kaveesha-doctorPool');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -19,6 +20,10 @@ app.use('/uploads/reports', express.static(path.join('/app/uploads', 'reports'))
 const doctorRoutes = require('./src/routes/kaveesha-doctorRoutes');
 app.use('/doctors', doctorRoutes);
 
+// Doctor Registration Routes
+const doctorRegistrationRoutes = require('./src/routes/kaveesha-doctorRegistrationRoutes');
+app.use('/api/doctors', doctorRegistrationRoutes);
+
 // ─── Health check ──────────────────────────────────────────────────────────────
 app.get('/health', (req, res) => res.json({ status: 'doctor-service OK' }));
 
@@ -28,6 +33,16 @@ app.use((err, req, res, next) => {
   res.status(500).json({ error: 'Internal server error' });
 });
 
-app.listen(PORT, () => {
+// ─── Start server with DB connection test ──────────────────────────────────────
+app.listen(PORT, async () => {
   console.log(`Doctor service running on port ${PORT}`);
+  
+  // Test database connection
+  try {
+    const client = await pool.connect();
+    console.log('✅ Database connection successful');
+    client.release();
+  } catch (err) {
+    console.error('❌ Database connection failed:', err.message);
+  }
 });

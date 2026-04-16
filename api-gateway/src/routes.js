@@ -60,9 +60,59 @@ router.post('/auth/login', (req, res) => {
   proxyRequest(req, res, SERVICES.auth, '/api/auth/login');
 });
 
-// ─────────────────────────────────────────────
-// APPOINTMENT SERVICE
-// ─────────────────────────────────────────────
+// ─── DOCTOR SERVICE ROUTES ─────────────────────────────────────────────────────
+
+// Doctor registration (public - includes file upload)
+router.post('/doctors/register', async (req, res) => {
+  const url = `${SERVICES.doctor}/api/doctors/register`;
+  
+  console.log('Proxying doctor registration to:', url);
+  
+  try {
+    // Forward multipart/form-data request by piping the raw request
+    const response = await fetch(url, {
+      method: 'POST',
+      headers: {
+        'Content-Type': req.headers['content-type'],
+      },
+      body: req,
+      duplex: 'half', // Required for streaming request body in Node.js
+    });
+    
+    const contentType = response.headers.get('content-type');
+    if (contentType && contentType.includes('application/json')) {
+      const data = await response.json();
+      res.status(response.status).json(data);
+    } else {
+      const text = await response.text();
+      console.error('Non-JSON response from doctor service:', text);
+      res.status(response.status).json({ error: 'Invalid response from service' });
+    }
+  } catch (error) {
+    console.error(`Proxy error to ${url}:`, error.message);
+    res.status(502).json({ error: 'Service unavailable', detail: error.message });
+  }
+});
+
+// Get all doctors (public)
+router.get('/doctors', (req, res) => {
+  const query = new URLSearchParams(req.query).toString();
+  proxyRequest(req, res, SERVICES.doctor, `/doctors?${query}`);
+});
+
+// Get doctor by ID (public)
+router.get('/doctors/:id', (req, res) => {
+  proxyRequest(req, res, SERVICES.doctor, `/doctors/${req.params.id}`);
+});
+
+// Get doctor availability (public)
+router.get('/doctors/:id/availability', (req, res) => {
+  proxyRequest(req, res, SERVICES.doctor, `/doctors/${req.params.id}/availability`);
+});
+
+// ─── APPOINTMENT SERVICE ROUTES ───────────────────────────────────────────────
+
+// Search doctors by specialty
 router.get('/appointments/doctors/search', (req, res) => {
   const query = new URLSearchParams(req.query).toString();
   proxyRequest(req, res, SERVICES.appointment, `/api/appointments/doctors/search?${query}`);

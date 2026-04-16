@@ -45,6 +45,7 @@ services:
     env_file: ./doctor-service/.env
     volumes:
       - ./shared:/app/shared
+    # No depends_on - using external Neon database
 
   appointment-service:
     build: ./appointment-service
