@@ -20,53 +20,17 @@ const proxyRequest = async (req, res, serviceUrl, path) => {
     const fetch = (await import('node-fetch')).default;
 
     const url = `${serviceUrl}${path}`;
-    
-    // Check if request has files (multipart/form-data)
-    if (req.files && req.files.length > 0) {
-      // For file uploads, use FormData
-      const FormData = (await import('form-data')).default;
-      const formData = new FormData();
-      
-      // Add files
-      req.files.forEach(file => {
-        formData.append(file.fieldname, file.buffer, {
-          filename: file.originalname,
-          contentType: file.mimetype,
-        });
-      });
-      
-      // Add other body fields
-      if (req.body) {
-        Object.entries(req.body).forEach(([key, value]) => {
-          formData.append(key, value);
-        });
-      }
-      
-      const response = await fetch(url, {
-        method: req.method,
-        headers: {
-          'Authorization': req.headers.authorization || '',
-          ...formData.getHeaders(),
-        },
-        body: formData,
-      });
-      
-      const data = await response.json();
-      res.status(response.status).json(data);
-    } else {
-      // Regular JSON request
-      const response = await fetch(url, {
-        method: req.method,
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': req.headers.authorization || '',
-        },
-        body: req.method !== 'GET' ? JSON.stringify(req.body) : undefined,
-      });
+    const response = await fetch(url, {
+      method: req.method,
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': req.headers.authorization || '',
+      },
+      body: req.method !== 'GET' ? JSON.stringify(req.body) : undefined,
+    });
 
-      const data = await response.json();
-      res.status(response.status).json(data);
-    }
+    const data = await response.json();
+    res.status(response.status).json(data);
   } catch (error) {
     console.error(`Proxy error to ${serviceUrl}${path}:`, error.message);
     res.status(502).json({ error: 'Service unavailable', detail: error.message });
@@ -81,141 +45,6 @@ router.post('/auth/register', (req, res) => {
 
 router.post('/auth/login', (req, res) => {
   proxyRequest(req, res, SERVICES.auth, '/api/auth/login');
-});
-
-// ─── DOCTOR SERVICE ROUTES ─────────────────────────────────────────────────────
-
-// Public routes
-router.get('/doctors', (req, res) => {
-  const query = new URLSearchParams(req.query).toString();
-  proxyRequest(req, res, SERVICES.doctor, `/doctors?${query}`);
-});
-
-router.get('/doctors/:id', (req, res) => {
-  proxyRequest(req, res, SERVICES.doctor, `/doctors/${req.params.id}`);
-});
-
-router.get('/doctors/:id/availability', (req, res) => {
-  proxyRequest(req, res, SERVICES.doctor, `/doctors/${req.params.id}/availability`);
-});
-
-// Doctor registration
-router.post('/doctors/register', (req, res) => {
-  proxyRequest(req, res, SERVICES.doctor, '/doctors/register');
-});
-
-// Doctor profile
-router.get('/doctors/me/profile', (req, res) => {
-  proxyRequest(req, res, SERVICES.doctor, '/doctors/me/profile');
-});
-
-router.put('/doctors/me/profile', (req, res) => {
-  proxyRequest(req, res, SERVICES.doctor, '/doctors/me/profile');
-});
-
-// Doctor availability
-router.get('/doctors/me/availability', (req, res) => {
-  proxyRequest(req, res, SERVICES.doctor, '/doctors/me/availability');
-});
-
-router.post('/doctors/me/availability', (req, res) => {
-  proxyRequest(req, res, SERVICES.doctor, '/doctors/me/availability');
-});
-
-router.delete('/doctors/me/availability/:slotId', (req, res) => {
-  proxyRequest(req, res, SERVICES.doctor, `/doctors/me/availability/${req.params.slotId}`);
-});
-
-router.get('/doctors/me/availability/exceptions', (req, res) => {
-  proxyRequest(req, res, SERVICES.doctor, '/doctors/me/availability/exceptions');
-});
-
-router.post('/doctors/me/availability/block', (req, res) => {
-  proxyRequest(req, res, SERVICES.doctor, '/doctors/me/availability/block');
-});
-
-// Doctor appointments
-router.get('/doctors/me/appointments', (req, res) => {
-  const query = new URLSearchParams(req.query).toString();
-  proxyRequest(req, res, SERVICES.doctor, `/doctors/me/appointments?${query}`);
-});
-
-router.get('/doctors/me/appointments/:id', (req, res) => {
-  proxyRequest(req, res, SERVICES.doctor, `/doctors/me/appointments/${req.params.id}`);
-});
-
-router.patch('/doctors/me/appointments/:id/confirm', (req, res) => {
-  proxyRequest(req, res, SERVICES.doctor, `/doctors/me/appointments/${req.params.id}/confirm`);
-});
-
-router.patch('/doctors/me/appointments/:id/reject', (req, res) => {
-  proxyRequest(req, res, SERVICES.doctor, `/doctors/me/appointments/${req.params.id}/reject`);
-});
-
-router.patch('/doctors/me/appointments/:id/complete', (req, res) => {
-  proxyRequest(req, res, SERVICES.doctor, `/doctors/me/appointments/${req.params.id}/complete`);
-});
-
-// Doctor prescriptions
-router.post('/doctors/me/prescriptions', (req, res) => {
-  proxyRequest(req, res, SERVICES.doctor, '/doctors/me/prescriptions');
-});
-
-router.get('/doctors/me/prescriptions', (req, res) => {
-  proxyRequest(req, res, SERVICES.doctor, '/doctors/me/prescriptions');
-});
-
-router.get('/doctors/me/prescriptions/:id', (req, res) => {
-  proxyRequest(req, res, SERVICES.doctor, `/doctors/me/prescriptions/${req.params.id}`);
-});
-
-router.get('/doctors/me/prescriptions/appointment/:appointmentId', (req, res) => {
-  proxyRequest(req, res, SERVICES.doctor, `/doctors/me/prescriptions/appointment/${req.params.appointmentId}`);
-});
-
-router.put('/doctors/me/prescriptions/:id', (req, res) => {
-  proxyRequest(req, res, SERVICES.doctor, `/doctors/me/prescriptions/${req.params.id}`);
-});
-
-// Doctor patient reports
-router.post('/doctors/me/reports/upload', (req, res) => {
-  proxyRequest(req, res, SERVICES.doctor, '/doctors/me/reports/upload');
-});
-
-router.get('/doctors/me/reports', (req, res) => {
-  const query = new URLSearchParams(req.query).toString();
-  proxyRequest(req, res, SERVICES.doctor, `/doctors/me/reports?${query}`);
-});
-
-router.get('/doctors/me/reports/:id', (req, res) => {
-  proxyRequest(req, res, SERVICES.doctor, `/doctors/me/reports/${req.params.id}`);
-});
-
-router.get('/doctors/me/reports/appointment/:appointmentId', (req, res) => {
-  proxyRequest(req, res, SERVICES.doctor, `/doctors/me/reports/appointment/${req.params.appointmentId}`);
-});
-
-router.delete('/doctors/me/reports/:id', (req, res) => {
-  proxyRequest(req, res, SERVICES.doctor, `/doctors/me/reports/${req.params.id}`);
-});
-
-// Doctor telemedicine
-router.post('/doctors/me/telemedicine/generate-room', (req, res) => {
-  proxyRequest(req, res, SERVICES.doctor, '/doctors/me/telemedicine/generate-room');
-});
-
-router.get('/doctors/me/telemedicine/appointment/:appointmentId', (req, res) => {
-  proxyRequest(req, res, SERVICES.doctor, `/doctors/me/telemedicine/appointment/${req.params.appointmentId}`);
-});
-
-// Admin routes
-router.get('/doctors/admin/all', (req, res) => {
-  const query = new URLSearchParams(req.query).toString();
-  proxyRequest(req, res, SERVICES.doctor, `/doctors/admin/all?${query}`);
-});
-
-router.patch('/doctors/admin/:id/verify', (req, res) => {
-  proxyRequest(req, res, SERVICES.doctor, `/doctors/admin/${req.params.id}/verify`);
 });
 
 // ─── APPOINTMENT SERVICE ROUTES ───────────────────────────────────────────────
@@ -316,6 +145,74 @@ router.post('/payments/cancel-with-refund', (req, res) => {
 // PayHere webhook (no auth required)
 router.post('/payments/webhook/payhere', (req, res) => {
   proxyRequest(req, res, SERVICES.payment, '/api/payments/webhook/payhere');
+// ─── ADMIN SERVICE ROUTES ───────────────────────────────────────────────────────
+
+// Dashboard stats
+router.get('/admin/stats', (req, res) => {
+  proxyRequest(req, res, SERVICES.admin, '/admin/stats');
+});
+
+// Doctor verification
+router.get('/admin/doctors', (req, res) => {
+  const query = new URLSearchParams(req.query).toString();
+  proxyRequest(req, res, SERVICES.admin, `/admin/doctors?${query}`);
+});
+
+router.get('/admin/doctors/:id', (req, res) => {
+  proxyRequest(req, res, SERVICES.admin, `/admin/doctors/${req.params.id}`);
+});
+
+router.patch('/admin/doctors/:id/verify', (req, res) => {
+  proxyRequest(req, res, SERVICES.admin, `/admin/doctors/${req.params.id}/verify`);
+});
+
+// AI license analysis (file upload)
+router.post('/admin/doctors/:id/ai-analyze', (req, res) => {
+  // For multipart/form-data, we need to forward differently
+  const fetch = require('node-fetch');
+  const url = `${SERVICES.admin}/admin/doctors/${req.params.id}/ai-analyze`;
+  
+  // Forward the request with headers but without JSON.stringify
+  fetch(url, {
+    method: 'POST',
+    headers: {
+      'Authorization': req.headers.authorization || '',
+      'Content-Type': req.headers['content-type'] || 'multipart/form-data',
+    },
+    body: req,
+  })
+  .then(response => response.json())
+  .then(data => res.status(response.status).json(data))
+  .catch(error => {
+    console.error(`Proxy error to ${url}:`, error.message);
+    res.status(502).json({ error: 'Service unavailable', detail: error.message });
+  });
+});
+
+// User management
+router.get('/admin/users', (req, res) => {
+  const query = new URLSearchParams(req.query).toString();
+  proxyRequest(req, res, SERVICES.admin, `/admin/users?${query}`);
+});
+
+router.put('/admin/users/:id/suspend', (req, res) => {
+  proxyRequest(req, res, SERVICES.admin, `/admin/users/${req.params.id}/suspend`);
+});
+
+router.put('/admin/users/:id/reactivate', (req, res) => {
+  proxyRequest(req, res, SERVICES.admin, `/admin/users/${req.params.id}/reactivate`);
+});
+
+// Appointments (admin view)
+router.get('/admin/appointments', (req, res) => {
+  const query = new URLSearchParams(req.query).toString();
+  proxyRequest(req, res, SERVICES.admin, `/admin/appointments?${query}`);
+});
+
+// Payments (admin view)
+router.get('/admin/payments', (req, res) => {
+  const query = new URLSearchParams(req.query).toString();
+  proxyRequest(req, res, SERVICES.admin, `/admin/payments?${query}`);
 });
 
 module.exports = router;

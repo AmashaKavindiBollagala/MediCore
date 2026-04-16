@@ -1,8 +1,8 @@
--- Create appointments schema
-CREATE SCHEMA IF NOT EXISTS appointments;
+-- Appointment Service SQL Schema
+-- This file contains the database schema for the appointment service
 
 -- Create bookings table
-CREATE TABLE IF NOT EXISTS appointments.bookings (
+CREATE TABLE IF NOT EXISTS bookings (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   patient_id UUID NOT NULL,
   doctor_id UUID NOT NULL,
@@ -19,7 +19,7 @@ CREATE TABLE IF NOT EXISTS appointments.bookings (
 );
 
 -- Create indexes for better query performance
-CREATE INDEX IF NOT EXISTS idx_bookings_patient_id ON appointments.bookings(patient_id);
-CREATE INDEX IF NOT EXISTS idx_bookings_doctor_id ON appointments.bookings(doctor_id);
-CREATE INDEX IF NOT EXISTS idx_bookings_status ON appointments.bookings(status);
-CREATE INDEX IF NOT EXISTS idx_bookings_scheduled_at ON appointments.bookings(scheduled_at);
+CREATE INDEX IF NOT EXISTS idx_bookings_patient_id ON bookings(patient_id);
+CREATE INDEX IF NOT EXISTS idx_bookings_doctor_id ON bookings(doctor_id);
+CREATE INDEX IF NOT EXISTS idx_bookings_status ON bookings(status);
+CREATE INDEX IF NOT EXISTS idx_bookings_scheduled_at ON bookings(scheduled_at);
