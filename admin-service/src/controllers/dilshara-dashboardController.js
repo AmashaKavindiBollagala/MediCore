@@ -14,7 +14,7 @@ exports.getStats = async (req, res) => {
         COUNT(*) FILTER (WHERE verification_status = 'approved') AS approved,
         COUNT(*) FILTER (WHERE verification_status = 'rejected') AS rejected,
         COUNT(*)                                                  AS total
-      FROM doctors.profiles
+      FROM public.profiles
     `);
 
     // User counts from auth-service DB (auth schema)

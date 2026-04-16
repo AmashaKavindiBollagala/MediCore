@@ -9,7 +9,12 @@ CREATE TABLE IF NOT EXISTS auth.users (
   email VARCHAR(255) UNIQUE NOT NULL,
   password VARCHAR(255) NOT NULL,
   role VARCHAR(20) NOT NULL CHECK (role IN ('patient', 'doctor', 'admin')),
-  created_at TIMESTAMP DEFAULT NOW()
+  verified BOOLEAN DEFAULT FALSE,
+  status VARCHAR(20) DEFAULT 'active' CHECK (status IN ('active', 'suspended')),
+  suspension_reason TEXT,
+  phone VARCHAR(20),
+  created_at TIMESTAMP DEFAULT NOW(),
+  updated_at TIMESTAMP DEFAULT NOW()
 );
 
 CREATE TABLE IF NOT EXISTS patients.profiles (
@@ -25,9 +30,27 @@ CREATE TABLE IF NOT EXISTS doctors.profiles (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   user_id UUID REFERENCES auth.users(id),
   full_name VARCHAR(255),
+  first_name VARCHAR(100),
+  last_name VARCHAR(100),
+  email VARCHAR(255),
+  phone VARCHAR(20),
   specialty VARCHAR(100),
+  sub_specialty VARCHAR(100),
+  hospital VARCHAR(255),
+  medical_license_number VARCHAR(100),
+  years_of_experience INTEGER,
+  bio TEXT,
+  consultation_fee_online DECIMAL(10,2),
+  consultation_fee_physical DECIMAL(10,2),
+  profile_photo_url TEXT,
+  id_card_url TEXT,
+  medical_license_url TEXT,
+  medical_id_url TEXT,
+  verification_status VARCHAR(30) DEFAULT 'pending' CHECK (verification_status IN ('pending','approved','rejected')),
   verified BOOLEAN DEFAULT FALSE,
-  created_at TIMESTAMP DEFAULT NOW()
+  rejection_reason TEXT,
+  created_at TIMESTAMP DEFAULT NOW(),
+  updated_at TIMESTAMP DEFAULT NOW()
 );
 
 CREATE TABLE IF NOT EXISTS appointments.bookings (
