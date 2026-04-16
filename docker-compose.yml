@@ -26,11 +26,9 @@ services:
     build: ./auth-service
     ports:
       - "3001:3000"
-    env_file: ./auth-service/.env 
+    env_file: ./auth-service/.env
     volumes:
       - ./shared:/app/shared
-    depends_on:
-      - postgres
 
   patient-service:
     build: ./patient-service
@@ -39,8 +37,6 @@ services:
     env_file: ./patient-service/.env
     volumes:
       - ./shared:/app/shared
-    depends_on:
-      - postgres
 
   doctor-service:
     build: ./doctor-service
@@ -49,28 +45,36 @@ services:
     env_file: ./doctor-service/.env
     volumes:
       - ./shared:/app/shared
-    depends_on:
-      - postgres
 
   appointment-service:
     build: ./appointment-service
     ports:
       - "3004:3000"
     env_file: .env
+    environment:
+      - NODE_ENV=development
     volumes:
       - ./shared:/app/shared
-    depends_on:
-      - postgres
+    deploy:
+      resources:
+        limits:
+          memory: 512M
+          cpus: '0.50'
 
   payment-service:
     build: ./payment-service
     ports:
       - "3005:3000"
     env_file: .env
+    environment:
+      - NODE_ENV=development
     volumes:
       - ./shared:/app/shared
-    depends_on:
-      - postgres
+    deploy:
+      resources:
+        limits:
+          memory: 512M
+          cpus: '0.50'
 
   notification-service:
     build: ./notification-service
@@ -102,28 +106,4 @@ services:
       - "3009:3000"
     env_file: .env
     depends_on:
-      postgres:
-        condition: service_healthy
-
-  postgres:
-    image: postgres:15-alpine
-    restart: always
-    env_file: .env
-    environment:
-      POSTGRES_USER: ${DB_USER}
-      POSTGRES_PASSWORD: ${DB_PASSWORD}
-      POSTGRES_DB: ${DB_NAME}
-    ports:
-      - "5432:5432"
-    volumes:
-      - pgdata:/var/lib/postgresql/data
-      - ./db/init.sql:/docker-entrypoint-initdb.d/init.sql
-    healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${DB_USER:-postgres} -d ${DB_NAME:-medicore}"]
-      interval: 5s
-      timeout: 5s
-      retries: 5
-      start_period: 10s
-
-volumes:
-  pgdata:
+      - auth-service

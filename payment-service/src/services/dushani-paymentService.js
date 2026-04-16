@@ -11,7 +11,7 @@ class PaymentService {
       await client.query('BEGIN');
       
       const paymentQuery = `
-        INSERT INTO payments.transactions 
+        INSERT INTO public.transactions 
           (appointment_id, patient_id, doctor_id, amount, currency, payment_method, payment_gateway, status)
         VALUES ($1, $2, $3, $4, $5, $6, $7, 'PENDING')
         RETURNING *
@@ -44,8 +44,8 @@ class PaymentService {
       SELECT p.*, 
              a.scheduled_at, a.status as appointment_status,
              d.full_name as doctor_name, d.specialty
-      FROM payments.transactions p
-      JOIN appointments.bookings a ON p.appointment_id = a.id
+      FROM public.transactions p
+      JOIN public.appointments a ON p.appointment_id = a.id
       JOIN doctors.profiles d ON p.doctor_id = d.id
       WHERE p.id = $1
     `;
@@ -67,8 +67,8 @@ class PaymentService {
       SELECT p.*, 
              a.scheduled_at, a.status as appointment_status,
              d.full_name as doctor_name, d.specialty
-      FROM payments.transactions p
-      JOIN appointments.bookings a ON p.appointment_id = a.id
+      FROM public.transactions p
+      JOIN public.appointments a ON p.appointment_id = a.id
       JOIN doctors.profiles d ON p.doctor_id = d.id
       WHERE p.patient_id = $1 AND p.transaction_type = 'payment'
     `;
@@ -94,8 +94,8 @@ class PaymentService {
       SELECT p.*, 
              a.scheduled_at, a.status as appointment_status,
              p2.full_name as patient_name
-      FROM payments.transactions p
-      JOIN appointments.bookings a ON p.appointment_id = a.id
+      FROM public.transactions p
+      JOIN public.appointments a ON p.appointment_id = a.id
       JOIN patients.profiles p2 ON p.patient_id = p2.id
       WHERE p.doctor_id = $1 AND p.transaction_type = 'payment'
     `;
@@ -125,7 +125,7 @@ class PaymentService {
     const totalQuery = `
       SELECT COALESCE(SUM(amount), 0) as total_earnings,
              COUNT(*) as total_transactions
-      FROM payments.transactions
+      FROM public.transactions
       WHERE doctor_id = $1 AND status = 'SUCCESS' AND transaction_type = 'payment'
     `;
     
@@ -175,8 +175,8 @@ class PaymentService {
       
       const paymentQuery = `
         SELECT p.*, a.cancelled_by 
-        FROM payments.transactions p
-        JOIN appointments.bookings a ON p.appointment_id = a.id
+        FROM public.transactions p
+        JOIN public.appointments a ON p.appointment_id = a.id
         WHERE p.id = $1
       `;
       const paymentResult = await client.query(paymentQuery, [paymentId]);
@@ -212,7 +212,7 @@ class PaymentService {
       
       // Update payment status
       const updatePaymentQuery = `
-        UPDATE payments.transactions 
+        UPDATE public.transactions 
         SET status = 'REFUNDED', 
             refund_reason = $2,
             updated_at = NOW()
@@ -224,7 +224,7 @@ class PaymentService {
       
       // Update appointment status
       const updateAppointmentQuery = `
-        UPDATE appointments.bookings 
+        UPDATE public.appointments 
         SET status = 'CANCELLED', 
             updated_at = NOW()
         WHERE id = $1 AND status NOT IN ('CANCELLED', 'REJECTED')
@@ -283,7 +283,7 @@ class PaymentService {
       
       // Update payment
       const paymentQuery = `
-        UPDATE payments.transactions 
+        UPDATE public.transactions 
         SET status = $1, 
             gateway_transaction_id = $2,
             payment_method = $3,
@@ -310,7 +310,7 @@ class PaymentService {
       // Handle based on payment status
       if (paymentStatus === 'SUCCESS') {
         const appointmentQuery = `
-          UPDATE appointments.bookings 
+          UPDATE public.appointments 
           SET status = 'CONFIRMED', 
               payment_id = $1,
               updated_at = NOW()
@@ -338,7 +338,7 @@ class PaymentService {
         
       } else if (paymentStatus === 'FAILED') {
         const appointmentQuery = `
-          UPDATE appointments.bookings 
+          UPDATE public.appointments 
           SET status = 'CANCELLED', 
               updated_at = NOW()
           WHERE id = $1 AND status = 'PENDING_PAYMENT'
@@ -376,8 +376,8 @@ class PaymentService {
       
       const appointmentQuery = `
         SELECT a.*, p.status as payment_status, p.id as payment_id
-        FROM appointments.bookings a
-        LEFT JOIN payments.transactions p ON a.id = p.appointment_id 
+        FROM public.appointments a
+        LEFT JOIN public.transactions p ON a.id = p.appointment_id 
           AND p.transaction_type = 'payment'
         WHERE a.id = $1
       `;
@@ -404,7 +404,7 @@ class PaymentService {
       // Process refund if payment exists and is successful
       if (appointment.payment_id && appointment.payment_status === 'SUCCESS') {
         const updatePaymentQuery = `
-          UPDATE payments.transactions 
+          UPDATE public.transactions 
           SET status = 'REFUNDED',
               refund_reason = $2,
               updated_at = NOW()
@@ -423,7 +423,7 @@ class PaymentService {
       
       // Update appointment status
       const updateAppointmentQuery = `
-        UPDATE appointments.bookings 
+        UPDATE public.appointments 
         SET status = 'CANCELLED',
             cancelled_by = $2,
             cancellation_reason = $3,
@@ -461,7 +461,7 @@ class PaymentService {
       await client.query('BEGIN');
       
       const appointmentQuery = `
-        SELECT * FROM appointments.bookings 
+        SELECT * FROM public.appointments 
         WHERE id = $1 AND patient_id = $2 AND status = 'PENDING_PAYMENT'
       `;
       const appointmentResult = await client.query(appointmentQuery, [appointmentId, patientId]);
