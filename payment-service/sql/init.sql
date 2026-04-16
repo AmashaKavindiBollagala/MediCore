@@ -1,11 +1,8 @@
 -- Payment Service SQL Schema
 -- This file contains the database schema for the payment service
 
--- Create payments schema if not exists
-CREATE SCHEMA IF NOT EXISTS payments;
-
 -- Payment transactions table
-CREATE TABLE IF NOT EXISTS payments.transactions (
+CREATE TABLE IF NOT EXISTS transactions (
     id SERIAL PRIMARY KEY,
     appointment_id INTEGER NOT NULL,
     patient_id INTEGER NOT NULL,
@@ -23,8 +20,8 @@ CREATE TABLE IF NOT EXISTS payments.transactions (
 );
 
 -- Indexes for better query performance
-CREATE INDEX IF NOT EXISTS idx_payments_appointment_id ON payments.transactions(appointment_id);
-CREATE INDEX IF NOT EXISTS idx_payments_patient_id ON payments.transactions(patient_id);
-CREATE INDEX IF NOT EXISTS idx_payments_doctor_id ON payments.transactions(doctor_id);
-CREATE INDEX IF NOT EXISTS idx_payments_status ON payments.transactions(status);
-CREATE INDEX IF NOT EXISTS idx_payments_created_at ON payments.transactions(created_at);
+CREATE INDEX IF NOT EXISTS idx_payments_appointment_id ON transactions(appointment_id);
+CREATE INDEX IF NOT EXISTS idx_payments_patient_id ON transactions(patient_id);
+CREATE INDEX IF NOT EXISTS idx_payments_doctor_id ON transactions(doctor_id);
+CREATE INDEX IF NOT EXISTS idx_payments_status ON transactions(status);
+CREATE INDEX IF NOT EXISTS idx_payments_created_at ON transactions(created_at);
