@@ -2,8 +2,39 @@ const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const { findByEmail, createUser, findById } = require('../models/amasha-usermodel');
 
+// Import patient service to sync patient data
+const createPatientProfile = async (userId, name, email, phone) => {
+  try {
+    const patientServiceUrl = process.env.PATIENT_SERVICE_URL || 'http://patient-service:3000';
+    console.log(`Attempting to sync patient profile to: ${patientServiceUrl}/api/patients/sync`);
+    console.log('Patient data:', { user_id: userId, name, email, phone });
+    
+    const response = await fetch(`${patientServiceUrl}/api/patients/sync`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ user_id: userId, name, email, phone }),
+    });
+    
+    const responseText = await response.text();
+    console.log('Patient service response status:', response.status);
+    console.log('Patient service response:', responseText);
+    
+    if (!response.ok) {
+      console.error('Failed to create patient profile:', responseText);
+      return false;
+    }
+    
+    console.log('Patient profile synced successfully');
+    return true;
+  } catch (error) {
+    console.error('Error syncing patient profile:', error.message);
+    console.error('Error stack:', error.stack);
+    return false;
+  }
+};
+
 const register = async (req, res) => {
-  const { name, email, password, role } = req.body;
+  const { name, email, password, role, phone } = req.body;
 
   if (!name || !email || !password) {
     return res.status(400).json({ message: 'Name, email, and password are required.' });
@@ -17,6 +48,11 @@ const register = async (req, res) => {
 
     const hashedPassword = await bcrypt.hash(password, 10);
     const user = await createUser(name, email, hashedPassword, role || 'patient');
+
+    // If role is patient, also create profile in patient_db
+    if (role === 'patient' || !role) {
+      await createPatientProfile(user.id, name, email, phone);
+    }
 
     res.status(201).json({ message: 'Registration successful.', user });
   } catch (err) {
