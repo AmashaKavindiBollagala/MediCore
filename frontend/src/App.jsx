@@ -11,6 +11,16 @@ import RegisterDetails from './pages/amasha-patientRegister';
 import PatientDashboard from './pages/amasha-patientDashboard';
 import PatientProfile from './pages/amasha-patientProfile';
 import MedicalReports from './pages/amasha-medicalReportsPage';
+import DilsharaAdminRoute               from './components/dilshara-AdminRoute';
+import DilsharaAdminDashboard           from './pages/dilshara-AdminDashboard';
+import DilsharaDoctorVerificationList   from './pages/dilshara-DoctorVerificationList';
+import DilsharaDoctorVerificationDetail from './pages/dilshara-DoctorVerificationDetail';
+import DilsharaAdminUsers               from './pages/dilshara-AdminUsers';
+import {
+  DilsharaAdminPayments,
+  DilsharaAdminAvailability,
+} from './pages/dilshara-AdminPlaceholders';
+
 
 function App() {
   return (
@@ -78,6 +88,13 @@ function App() {
         />
 
          
+          {/* Admin Routes - Protected */}
+          <Route path="/admin" element={<DilsharaAdminRoute><DilsharaAdminDashboard /></DilsharaAdminRoute>} />
+          <Route path="/admin/doctors" element={<DilsharaAdminRoute><DilsharaDoctorVerificationList /></DilsharaAdminRoute>} />
+          <Route path="/admin/doctors/:id" element={<DilsharaAdminRoute><DilsharaDoctorVerificationDetail /></DilsharaAdminRoute>} />
+          <Route path="/admin/users" element={<DilsharaAdminRoute><DilsharaAdminUsers /></DilsharaAdminRoute>} />
+          <Route path="/admin/payments" element={<DilsharaAdminRoute><DilsharaAdminPayments /></DilsharaAdminRoute>} />
+          <Route path="/admin/availability" element={<DilsharaAdminRoute><DilsharaAdminAvailability /></DilsharaAdminRoute>} />
 
         </Routes>
       </div>
@@ -103,7 +120,7 @@ function Home() {
         <p className="text-lg sm:text-xl text-gray-600 mb-6 sm:mb-8">
           Book appointments with top doctors and manage your healthcare
         </p>
-        <div className="flex flex-col sm:flex-row justify-center gap-4 mb-12">
+        <div className="flex flex-col sm:flex-row justify-center gap-4">
           <Link
             to="/appointments/book"
             className="bg-blue-600 hover:bg-blue-700 text-white font-medium py-3 px-8 rounded-lg transition-colors text-base sm:text-lg"
@@ -116,54 +133,6 @@ function Home() {
           >
             View My Appointments
           </Link>
-        </div>
-
-        {/* Quick Access Links */}
-        <div className="bg-white rounded-2xl shadow-lg p-8 max-w-4xl mx-auto">
-          <h2 className="text-2xl font-bold text-gray-800 mb-6">Quick Access</h2>
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-            {/* Login */}
-            <Link to="/login" className="block p-6 bg-gradient-to-br from-blue-50 to-blue-100 rounded-xl hover:shadow-md transition-shadow border border-blue-200">
-              <div className="text-3xl mb-3">🔐</div>
-              <h3 className="font-semibold text-gray-800 mb-1">Login</h3>
-              <p className="text-sm text-gray-600">Sign in to your account</p>
-            </Link>
-
-            {/* Patient Register */}
-            <Link to="/register" className="block p-6 bg-gradient-to-br from-green-50 to-green-100 rounded-xl hover:shadow-md transition-shadow border border-green-200">
-              <div className="text-3xl mb-3">👤</div>
-              <h3 className="font-semibold text-gray-800 mb-1">Patient Register</h3>
-              <p className="text-sm text-gray-600">Create patient account</p>
-            </Link>
-
-            {/* Doctor Register */}
-            <Link to="/doctor-register" className="block p-6 bg-gradient-to-br from-purple-50 to-purple-100 rounded-xl hover:shadow-md transition-shadow border border-purple-200">
-              <div className="text-3xl mb-3">👨‍⚕️</div>
-              <h3 className="font-semibold text-gray-800 mb-1">Doctor Registration</h3>
-              <p className="text-sm text-gray-600">Join as a doctor</p>
-            </Link>
-
-            {/* Doctor Dashboard */}
-            <Link to="/doctor-dashboard" className="block p-6 bg-gradient-to-br from-indigo-50 to-indigo-100 rounded-xl hover:shadow-md transition-shadow border border-indigo-200">
-              <div className="text-3xl mb-3">📊</div>
-              <h3 className="font-semibold text-gray-800 mb-1">Doctor Dashboard</h3>
-              <p className="text-sm text-gray-600">Manage appointments & profile</p>
-            </Link>
-
-            {/* My Appointments */}
-            <Link to="/appointments" className="block p-6 bg-gradient-to-br from-orange-50 to-orange-100 rounded-xl hover:shadow-md transition-shadow border border-orange-200">
-              <div className="text-3xl mb-3">📅</div>
-              <h3 className="font-semibold text-gray-800 mb-1">My Appointments</h3>
-              <p className="text-sm text-gray-600">View your bookings</p>
-            </Link>
-
-            {/* Book Appointment */}
-            <Link to="/appointments/book" className="block p-6 bg-gradient-to-br from-teal-50 to-teal-100 rounded-xl hover:shadow-md transition-shadow border border-teal-200">
-              <div className="text-3xl mb-3">🏥</div>
-              <h3 className="font-semibold text-gray-800 mb-1">Book Appointment</h3>
-              <p className="text-sm text-gray-600">Schedule a consultation</p>
-            </Link>
-          </div>
         </div>
       </div>
     </div>
