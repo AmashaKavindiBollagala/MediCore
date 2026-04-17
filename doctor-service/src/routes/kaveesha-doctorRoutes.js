@@ -9,7 +9,9 @@ const {
 
 const {
   addAvailabilitySlot, getMyAvailability, getDoctorAvailability,
-  removeAvailabilitySlot, addExceptionDate, getExceptionDates,
+  removeAvailabilitySlot, deleteAvailabilityBySlot, updateAvailabilitySlot,
+  addExceptionDate, getExceptionDates,
+  updateExceptionDate, removeExceptionDate,
 } = require('../controllers/kaveesha-availabilityController');
 
 const {
@@ -42,8 +44,6 @@ const { validateDoctorRegistration, validateAvailability } =
 
 // ── Public routes ──────────────────────────────────────────────────────────────
 router.get('/', listDoctors);                          // GET  /doctors
-router.get('/:id', getDoctorById);                     // GET  /doctors/:id
-router.get('/:id/availability', getDoctorAvailability);// GET  /doctors/:id/availability
 
 // ── Doctor: register own profile (PUBLIC - No auth required) ──────────────────
 router.post(
@@ -57,16 +57,19 @@ router.post(
 router.get('/me/profile', authenticate, requireDoctor, getMyProfile);
 router.put('/me/profile', authenticate, requireDoctor, updateMyProfile);
 
-// ── Doctor: manage own availability ───────────────────────────────────────────
+// ── Doctor: manage own availability (MUST be before /:id routes) ──────────────
 router.get('/me/availability', authenticate, requireDoctor, getMyAvailability);
 router.post(
   '/me/availability',
   authenticate, requireDoctor, validateAvailability,
   addAvailabilitySlot
 );
+router.put('/me/availability/:slotId', authenticate, requireDoctor, updateAvailabilitySlot);
 router.delete('/me/availability/:slotId', authenticate, requireDoctor, removeAvailabilitySlot);
 router.get('/me/availability/exceptions', authenticate, requireDoctor, getExceptionDates);
 router.post('/me/availability/block', authenticate, requireDoctor, addExceptionDate);
+router.put('/me/availability/exceptions/:exceptionId', authenticate, requireDoctor, updateExceptionDate);
+router.delete('/me/availability/exceptions/:exceptionId', authenticate, requireDoctor, removeExceptionDate);
 
 // ── Doctor: manage appointments ───────────────────────────────────────────────
 router.get('/me/appointments', authenticate, requireDoctor, getMyAppointments);
@@ -78,6 +81,14 @@ router.patch('/me/appointments/:id/complete', authenticate, requireDoctor, compl
 // ── Doctor: manage prescriptions ──────────────────────────────────────────────
 router.post('/me/prescriptions', authenticate, requireDoctor, issuePrescription);
 router.get('/me/prescriptions', authenticate, requireDoctor, getMyPrescriptions);
+
+// ── Doctor: manage reports ────────────────────────────────────────────────────
+router.get('/me/reports', authenticate, requireDoctor, getMyPatientReports);
+
+// ── Public routes with parameters (MUST be after /me/* routes) ────────────────
+router.get('/:id', getDoctorById);                     // GET  /doctors/:id
+router.get('/:id/availability', getDoctorAvailability);// GET  /doctors/:id/availability
+router.delete('/:id/availability/delete-by-slot', deleteAvailabilityBySlot); // DELETE /doctors/:id/availability/delete-by-slot
 router.get('/me/prescriptions/:id', authenticate, requireDoctor, getPrescriptionById);
 router.get('/me/prescriptions/appointment/:appointmentId', authenticate, requireDoctor, getPrescriptionsByAppointment);
 router.put('/me/prescriptions/:id', authenticate, requireDoctor, updatePrescription);

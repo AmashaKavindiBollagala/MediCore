@@ -13,6 +13,10 @@ export default defineConfig({
         target: 'http://localhost:8080', // API Gateway
         changeOrigin: true,
         rewrite: (path) => path.replace(/^\/api/, '') // Strip /api prefix
+      },
+      '/uploads': {
+        target: 'http://localhost:3010', // Doctor service (mapped from 3000)
+        changeOrigin: true,
       }
     }
   }

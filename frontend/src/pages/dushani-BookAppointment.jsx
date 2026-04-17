@@ -96,11 +96,19 @@ const DushaniBookAppointment = () => {
     }
   };
 
-  const handleTimeSelect = (time) => {
+  const handleTimeSelect = (time, consultationType) => {
     setSelectedTime(time);
     // Combine date and time
     const scheduledAt = `${selectedDate}T${time}`;
-    setFormData((prev) => ({ ...prev, scheduled_at: scheduledAt }));
+    
+    // Use the consultation type from the availability slot
+    const finalConsultationType = consultationType === 'both' ? 'video' : (consultationType || 'video');
+    
+    setFormData((prev) => ({ 
+      ...prev, 
+      scheduled_at: scheduledAt,
+      consultation_type: finalConsultationType // Auto-set from availability slot
+    }));
     setStep(4); // Go to booking form
   };
 
@@ -112,10 +120,17 @@ const DushaniBookAppointment = () => {
     try {
       const token = localStorage.getItem('token');
       
-      // Calculate consultation fee based on type
-      const consultationFee = formData.consultation_type === 'video' 
-        ? selectedDoctor?.consultation_fee_online 
-        : selectedDoctor?.consultation_fee_physical || selectedDoctor?.consultation_fee_online;
+      // Calculate consultation fee based on the consultation type from availability slot
+      let consultationFee = 0;
+      if (formData.consultation_type === 'video' || formData.consultation_type === 'online') {
+        consultationFee = selectedDoctor?.consultation_fee_online || 0;
+      } else if (formData.consultation_type === 'physical') {
+        consultationFee = selectedDoctor?.consultation_fee_physical || selectedDoctor?.consultation_fee_online || 0;
+      }
+      
+      console.log('Booking with consultation type:', formData.consultation_type);
+      console.log('Calculated fee:', consultationFee);
+      console.log('Full formData being sent:', formData);
       
       const response = await fetch(`${API_BASE}/appointments/book`, {
         method: 'POST',
@@ -134,13 +149,13 @@ const DushaniBookAppointment = () => {
       if (data.success) {
         // Store appointment ID and amount for payment
         localStorage.setItem('pendingAppointmentId', data.data.id);
-        // Use doctor's consultation fee if available, otherwise default
+        // Use the calculated consultation fee
         const amount = consultationFee || 1000;
         localStorage.setItem('pendingAppointmentAmount', amount.toString());
         
         alert('Appointment booked successfully! Redirecting to your appointments...');
-        // Navigate to patient's appointments page (profile)
-        navigate('/appointments');
+        // Navigate to patient's appointments page with refresh flag
+        navigate('/appointments', { state: { refresh: true, newAppointmentId: data.data.id } });
       } else {
         setError(data.error || 'Failed');
       }
@@ -367,16 +382,38 @@ const DushaniBookAppointment = () => {
                 <p className="text-sm font-semibold text-[#184E77] mb-3">
                   Available Time Slots for {new Date(selectedDate).toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}:
                 </p>
-                <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 gap-3">
-                  {availability.map((slot, i) => (
-                    <button
-                      key={i}
-                      onClick={() => handleTimeSelect(slot.start_time)}
-                      className="bg-white border-2 border-[#34A0A4] text-[#184E77] rounded-lg px-4 py-3 text-sm font-semibold hover:bg-[#34A0A4] hover:text-white transition-all duration-200"
-                    >
-                      {slot.start_time}
-                    </button>
-                  ))}
+                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
+                  {availability.map((slot, i) => {
+                    // Calculate fee based on slot's consultation type
+                    let slotFee = 0;
+                    let slotType = slot.consultation_type || 'video';
+                    
+                    if (slotType === 'both') {
+                      slotType = 'video'; // Default to video for 'both'
+                    }
+                    
+                    if (slotType === 'video' || slotType === 'online') {
+                      slotFee = selectedDoctor?.consultation_fee_online || 0;
+                    } else if (slotType === 'physical') {
+                      slotFee = selectedDoctor?.consultation_fee_physical || selectedDoctor?.consultation_fee_online || 0;
+                    }
+                    
+                    return (
+                      <button
+                        key={i}
+                        onClick={() => handleTimeSelect(slot.start_time, slot.consultation_type)}
+                        className="bg-white border-2 border-[#34A0A4] text-[#184E77] rounded-lg px-4 py-3 text-sm font-semibold hover:bg-[#34A0A4] hover:text-white transition-all duration-200"
+                      >
+                        <div className="text-base">{slot.start_time}</div>
+                        <div className="text-xs mt-1" style={{ opacity: 0.9 }}>
+                          {slotType === 'video' || slotType === 'online' ? '🎥 Online' : '🏥 Physical'}
+                        </div>
+                        <div className="text-xs mt-1 font-bold" style={{ opacity: 0.95 }}>
+                          LKR {slotFee}
+                        </div>
+                      </button>
+                    );
+                  })}
                 </div>
               </div>
             ) : selectedDate ? (
@@ -425,9 +462,11 @@ const DushaniBookAppointment = () => {
                     )}
                     {selectedDoctor.consultation_fee_online && (
                       <div className="mt-2 pt-2 border-t border-white/20">
-                        <p className="text-xs text-white/80">Consultation Fee</p>
+                        <p className="text-xs text-white/80">Consultation Fee ({formData.consultation_type === 'video' || formData.consultation_type === 'online' ? 'Online' : 'Physical'})</p>
                         <p className="text-lg font-bold">
-                          LKR {formData.consultation_type === 'video' ? selectedDoctor.consultation_fee_online : selectedDoctor.consultation_fee_physical || selectedDoctor.consultation_fee_online}
+                          LKR {formData.consultation_type === 'video' || formData.consultation_type === 'online' 
+                            ? selectedDoctor.consultation_fee_online 
+                            : selectedDoctor.consultation_fee_physical || selectedDoctor.consultation_fee_online}
                         </p>
                       </div>
                     )}
@@ -492,6 +531,9 @@ const DushaniBookAppointment = () => {
                     <option value="video">🎥 Video Consultation (Online)</option>
                     <option value="physical">🏥 Physical Visit (In-Person)</option>
                   </select>
+                  <p style={{ fontSize: '12px', color: '#888', marginTop: '4px' }}>
+                    ℹ️ Auto-selected based on doctor's availability
+                  </p>
                 </div>
 
                 <div className="mb-4">
@@ -527,15 +569,19 @@ const DushaniBookAppointment = () => {
                     <span className="font-semibold text-[#184E77]">{new Date(formData.scheduled_at).toLocaleString()}</span>
                   </div>
                   <div className="flex justify-between">
-                    <span className="text-gray-600">Consultation:</span>
+                    <span className="text-gray-600">Consultation Type:</span>
                     <span className="font-semibold text-[#184E77]">
-                      {formData.consultation_type === 'video' ? '🎥 Video' : '🏥 Physical'}
+                      {formData.consultation_type === 'video' || formData.consultation_type === 'online' 
+                        ? '🎥 Video Consultation' 
+                        : '🏥 Physical Visit'}
                     </span>
                   </div>
                   <div className="flex justify-between pt-2 border-t border-blue-200">
-                    <span className="text-gray-700 font-semibold">Fee to Pay:</span>
+                    <span className="text-gray-700 font-semibold">Consultation Fee:</span>
                     <span className="font-bold text-lg text-[#76C893]">
-                      LKR {formData.consultation_type === 'video' ? selectedDoctor?.consultation_fee_online : selectedDoctor?.consultation_fee_physical || selectedDoctor?.consultation_fee_online}
+                      LKR {formData.consultation_type === 'video' || formData.consultation_type === 'online'
+                        ? selectedDoctor?.consultation_fee_online 
+                        : selectedDoctor?.consultation_fee_physical || selectedDoctor?.consultation_fee_online}
                     </span>
                   </div>
                 </div>

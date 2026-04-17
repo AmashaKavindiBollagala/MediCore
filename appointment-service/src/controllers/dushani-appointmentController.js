@@ -48,7 +48,7 @@ class AppointmentController {
   // Book appointment
   async bookAppointment(req, res) {
     try {
-      const { doctor_id, scheduled_at, consultation_type, symptoms, specialty } = req.body;
+      const { doctor_id, scheduled_at, consultation_type, symptoms, specialty, patient_name, patient_age, consultation_fee } = req.body;
       const patient_id = req.user.id;
 
       if (!doctor_id || !scheduled_at) {
@@ -56,7 +56,7 @@ class AppointmentController {
       }
 
       const result = await appointmentService.bookAppointment(
-        { doctor_id, scheduled_at, consultation_type, symptoms, specialty },
+        { doctor_id, scheduled_at, consultation_type, symptoms, specialty, patient_name, patient_age, consultation_fee },
         patient_id
       );
 
