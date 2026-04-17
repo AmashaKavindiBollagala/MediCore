@@ -81,7 +81,12 @@ services:
     build: ./notification-service
     ports:
       - "3006:3000"
-    env_file: ./notification-service/.env  
+    env_file: ./notification-service/.env
+    depends_on:
+      - redis
+    environment:
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
     volumes:
       - ./shared:/app/shared
 
@@ -118,3 +123,9 @@ services:
     environment:
       PGADMIN_DEFAULT_EMAIL: admin@admin.com
       PGADMIN_DEFAULT_PASSWORD: admin
+
+  redis:
+    image: redis:7
+    container_name: medicore-redis
+    ports:
+      - "6379:6379"
