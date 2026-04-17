@@ -23,18 +23,30 @@ const PaymentSuccess = () => {
         return;
       }
 
-      // Fetch payment details
-      const response = await fetch(`/api/payments/${orderId}`, {
+      console.log('Verifying payment with order_id:', orderId);
+
+      // Extract payment ID from order_id (remove "ORDER_" prefix if present)
+      const paymentId = orderId.startsWith('ORDER_') 
+        ? orderId.replace('ORDER_', '') 
+        : orderId;
+
+      console.log('Extracted payment_id:', paymentId);
+
+      // Fetch payment details using the actual payment ID
+      const response = await fetch(`/api/payments/${paymentId}`, {
         headers: {
           'Authorization': `Bearer ${token}`,
         },
       });
 
       if (!response.ok) {
-        throw new Error('Failed to fetch payment details');
+        const errorData = await response.json().catch(() => ({}));
+        console.error('Payment fetch failed:', response.status, errorData);
+        throw new Error(errorData.error || 'Failed to fetch payment details');
       }
 
       const result = await response.json();
+      console.log('Payment details fetched:', result);
       setPaymentDetails(result.data);
     } catch (err) {
       console.error('Payment verification error:', err);

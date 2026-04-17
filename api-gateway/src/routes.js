@@ -276,6 +276,10 @@ router.get('/payments/:paymentId', (req, res) => {
   proxyRequest(req, res, SERVICES.payment, `/api/payments/${req.params.paymentId}`);
 });
 
+router.get('/payments/order/:orderId', (req, res) => {
+  proxyRequest(req, res, SERVICES.payment, `/api/payments/order/${req.params.orderId}`);
+});
+
 router.get('/payments/patient/my-payments', (req, res) => {
   const query = new URLSearchParams(req.query).toString();
   proxyRequest(req, res, SERVICES.payment, `/api/payments/patient/my-payments?${query}`);

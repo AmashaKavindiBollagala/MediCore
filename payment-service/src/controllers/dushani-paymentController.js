@@ -73,6 +73,8 @@ class PaymentController {
       const userId = req.user.id;
       const userRole = req.user.role;
       
+      console.log('GetPaymentDetails - Payment ID:', paymentId);
+      
       const payment = await paymentService.getPaymentById(paymentId, userId, userRole);
       
       if (!payment) {
@@ -86,6 +88,39 @@ class PaymentController {
       
     } catch (error) {
       console.error('Get payment error:', error);
+      res.status(500).json({ error: 'Failed to fetch payment details' });
+    }
+  }
+
+  // Get payment details by order ID (for PayHere return)
+  async getPaymentByOrderId(req, res) {
+    try {
+      const { orderId } = req.params;
+      const userId = req.user.id;
+      const userRole = req.user.role;
+      
+      console.log('GetPaymentByOrderId - Order ID:', orderId);
+      
+      // Extract payment ID from order_id (remove "ORDER_" prefix if present)
+      const paymentId = orderId.startsWith('ORDER_') 
+        ? orderId.replace('ORDER_', '') 
+        : orderId;
+      
+      console.log('Extracted Payment ID:', paymentId);
+      
+      const payment = await paymentService.getPaymentById(paymentId, userId, userRole);
+      
+      if (!payment) {
+        return res.status(404).json({ error: 'Payment not found' });
+      }
+      
+      res.json({
+        success: true,
+        data: payment
+      });
+      
+    } catch (error) {
+      console.error('Get payment by order ID error:', error);
       res.status(500).json({ error: 'Failed to fetch payment details' });
     }
   }

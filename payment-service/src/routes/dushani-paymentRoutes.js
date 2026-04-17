@@ -7,6 +7,7 @@ const { authenticateToken } = require('../middleware/dushani-auth');
 router.post('/initiate', authenticateToken, paymentController.initiatePayment);
 router.get('/:paymentId/status', authenticateToken, paymentController.getPaymentStatus);
 router.get('/:paymentId', authenticateToken, paymentController.getPaymentDetails);
+router.get('/order/:orderId', authenticateToken, paymentController.getPaymentByOrderId);
 router.get('/patient/my-payments', authenticateToken, paymentController.getPatientPayments);
 router.get('/doctor/my-earnings', authenticateToken, paymentController.getDoctorEarnings);
 router.post('/:paymentId/refund', authenticateToken, paymentController.processRefund);
