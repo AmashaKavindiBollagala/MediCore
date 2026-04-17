@@ -1,39 +1,8 @@
 const pool = require('../config/db');
-const Groq = require('groq-sdk');
+const aiService = require('../services/ai.service');
 const fs = require('fs');
 const pdfParse = require('pdf-parse');
 require('dotenv').config();
-
-const groq = new Groq({ apiKey: process.env.GROQ_API_KEY });
-
-// ─── System Prompt ────────────────────────────────────────────────────────────
-function buildSystemPrompt() {
-  return `You are a multilingual medical AI assistant. 
-Analyze the patient's symptoms and respond in the SAME language they used.
-Always structure your response as valid JSON with these exact fields:
-{
-  "summary": "Brief summary of symptoms identified",
-  "possible_conditions": ["condition1", "condition2"],
-  "recommendations": ["recommendation1", "recommendation2"],
-  "specialty_recommended": "e.g. Cardiologist, General Practitioner, Dermatologist",
-  "urgency": "low | medium | high",
-  "disclaimer": "This is not a medical diagnosis. Please consult a doctor."
-}
-Do not include any text outside the JSON.`;
-}
-
-// ─── Shared AI Text Call ──────────────────────────────────────────────────────
-async function callAI(userText) {
-  const response = await groq.chat.completions.create({
-    model: 'llama3-8b-8192',
-    messages: [
-      { role: 'system', content: buildSystemPrompt() },
-      { role: 'user', content: userText },
-    ],
-    max_tokens: 1000,
-  });
-  return response.choices[0].message.content;
-}
 
 // ─── Save to DB ───────────────────────────────────────────────────────────────
 async function saveToDb({ userId, inputType, originalInput, languageDetected, aiResponse, specialtyRecommended }) {
@@ -43,16 +12,6 @@ async function saveToDb({ userId, inputType, originalInput, languageDetected, ai
      VALUES ($1, $2, $3, $4, $5, $6)`,
     [userId, inputType, originalInput, languageDetected, aiResponse, specialtyRecommended]
   );
-}
-
-// ─── Parse AI JSON ────────────────────────────────────────────────────────────
-function parseAIResponse(raw) {
-  try {
-    const cleaned = raw.replace(/```json|```/g, '').trim();
-    return JSON.parse(cleaned);
-  } catch {
-    return { raw_response: raw, specialty_recommended: null };
-  }
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -68,19 +27,18 @@ exports.checkByText = async (req, res) => {
   }
 
   try {
-    const rawAI = await callAI(symptoms);
-    const parsed = parseAIResponse(rawAI);
+    const result = await aiService.analyzeSymptoms(symptoms);
 
     await saveToDb({
       userId, inputType: 'text', originalInput: symptoms,
-      languageDetected: parsed.language || null,
-      aiResponse: rawAI, specialtyRecommended: parsed.specialty_recommended || null,
+      languageDetected: null,
+      aiResponse: JSON.stringify(result), specialtyRecommended: result.specialty_recommended || null,
     });
 
-    res.json({ success: true, result: parsed });
+    res.json({ success: true, result });
   } catch (err) {
     console.error('checkByText error:', err.message);
-    res.status(500).json({ error: 'AI processing failed.' });
+    res.status(500).json({ error: 'AI processing failed.', detail: err.message });
   }
 };
 
@@ -97,11 +55,11 @@ exports.checkByFile = async (req, res) => {
 
   const { mimetype, path: filePath, originalname } = req.file;
 
-  // Only PDF allowed (no image support with Groq)
+  // Only PDF allowed
   if (mimetype !== 'application/pdf') {
     if (fs.existsSync(filePath)) fs.unlinkSync(filePath);
     return res.status(415).json({ 
-      error: 'Only PDF files are supported. Image analysis is not available.' 
+      error: 'Only PDF files are supported.' 
     });
   }
 
@@ -114,24 +72,23 @@ exports.checkByFile = async (req, res) => {
       return res.status(422).json({ error: 'Could not extract text from PDF.' });
     }
 
-    const rawAI = await callAI(
+    const result = await aiService.analyzeSymptoms(
       `The following is extracted from a medical document (${originalname}):\n\n${extractedText}`
     );
-    const parsed = parseAIResponse(rawAI);
 
     fs.unlinkSync(filePath);
 
     await saveToDb({
       userId, inputType: 'file', originalInput: `File: ${originalname}`,
-      languageDetected: null, aiResponse: rawAI,
-      specialtyRecommended: parsed.specialty_recommended || null,
+      languageDetected: null, aiResponse: JSON.stringify(result),
+      specialtyRecommended: result.specialty_recommended || null,
     });
 
-    res.json({ success: true, result: parsed });
+    res.json({ success: true, result });
   } catch (err) {
     if (fs.existsSync(filePath)) fs.unlinkSync(filePath);
     console.error('checkByFile error:', err.message);
-    res.status(500).json({ error: 'AI processing failed.' });
+    res.status(500).json({ error: 'AI processing failed.', detail: err.message });
   }
 };
 
@@ -149,7 +106,8 @@ exports.checkByVoice = async (req, res) => {
   const { path: filePath } = req.file;
 
   try {
-    // Step 1: Transcribe with Groq Whisper (free!)
+    // Step 1: Transcribe with Groq Whisper
+    const groq = new (require('groq-sdk'))({ apiKey: process.env.GROQ_API_KEY });
     const transcription = await groq.audio.transcriptions.create({
       file: fs.createReadStream(filePath),
       model: 'whisper-large-v3',
@@ -162,23 +120,22 @@ exports.checkByVoice = async (req, res) => {
       return res.status(422).json({ error: 'Could not transcribe audio.' });
     }
 
-    // Step 2: Analyze transcript with Llama 3
-    const rawAI = await callAI(transcript);
-    const parsed = parseAIResponse(rawAI);
+    // Step 2: Analyze transcript with AI Service
+    const result = await aiService.analyzeSymptoms(transcript);
 
     fs.unlinkSync(filePath);
 
     await saveToDb({
       userId, inputType: 'voice', originalInput: transcript,
-      languageDetected: parsed.language || null, aiResponse: rawAI,
-      specialtyRecommended: parsed.specialty_recommended || null,
+      languageDetected: null, aiResponse: JSON.stringify(result),
+      specialtyRecommended: result.specialty_recommended || null,
     });
 
-    res.json({ success: true, transcript, result: parsed });
+    res.json({ success: true, transcript, result });
   } catch (err) {
     if (fs.existsSync(filePath)) fs.unlinkSync(filePath);
     console.error('checkByVoice error:', err.message);
-    res.status(500).json({ error: 'Voice processing failed.' });
+    res.status(500).json({ error: 'Voice processing failed.', detail: err.message });
   }
 };
 
@@ -199,7 +156,7 @@ exports.getHistory = async (req, res) => {
     );
 
     const history = result.rows.map((row) => ({
-      ...row, ai_response: parseAIResponse(row.ai_response),
+      ...row, ai_response: aiService.parseResponse(row.ai_response),
     }));
 
     res.json({ success: true, history });
