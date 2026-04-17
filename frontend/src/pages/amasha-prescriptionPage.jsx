@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 
-const PATIENT_API = import.meta.env.VITE_PATIENT_API_URL || 'http://localhost:3001';
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8080';
 
 const navItems = [
   { to: '/dashboard',     label: 'Dashboard',       path: 'M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6' },
@@ -288,7 +288,7 @@ export default function PrescriptionsPage() {
     setUser(JSON.parse(stored));
 
     const token = localStorage.getItem('token');
-    fetch(`${PATIENT_API}/api/patients/prescriptions`, {
+    fetch(`${API_URL}/api/patients/prescriptions`, {
       headers: { Authorization: `Bearer ${token}` },
     })
       .then(r => {

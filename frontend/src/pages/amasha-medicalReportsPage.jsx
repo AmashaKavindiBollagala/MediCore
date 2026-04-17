@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 
-const PATIENT_API = import.meta.env.VITE_PATIENT_API_URL || 'http://localhost:3001';
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8080';
 
 export default function MedicalReports() {
   const navigate = useNavigate();
@@ -15,7 +15,7 @@ export default function MedicalReports() {
   const token = localStorage.getItem('token');
 
   const fetchReports = () => {
-    fetch(`${PATIENT_API}/api/patients/reports`, { headers: { Authorization: `Bearer ${token}` } })
+    fetch(`${API_URL}/api/patients/reports`, { headers: { Authorization: `Bearer ${token}` } })
       .then(r => r.json()).then(setReports).catch(() => {});
   };
 
@@ -32,7 +32,7 @@ export default function MedicalReports() {
     formData.append('report', file);
     formData.append('description', description);
     try {
-      const res = await fetch(`${PATIENT_API}/api/patients/reports`, {
+      const res = await fetch(`${API_URL}/api/patients/reports`, {
         method: 'POST',
         headers: { Authorization: `Bearer ${token}` },
         body: formData,
@@ -177,7 +177,7 @@ export default function MedicalReports() {
                   <span className="text-xs" style={{ color: '#26667F' }}>
                     {new Date(r.uploaded_at).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })}
                   </span>
-                  <a href={`${PATIENT_API}/${r.file_path}`} target="_blank" rel="noreferrer"
+                  <a href={`${r.report_url}`} target="_blank" rel="noreferrer"
                     className="text-xs font-semibold px-3 py-1.5 rounded-lg transition-all"
                     style={{ background: '#124170', color: 'white' }}
                     onMouseEnter={e => e.currentTarget.style.background = '#26667F'}
