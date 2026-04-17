@@ -5,4 +5,4 @@ RUN npm install
 RUN mkdir -p uploads
 COPY . .
 EXPOSE 3000
-CMD ["node", "src/index.js"]
+CMD ["node", "index.js"]

@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 
-const PATIENT_API = import.meta.env.VITE_PATIENT_API_URL || 'http://localhost:3001';
+const PATIENT_API = import.meta.env.VITE_PATIENT_API_URL || 'http://localhost:3002';
 
 export default function PatientProfile() {
   const navigate = useNavigate();
@@ -16,12 +16,38 @@ export default function PatientProfile() {
   useEffect(() => {
     const token = localStorage.getItem('token');
     if (!token) { navigate('/login'); return; }
+    
+    // Get user data from localStorage as fallback
+    const userData = JSON.parse(localStorage.getItem('user') || '{}');
+    
     fetch(`${PATIENT_API}/api/patients/profile`, {
       headers: { Authorization: `Bearer ${token}` }
     })
       .then(r => r.json())
-      .then(data => { if (data && !data.message) setForm(prev => ({ ...prev, ...data })); })
-      .catch(() => {})
+      .then(data => { 
+        if (data && !data.message) {
+          setForm(prev => ({ ...prev, ...data }));
+        } else if (userData) {
+          // Fallback to localStorage user data
+          setForm(prev => ({ 
+            ...prev, 
+            name: userData.name || prev.name,
+            email: userData.email || prev.email,
+            phone: userData.phone || prev.phone
+          }));
+        }
+      })
+      .catch(() => {
+        // On error, use localStorage data
+        if (userData) {
+          setForm(prev => ({ 
+            ...prev, 
+            name: userData.name || prev.name,
+            email: userData.email || prev.email,
+            phone: userData.phone || prev.phone
+          }));
+        }
+      })
       .finally(() => setFetching(false));
   }, [navigate]);
 

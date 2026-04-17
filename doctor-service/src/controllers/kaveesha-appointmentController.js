@@ -3,7 +3,7 @@ const pool = require('../config/kaveesha-doctorPool');
 // Helper: get doctor profile id from user id
 const getDoctorProfileId = async (userId) => {
   const result = await pool.query(
-    'SELECT id FROM doctors.profiles WHERE user_id = $1',
+    'SELECT id FROM profiles WHERE user_id = $1',
     [userId]
   );
   return result.rows[0]?.id || null;

@@ -72,6 +72,21 @@ router.post('/auth/login', (req, res) => {
   proxyRequest(req, res, SERVICES.auth, '/api/auth/login');
 });
 
+// ─────────────────────────────────────────────
+// PATIENT SERVICE
+// ─────────────────────────────────────────────
+router.get('/patients/profile', (req, res) => {
+  proxyRequest(req, res, SERVICES.patient, '/api/patients/profile');
+});
+
+router.post('/patients/profile', (req, res) => {
+  proxyRequest(req, res, SERVICES.patient, '/api/patients/profile');
+});
+
+router.post('/patients/sync', (req, res) => {
+  proxyRequest(req, res, SERVICES.patient, '/api/patients/sync');
+});
+
 // ─── DOCTOR SERVICE ROUTES ─────────────────────────────────────────────────────
 
 // Doctor registration (public - includes file upload)
@@ -112,7 +127,69 @@ router.get('/doctors', (req, res) => {
   proxyRequest(req, res, SERVICES.doctor, `/doctors?${query}`);
 });
 
-// Get doctor by ID (public)
+// Doctor profile routes (authenticated) - MUST be before /doctors/:id
+router.get('/doctors/me/profile', (req, res) => {
+  console.log('API Gateway: Proxying GET /doctors/me/profile to', SERVICES.doctor);
+  proxyRequest(req, res, SERVICES.doctor, '/doctors/me/profile');
+});
+
+router.put('/doctors/me/profile', (req, res) => {
+  console.log('API Gateway: Proxying PUT /doctors/me/profile to', SERVICES.doctor);
+  proxyRequest(req, res, SERVICES.doctor, '/doctors/me/profile');
+});
+
+// Doctor availability routes (authenticated)
+router.get('/doctors/me/availability', (req, res) => {
+  proxyRequest(req, res, SERVICES.doctor, '/doctors/me/availability');
+});
+
+router.post('/doctors/me/availability', (req, res) => {
+  proxyRequest(req, res, SERVICES.doctor, '/doctors/me/availability');
+});
+
+router.put('/doctors/me/availability/:slotId', (req, res) => {
+  proxyRequest(req, res, SERVICES.doctor, `/doctors/me/availability/${req.params.slotId}`);
+});
+
+router.delete('/doctors/me/availability/:slotId', (req, res) => {
+  proxyRequest(req, res, SERVICES.doctor, `/doctors/me/availability/${req.params.slotId}`);
+});
+
+router.get('/doctors/me/availability/exceptions', (req, res) => {
+  proxyRequest(req, res, SERVICES.doctor, '/doctors/me/availability/exceptions');
+});
+
+router.post('/doctors/me/availability/block', (req, res) => {
+  proxyRequest(req, res, SERVICES.doctor, '/doctors/me/availability/block');
+});
+
+router.put('/doctors/me/availability/exceptions/:exceptionId', (req, res) => {
+  proxyRequest(req, res, SERVICES.doctor, `/doctors/me/availability/exceptions/${req.params.exceptionId}`);
+});
+
+router.delete('/doctors/me/availability/exceptions/:exceptionId', (req, res) => {
+  proxyRequest(req, res, SERVICES.doctor, `/doctors/me/availability/exceptions/${req.params.exceptionId}`);
+});
+
+// Doctor appointments
+router.get('/doctors/me/appointments', (req, res) => {
+  const query = new URLSearchParams(req.query).toString();
+  proxyRequest(req, res, SERVICES.doctor, `/doctors/me/appointments?${query}`);
+});
+
+// Doctor prescriptions
+router.get('/doctors/me/prescriptions', (req, res) => {
+  const query = new URLSearchParams(req.query).toString();
+  proxyRequest(req, res, SERVICES.doctor, `/doctors/me/prescriptions?${query}`);
+});
+
+// Doctor reports
+router.get('/doctors/me/reports', (req, res) => {
+  const query = new URLSearchParams(req.query).toString();
+  proxyRequest(req, res, SERVICES.doctor, `/doctors/me/reports?${query}`);
+});
+
+// Get doctor by ID (public) - MUST be after /doctors/me/* routes
 router.get('/doctors/:id', (req, res) => {
   proxyRequest(req, res, SERVICES.doctor, `/doctors/${req.params.id}`);
 });

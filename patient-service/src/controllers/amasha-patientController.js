@@ -1,6 +1,7 @@
 const {
   findByUserId,
   createPatientFromAuth,
+  updatePatientProfile,
 } = require('../models/amasha-patientModel');
 
 const syncPatientProfile = async (req, res) => {
@@ -33,4 +34,37 @@ const syncPatientProfile = async (req, res) => {
   }
 };
 
-module.exports = { syncPatientProfile };
+const getPatientProfile = async (req, res) => {
+  try {
+    const userId = req.user.userId;
+    
+    const patient = await findByUserId(userId);
+    if (!patient) {
+      return res.status(404).json({ message: 'Patient profile not found' });
+    }
+    
+    res.json(patient);
+  } catch (err) {
+    console.error('getPatientProfile error:', err);
+    res.status(500).json({ message: 'Server error fetching patient profile' });
+  }
+};
+
+const updateProfile = async (req, res) => {
+  try {
+    const userId = req.user.userId;
+    const updates = req.body;
+    
+    const patient = await updatePatientProfile(userId, updates);
+    if (!patient) {
+      return res.status(404).json({ message: 'Patient profile not found' });
+    }
+    
+    res.json({ message: 'Profile updated successfully', patient });
+  } catch (err) {
+    console.error('updateProfile error:', err);
+    res.status(500).json({ message: 'Server error updating patient profile' });
+  }
+};
+
+module.exports = { syncPatientProfile, getPatientProfile, updateProfile };

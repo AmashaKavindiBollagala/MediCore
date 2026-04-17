@@ -68,7 +68,7 @@ const validateDoctorRegistration = (req, res, next) => {
 
 const validateAvailability = (req, res, next) => {
   const errors = [];
-  const { day_of_week, start_time, end_time, slot_duration_minutes, consultation_type } = req.body;
+  const { day_of_week, start_time, end_time, slot_duration_minutes, consultation_type, slot_date } = req.body;
 
   const day = parseInt(day_of_week);
   if (isNaN(day) || day < 0 || day > 6)
@@ -91,6 +91,28 @@ const validateAvailability = (req, res, next) => {
   const validTypes = ['online', 'physical', 'both'];
   if (!consultation_type || !validTypes.includes(consultation_type))
     errors.push(`consultation_type must be one of: ${validTypes.join(', ')}`);
+  
+  // Validate slot_date if provided - must be within current week (tomorrow + 6 days)
+  if (slot_date) {
+    const dateRegex = /^\d{4}-\d{2}-\d{2}$/;
+    if (!dateRegex.test(slot_date))
+      errors.push('slot_date must be in YYYY-MM-DD format');
+    
+    const selectedDate = new Date(slot_date + 'T00:00:00'); // Local timezone
+    const tomorrow = new Date();
+    tomorrow.setDate(tomorrow.getDate() + 1);
+    tomorrow.setHours(0, 0, 0, 0);
+    
+    const endOfWeek = new Date(tomorrow);
+    endOfWeek.setDate(tomorrow.getDate() + 6);
+    endOfWeek.setHours(23, 59, 59, 999);
+    
+    if (selectedDate < tomorrow)
+      errors.push('slot_date cannot be in the past');
+    
+    if (selectedDate > endOfWeek)
+      errors.push('slot_date must be within the current week (next 7 days)');
+  }
 
   if (errors.length > 0) return res.status(422).json({ errors });
   next();

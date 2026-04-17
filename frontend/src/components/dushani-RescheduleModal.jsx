@@ -21,7 +21,17 @@ const DushaniRescheduleModal = ({ appointment, onClose, onReschedule }) => {
 
   const handleReschedule = () => {
     if (!selectedDate || !selectedTime) return;
-    onReschedule(appointment.id, `${selectedDate}T${selectedTime}:00`);
+    
+    // Check if time already has seconds (e.g., "09:00:00")
+    // If it does, use it as is; otherwise add :00
+    const timeWithSeconds = selectedTime.includes(':') && selectedTime.split(':').length === 3
+      ? selectedTime
+      : `${selectedTime}:00`;
+    
+    const newScheduledAt = `${selectedDate}T${timeWithSeconds}`;
+    console.log('Rescheduling to:', newScheduledAt);
+    
+    onReschedule(appointment.id, newScheduledAt);
   };
 
   return (

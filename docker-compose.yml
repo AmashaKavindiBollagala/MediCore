@@ -51,7 +51,7 @@ services:
     build: ./appointment-service
     ports:
       - "3004:3000"
-    env_file: .env
+    env_file: ./appointment-service/.env
     environment:
       - NODE_ENV=development
     volumes:
