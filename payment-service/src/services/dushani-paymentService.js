@@ -10,6 +10,22 @@ class PaymentService {
     try {
       await client.query('BEGIN');
       
+      // Convert numeric IDs to UUID format
+      const patientIdStr = patientId.toString();
+      const patientIdUuid = patientIdStr.includes('-')
+        ? patientIdStr 
+        : `00000000-0000-0000-0000-${patientIdStr.padStart(12, '0')}`;
+      
+      const doctorIdStr = doctorId.toString();
+      const doctorIdUuid = doctorIdStr.includes('-')
+        ? doctorIdStr 
+        : `00000000-0000-0000-0000-${doctorIdStr.padStart(12, '0')}`;
+      
+      console.log('Payment - Creating transaction with:');
+      console.log('  Appointment ID:', appointmentId);
+      console.log('  Patient ID (UUID):', patientIdUuid);
+      console.log('  Doctor ID (UUID):', doctorIdUuid);
+      
       const paymentQuery = `
         INSERT INTO public.transactions 
           (appointment_id, patient_id, doctor_id, amount, currency, payment_method, payment_gateway, status)
@@ -19,8 +35,8 @@ class PaymentService {
       
       const paymentResult = await client.query(paymentQuery, [
         appointmentId,
-        patientId,
-        doctorId,
+        patientIdUuid,
+        doctorIdUuid,
         amount,
         'LKR',
         paymentMethod || 'card',
@@ -136,10 +152,19 @@ class PaymentService {
     const merchant_id = config.payhere.merchantId;
     const merchant_secret = config.payhere.merchantSecret;
     const currency = 'LKR';
-    const order_id = payment.id.toString();
-    const amountInCents = (parseFloat(payment.amount) * 100).toFixed(2);
     
-    const hash = generatePayHereHash(merchant_id, order_id, amountInCents, currency, merchant_secret);
+    // Format order_id properly
+    const order_id = `ORDER_${payment.id}`;
+    
+    // Amount should be in LKR with 2 decimal places (NOT multiplied by 100)
+    const amount = parseFloat(payment.amount).toFixed(2);
+    
+    console.log('PayHere Config - Merchant ID:', merchant_id);
+    console.log('PayHere Config - Order ID:', order_id);
+    console.log('PayHere Config - Amount:', amount);
+    console.log('PayHere Config - Currency:', currency);
+    
+    const hash = generatePayHereHash(merchant_id, order_id, amount, currency, merchant_secret);
     
     return {
       payment_id: payment.id,
@@ -150,12 +175,22 @@ class PaymentService {
         url: config.payhere.checkoutUrl,
         merchant_id: merchant_id,
         order_id: order_id,
-        amount: amountInCents,
+        amount: amount,
         currency: currency,
         hash: hash,
         return_url: `${config.frontendUrl}/payment/success`,
         cancel_url: `${config.frontendUrl}/payment/cancel`,
-        notify_url: `${config.backendUrl}/api/payments/webhook/payhere`
+        notify_url: `${config.backendUrl}/api/payments/webhook/payhere`,
+        // Customer information (required by PayHere)
+        first_name: 'Patient',
+        last_name: 'User',
+        email: 'patient@medicare.lk',
+        phone: '+94771234567',
+        address: 'Colombo',
+        city: 'Colombo',
+        country: 'Sri Lanka',
+        // Order details
+        items: 'Doctor Appointment Consultation'
       }
     };
   }
@@ -454,11 +489,21 @@ class PaymentService {
     try {
       await client.query('BEGIN');
       
+      // Convert numeric patientId to UUID format (same as appointment-service)
+      const patientIdStr = patientId.toString();
+      const patientIdUuid = patientIdStr.includes('-')
+        ? patientIdStr 
+        : `00000000-0000-0000-0000-${patientIdStr.padStart(12, '0')}`;
+      
+      console.log('Payment - Patient ID (original):', patientId);
+      console.log('Payment - Patient ID (UUID):', patientIdUuid);
+      console.log('Payment - Appointment ID:', appointmentId);
+      
       const appointmentQuery = `
         SELECT * FROM public.appointments 
         WHERE id = $1 AND patient_id = $2 AND status = 'PENDING_PAYMENT'
       `;
-      const appointmentResult = await client.query(appointmentQuery, [appointmentId, patientId]);
+      const appointmentResult = await client.query(appointmentQuery, [appointmentId, patientIdUuid]);
       
       if (appointmentResult.rows.length === 0) {
         await client.query('ROLLBACK');
