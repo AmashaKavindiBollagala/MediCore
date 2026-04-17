@@ -16,6 +16,7 @@ import RegisterDetails from './pages/amasha-patientRegister';
 import PatientDashboard from './pages/amasha-patientDashboard';
 import PatientProfile from './pages/amasha-patientProfile';
 import MedicalReports from './pages/amasha-medicalReportsPage';
+import Prescription from './pages/amasha-prescriptionPage';
 import DilsharaAdminRoute               from './components/dilshara-AdminRoute';
 import DilsharaAdminDashboard           from './pages/dilshara-AdminDashboard';
 import DilsharaDoctorVerificationList   from './pages/dilshara-DoctorVerificationList';
@@ -116,6 +117,14 @@ function App() {
             <SharedLayout>
               <PatientLayout>
                 <MedicalReports />
+              </PatientLayout>
+            </SharedLayout>
+          } />
+
+           <Route path="/patient-prescription" element={
+            <SharedLayout>
+              <PatientLayout>
+                <Prescription />
               </PatientLayout>
             </SharedLayout>
           } />
