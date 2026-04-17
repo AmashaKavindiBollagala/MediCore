@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 
 const PaymentCheckout = () => {
@@ -11,11 +11,15 @@ const PaymentCheckout = () => {
   
   // Get appointment ID from URL or localStorage
   const appointmentId = urlAppointmentId || localStorage.getItem('pendingAppointmentId');
+  
+  // Prevent duplicate API calls in React Strict Mode
+  const hasInitiatedPayment = useRef(false);
 
   useEffect(() => {
-    if (appointmentId) {
+    if (appointmentId && !hasInitiatedPayment.current) {
+      hasInitiatedPayment.current = true;
       initiatePayment();
-    } else {
+    } else if (!appointmentId) {
       setError('No appointment found. Please book an appointment first.');
       setLoading(false);
     }
@@ -25,7 +29,6 @@ const PaymentCheckout = () => {
     try {
       setLoading(true);
       setError('');
-      console.log("PAYMENT OBJECT:", payment);
 
       // Get token from localStorage
       const token = localStorage.getItem('token');

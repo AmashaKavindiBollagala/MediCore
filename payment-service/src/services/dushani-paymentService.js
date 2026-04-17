@@ -159,14 +159,18 @@ class PaymentService {
     // Amount should be in LKR with 2 decimal places (NOT multiplied by 100)
     const amount = parseFloat(payment.amount).toFixed(2);
     
-    console.log('PayHere Config - Merchant ID:', merchant_id);
-    console.log('PayHere Config - Order ID:', order_id);
-    console.log('PayHere Config - Amount:', amount);
-    console.log('PayHere Config - Currency:', currency);
+    console.log('=== PayHere Config Generation ===');
+    console.log('Merchant ID:', merchant_id);
+    console.log('Payment ID:', payment.id);
+    console.log('Order ID:', order_id);
+    console.log('Amount:', amount);
+    console.log('Currency:', currency);
+    console.log('Sandbox Mode:', config.payhere.sandbox);
+    console.log('Checkout URL:', config.payhere.checkoutUrl);
     
     const hash = generatePayHereHash(merchant_id, order_id, amount, currency, merchant_secret);
     
-    return {
+    const payhereConfig = {
       payment_id: payment.id,
       appointment_id: payment.appointment_id,
       amount: payment.amount,
@@ -193,6 +197,11 @@ class PaymentService {
         items: 'Doctor Appointment Consultation'
       }
     };
+    
+    console.log('Final PayHere Config:', JSON.stringify(payhereConfig.payhere_config, null, 2));
+    console.log('================================');
+    
+    return payhereConfig;
   }
 
   // Process refund for a payment
