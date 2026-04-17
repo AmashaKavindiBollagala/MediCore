@@ -24,26 +24,32 @@ export default function Login() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email: form.email, password: form.password }),
       });
-      
+
       const contentType = res.headers.get('content-type');
       if (!contentType || !contentType.includes('application/json')) {
         const text = await res.text();
         console.error('Non-JSON response:', text);
         throw new Error('Server returned invalid response');
       }
-      
+
       const data = await res.json();
       if (!res.ok) throw new Error(data.message || data.error || 'Login failed');
 
-      // Store JWT token and user info
+      // ── Store auth in localStorage ────────────────────────────────
       localStorage.setItem('token', data.token);
       localStorage.setItem('user', JSON.stringify(data.user));
 
-      // Redirect based on role
+      // ── Notify same-tab listeners (Home.jsx) immediately ─────────
+      // The native `storage` event only fires in OTHER tabs; we dispatch
+      // a custom event so the Home header updates without a page reload.
+      window.dispatchEvent(new Event('localAuthChange'));
+
+      // ── Redirect based on role ────────────────────────────────────
       const role = data.user?.role;
       if (role === 'doctor') navigate('/doctor-dashboard');
       else if (role === 'admin') navigate('/admin');
-      else navigate('/patient-dashboard');
+      else navigate('/');          // patients go to Home ← header now shows Logout
+
     } catch (err) {
       setError(err.message);
     } finally {
