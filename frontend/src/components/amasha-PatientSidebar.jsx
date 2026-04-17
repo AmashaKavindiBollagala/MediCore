@@ -68,7 +68,7 @@ export default function PatientSidebar() {
       </nav>
 
       <div className="p-4 border-t border-white/10">
-        <button onClick={handleLogout}
+        {/* <button onClick={handleLogout}
           className="w-full flex items-center gap-3 px-4 py-2.5 rounded-xl text-sm transition-all"
           style={{ color: 'rgba(255,255,255,0.6)' }}
           onMouseEnter={e => e.currentTarget.style.background = 'rgba(255,255,255,0.08)'}
@@ -78,7 +78,7 @@ export default function PatientSidebar() {
               stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/>
           </svg>
           Sign out
-        </button>
+        </button> */}
       </div>
     </aside>
   );
