@@ -16,7 +16,7 @@ function Sidebar({ user, onLogout }) {
   return (
     <aside className="w-64 min-h-screen flex flex-col" style={{ background: 'linear-gradient(180deg, #124170 0%, #1a5a8a 100%)' }}>
       {/* Brand */}
-      <div className="p-6 border-b border-white/10">
+      {/* <div className="p-6 border-b border-white/10">
         <div className="flex items-center gap-3">
           <div className="w-9 h-9 rounded-xl flex items-center justify-center" style={{ background: '#67C090' }}>
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
@@ -25,7 +25,7 @@ function Sidebar({ user, onLogout }) {
           </div>
           <span className="text-white font-bold text-lg" style={{ fontFamily: "'Playfair Display', serif" }}>MediCore</span>
         </div>
-      </div>
+      </div> */}
 
       {/* User pill */}
       <div className="px-4 py-4 border-b border-white/10">
@@ -64,7 +64,7 @@ function Sidebar({ user, onLogout }) {
       </nav>
 
       {/* Logout */}
-      <div className="p-4 border-t border-white/10">
+      {/* <div className="p-4 border-t border-white/10">
         <button onClick={onLogout}
           className="w-full flex items-center gap-3 px-4 py-2.5 rounded-xl text-sm transition-all"
           style={{ color: 'rgba(255,255,255,0.6)' }}
@@ -75,7 +75,7 @@ function Sidebar({ user, onLogout }) {
           </svg>
           Sign out
         </button>
-      </div>
+      </div> */}
     </aside>
   );
 }
