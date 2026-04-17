@@ -8,7 +8,16 @@ const PORT = process.env.PORT || 8080;
 
 // Middleware
 app.use(cors());
-app.use(express.json());
+
+// Only parse JSON for non-multipart requests
+app.use((req, res, next) => {
+  if (req.headers['content-type'] && req.headers['content-type'].includes('multipart/form-data')) {
+    // Skip JSON parsing for multipart/form-data (file uploads)
+    next();
+  } else {
+    express.json()(req, res, next);
+  }
+});
 
 // Routes — mounted at '/' so frontend calls /appointments/... work directly
 app.use('/', routes);

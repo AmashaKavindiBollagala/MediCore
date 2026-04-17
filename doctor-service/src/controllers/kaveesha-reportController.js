@@ -47,9 +47,9 @@ const uploadPatientReport = async (req, res) => {
     const reportUrl = fileUrl(file);
 
     const result = await pool.query(
-      `INSERT INTO doctors.patient_reports 
-        (appointment_id, patient_id, doctor_id, report_url, report_type, description)
-       VALUES ($1, $2, $3, $4, $5, $6)
+      `INSERT INTO patient_reports 
+        (appointment_id, patient_id, doctor_id, report_url, report_type, description, uploaded_by)
+       VALUES ($1, $2, $3, $4, $5, $6, 'doctor')
        RETURNING *`,
       [appointment_id, patient_id, doctorId, reportUrl, report_type || '', description || '']
     );
@@ -76,10 +76,13 @@ const getMyPatientReports = async (req, res) => {
     let query = `
       SELECT r.*, 
         a.scheduled_at as appointment_date,
-        a.status as appointment_status
-      FROM doctors.patient_reports r
+        a.status as appointment_status,
+        p.full_name as patient_name,
+        p.email as patient_email
+      FROM patient_reports r
       LEFT JOIN appointments.bookings a ON a.id = r.appointment_id
-      WHERE r.doctor_id = $1
+      LEFT JOIN patients.profiles p ON p.id::text = r.patient_id::text
+      WHERE r.doctor_id = $1 OR r.uploaded_by = 'patient'
     `;
     const params = [doctorId];
 
@@ -114,7 +117,7 @@ const getReportById = async (req, res) => {
       `SELECT r.*, 
         a.scheduled_at as appointment_date,
         a.status as appointment_status
-       FROM doctors.patient_reports r
+       FROM patient_reports r
        LEFT JOIN appointments.bookings a ON a.id = r.appointment_id
        WHERE r.id = $1 AND r.doctor_id = $2`,
       [req.params.id, doctorId]
@@ -139,7 +142,7 @@ const getReportsByAppointment = async (req, res) => {
 
   try {
     const result = await pool.query(
-      `SELECT * FROM doctors.patient_reports
+      `SELECT * FROM patient_reports
        WHERE appointment_id = $1 AND doctor_id = $2
        ORDER BY uploaded_at DESC`,
       [req.params.appointmentId, doctorId]
@@ -160,7 +163,7 @@ const deleteReport = async (req, res) => {
 
   try {
     const result = await pool.query(
-      'DELETE FROM doctors.patient_reports WHERE id = $1 AND doctor_id = $2 RETURNING id',
+      'DELETE FROM patient_reports WHERE id = $1 AND doctor_id = $2 RETURNING id',
       [req.params.id, doctorId]
     );
 

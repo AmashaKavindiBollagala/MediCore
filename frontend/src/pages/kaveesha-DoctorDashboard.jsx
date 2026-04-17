@@ -2,6 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import KaveeshaDoctorAvailability from './kaveesha-DoctorAvailability';
 import KaveeshaDoctorProfile from './kaveesha-doctorProfile';
+import KaveeshaPrescriptions from './Kaveesha-prescriptions';
+import KaveeshaPatientReports from './Kaveesha-patientreports';
 
 const COLORS = {
   navy: '#184E77',
@@ -420,14 +422,10 @@ export default function KaveeshaDoctorDashboard() {
         {activeTab === 'availability' && <KaveeshaDoctorAvailability token={token} />}
 
         {/* ── Prescriptions tab ── */}
-        {activeTab === 'prescriptions' && (
-          <PrescriptionsPanel prescriptions={prescriptions} loading={loadingPrescriptions} onRefresh={fetchPrescriptions} token={token} />
-        )}
+        {activeTab === 'prescriptions' && <KaveeshaPrescriptions />}
 
         {/* ── Reports tab ── */}
-        {activeTab === 'reports' && (
-          <ReportsPanel reports={reports} loading={loadingReports} onRefresh={fetchReports} />
-        )}
+        {activeTab === 'reports' && <KaveeshaPatientReports />}
 
         {/* ── Profile tab ── */}
         {activeTab === 'profile' && (
