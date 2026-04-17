@@ -25,6 +25,7 @@ const PaymentCheckout = () => {
     try {
       setLoading(true);
       setError('');
+      console.log("PAYMENT OBJECT:", payment);
 
       // Get token from localStorage
       const token = localStorage.getItem('token');
@@ -46,10 +47,11 @@ const PaymentCheckout = () => {
       }
 
       const appointmentResult = await appointmentResponse.json();
-      setAppointmentData(appointmentResult.data);
+      const appointment = appointmentResult.data;
+      setAppointmentData(appointment);
 
-      // Calculate amount from localStorage or default
-      const amount = parseFloat(localStorage.getItem('pendingAppointmentAmount')) || 1500.00;
+      // Calculate amount from appointment data or fallback to localStorage
+      const amount = appointment.consultation_fee || parseFloat(localStorage.getItem('pendingAppointmentAmount')) || 1500.00;
 
       // Initiate payment
       const response = await fetch('/api/payments/initiate', {
@@ -99,12 +101,13 @@ const PaymentCheckout = () => {
       currency: paymentData.payhere_config.currency,
       hash: paymentData.payhere_config.hash,
       first_name: appointmentData?.patient_name?.split(' ')[0] || 'Patient',
-      last_name: appointmentData?.patient_name?.split(' ')[1] || '',
-      email: appointmentData?.patient_email || 'patient@example.com',
-      phone: appointmentData?.patient_phone || '',
-      address: '',
-      city: '',
+      last_name: appointmentData?.patient_name?.split(' ')[1] || 'User',
+      email: appointmentData?.patient_email || 'patient@medicare.lk',
+      phone: appointmentData?.patient_phone || '+94771234567',
+      address: 'Colombo',
+      city: 'Colombo',
       country: 'Sri Lanka',
+      items: 'Doctor Appointment Consultation'
     };
 
     Object.entries(fields).forEach(([key, value]) => {
@@ -192,18 +195,30 @@ const PaymentCheckout = () => {
                     <div>
                       <p className="text-sm text-gray-500">Date & Time</p>
                       <p className="font-semibold text-gray-800">
-                        {new Date(appointmentData.scheduled_at).toLocaleDateString('en-US', {
-                          weekday: 'long',
-                          year: 'numeric',
-                          month: 'long',
-                          day: 'numeric',
-                        })}
+                        {(() => {
+                          const datePart = appointmentData.scheduled_at.split('T')[0];
+                          const [year, month, day] = datePart.split('-').map(Number);
+                          const date = new Date(year, month - 1, day);
+                          return date.toLocaleDateString('en-US', {
+                            weekday: 'long',
+                            year: 'numeric',
+                            month: 'long',
+                            day: 'numeric',
+                          });
+                        })()}
                       </p>
                       <p className="text-sm text-gray-600">
-                        {new Date(appointmentData.scheduled_at).toLocaleTimeString('en-US', {
-                          hour: '2-digit',
-                          minute: '2-digit',
-                        })}
+                        {(() => {
+                          const timeMatch = appointmentData.scheduled_at.match(/T(\d{2}:\d{2})/);
+                          if (timeMatch) {
+                            const [hours, minutes] = timeMatch[1].split(':');
+                            const hour = parseInt(hours);
+                            const ampm = hour >= 12 ? 'PM' : 'AM';
+                            const displayHour = hour % 12 || 12;
+                            return `${displayHour}:${minutes} ${ampm}`;
+                          }
+                          return '';
+                        })()}
                       </p>
                     </div>
                   </div>
@@ -244,14 +259,14 @@ const PaymentCheckout = () => {
                 <div className="flex justify-between items-center">
                   <span className="text-gray-600">Consultation Fee</span>
                   <span className="font-semibold text-gray-800">
-                    LKR {parseFloat(localStorage.getItem('pendingAppointmentAmount') || 1500).toLocaleString('en-US', {minimumFractionDigits: 2})}
+                    LKR {(appointmentData?.consultation_fee || parseFloat(localStorage.getItem('pendingAppointmentAmount') || 1500)).toLocaleString('en-US', {minimumFractionDigits: 2})}
                   </span>
                 </div>
                 <div className="border-t-2 border-gray-200 pt-3 mt-3">
                   <div className="flex justify-between items-center">
                     <span className="text-lg font-bold text-gray-800">Total Amount</span>
                     <span className="text-2xl font-bold" style={{color: '#76C893'}}>
-                      LKR {parseFloat(localStorage.getItem('pendingAppointmentAmount') || 1500).toLocaleString('en-US', {minimumFractionDigits: 2})}
+                      LKR {(appointmentData?.consultation_fee || parseFloat(localStorage.getItem('pendingAppointmentAmount') || 1500)).toLocaleString('en-US', {minimumFractionDigits: 2})}
                     </span>
                   </div>
                 </div>
@@ -292,7 +307,7 @@ const PaymentCheckout = () => {
                   <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
                   </svg>
-                  <span>Proceed to Pay LKR 1,500.00</span>
+                  <span>Proceed to Pay LKR {(appointmentData?.consultation_fee || parseFloat(localStorage.getItem('pendingAppointmentAmount') || 1500)).toLocaleString('en-US', {minimumFractionDigits: 2})}</span>
                 </span>
               </button>
 

@@ -58,8 +58,8 @@ const DushaniAppointmentCard = ({ appointment, onCancel, onReschedule, userRole 
     const amount = appointment.consultation_fee || 1000;
     localStorage.setItem('pendingAppointmentAmount', amount.toString());
     
-    // Navigate to payment checkout
-    navigate('/payment/checkout');
+    // Navigate to payment checkout with appointment ID in URL
+    navigate(`/payment/checkout/${appointment.id}`);
   };
 
   return (
