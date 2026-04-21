@@ -7,14 +7,82 @@ export default function Login() {
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [fieldErrors, setFieldErrors] = useState({ email: '', password: '' });
+
+  const validateEmail = (value) => {
+    if (!value) return 'Email is required.';
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value)) return 'Enter a valid email address.';
+    if (!value.toLowerCase().endsWith('@gmail.com')) return 'Only Gmail addresses (@gmail.com) are accepted.';
+    return '';
+  };
+
+  const validatePassword = (value) => {
+    if (!value) return 'Password is required.';
+    if (value.length < 6) return 'Password must be at least 6 characters.';
+    return '';
+  };
 
   const handleChange = (e) => {
-    setForm({ ...form, [e.target.name]: e.target.value });
+    const { name, value } = e.target;
+    setForm({ ...form, [name]: value });
     setError('');
+    if (fieldErrors[name]) {
+      setFieldErrors((prev) => ({ ...prev, [name]: '' }));
+    }
+  };
+
+  const handleBlur = (e) => {
+    const { name, value } = e.target;
+    let msg = '';
+    if (name === 'email') msg = validateEmail(value);
+    if (name === 'password') msg = validatePassword(value);
+    setFieldErrors((prev) => ({ ...prev, [name]: msg }));
+  };
+
+  // Block further typing in email once a non-gmail domain is fully typed
+  const handleEmailKeyDown = (e) => {
+    const value = e.target.value;
+    const atIndex = value.indexOf('@');
+
+    // If there's already an @ and the domain portion is complete (contains a dot)
+    // and it clearly won't resolve to @gmail.com, block printable characters
+    if (atIndex !== -1) {
+      const domain = value.slice(atIndex + 1).toLowerCase();
+      const isPrintable = e.key.length === 1 && !e.ctrlKey && !e.metaKey;
+
+      // Allow if the domain is still being typed and could still become gmail.com
+      const gmailPrefix = 'gmail.com';
+      const couldStillBeGmail = gmailPrefix.startsWith(domain + (isPrintable ? e.key : ''));
+
+      if (isPrintable && domain.length > 0 && !couldStillBeGmail && !domain.startsWith('gmail')) {
+        e.preventDefault();
+        setFieldErrors((prev) => ({ ...prev, email: 'Only Gmail addresses (@gmail.com) are accepted.' }));
+        return;
+      }
+    }
+
+    if (e.key === 'Enter') {
+      setFieldErrors((prev) => ({ ...prev, email: validateEmail(value) }));
+    }
+  };
+
+  const handleKeyDown = (e) => {
+    if (e.key === 'Enter') {
+      const { name, value } = e.target;
+      let msg = '';
+      if (name === 'email') msg = validateEmail(value);
+      if (name === 'password') msg = validatePassword(value);
+      setFieldErrors((prev) => ({ ...prev, [name]: msg }));
+    }
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    const emailErr = validateEmail(form.email);
+    const passwordErr = validatePassword(form.password);
+    setFieldErrors({ email: emailErr, password: passwordErr });
+    if (emailErr || passwordErr) return;
+
     setLoading(true);
     setError('');
     try {
@@ -35,26 +103,30 @@ export default function Login() {
       const data = await res.json();
       if (!res.ok) throw new Error(data.message || data.error || 'Login failed');
 
-      // ── Store auth in localStorage ────────────────────────────────
       localStorage.setItem('token', data.token);
       localStorage.setItem('user', JSON.stringify(data.user));
-
-      // ── Notify same-tab listeners (Home.jsx) immediately ─────────
-      // The native `storage` event only fires in OTHER tabs; we dispatch
-      // a custom event so the Home header updates without a page reload.
       window.dispatchEvent(new Event('localAuthChange'));
 
-      // ── Redirect based on role ────────────────────────────────────
       const role = data.user?.role;
       if (role === 'doctor') navigate('/doctor-dashboard');
       else if (role === 'admin') navigate('/admin');
-      else navigate('/');          // patients go to Home ← header now shows Logout
+      else navigate('/');
 
     } catch (err) {
       setError(err.message);
     } finally {
       setLoading(false);
     }
+  };
+
+  const inlineErrorStyle = {
+    color: '#B91C1C',
+    fontSize: '12px',
+    marginTop: '4px',
+    display: 'flex',
+    alignItems: 'center',
+    gap: '4px',
+    fontFamily: "'DM Sans', sans-serif",
   };
 
   return (
@@ -144,20 +216,37 @@ export default function Login() {
             <form onSubmit={handleSubmit} className="space-y-5">
               {/* Email */}
               <div>
-                <label className="block text-sm font-medium mb-2" style={{ color: '#124170' }}>Email Address</label>
+                <label className="block text-sm font-medium mb-2" style={{ color: '#124170' }}>
+                  Email Address <span style={{ color: '#67C090', fontSize: '11px', fontWeight: 400 }}>(@gmail.com only)</span>
+                </label>
                 <div className="relative">
                   <div className="absolute left-4 top-1/2 -translate-y-1/2">
                     <svg width="18" height="18" viewBox="0 0 24 24" fill="none"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z" stroke="#67C090" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/><polyline points="22,6 12,13 2,6" stroke="#67C090" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/></svg>
                   </div>
                   <input
-                    type="email" name="email" value={form.email} onChange={handleChange}
-                    placeholder="you@example.com" required
+                    type="email"
+                    name="email"
+                    value={form.email}
+                    onChange={handleChange}
+                    onBlur={handleBlur}
+                    onKeyDown={handleEmailKeyDown}
+                    placeholder="you@gmail.com"
+                    required
                     className="w-full pl-11 pr-4 py-3.5 rounded-xl text-sm outline-none transition-all"
-                    style={{ border: '1.5px solid #DDF4E7', background: '#F8FFFE', color: '#124170', fontFamily: "'DM Sans', sans-serif" }}
-                    onFocus={e => e.target.style.borderColor = '#67C090'}
-                    onBlur={e => e.target.style.borderColor = '#DDF4E7'}
+                    style={{
+                      border: fieldErrors.email ? '1.5px solid #B91C1C' : '1.5px solid #DDF4E7',
+                      background: '#F8FFFE', color: '#124170', fontFamily: "'DM Sans', sans-serif",
+                    }}
+                    onFocus={e => { if (!fieldErrors.email) e.target.style.borderColor = '#67C090'; }}
+                    onBlurCapture={e => { if (!fieldErrors.email) e.target.style.borderColor = '#DDF4E7'; }}
                   />
                 </div>
+                {fieldErrors.email && (
+                  <p style={inlineErrorStyle}>
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="10" stroke="#B91C1C" strokeWidth="2"/><path d="M12 8v4M12 16h.01" stroke="#B91C1C" strokeWidth="2" strokeLinecap="round"/></svg>
+                    {fieldErrors.email}
+                  </p>
+                )}
               </div>
 
               {/* Password */}
@@ -171,12 +260,21 @@ export default function Login() {
                     <svg width="18" height="18" viewBox="0 0 24 24" fill="none"><rect x="3" y="11" width="18" height="11" rx="2" ry="2" stroke="#67C090" strokeWidth="1.8"/><path d="M7 11V7a5 5 0 0110 0v4" stroke="#67C090" strokeWidth="1.8" strokeLinecap="round"/></svg>
                   </div>
                   <input
-                    type={showPassword ? 'text' : 'password'} name="password" value={form.password} onChange={handleChange}
-                    placeholder="Enter your password" required
+                    type={showPassword ? 'text' : 'password'}
+                    name="password"
+                    value={form.password}
+                    onChange={handleChange}
+                    onBlur={handleBlur}
+                    onKeyDown={handleKeyDown}
+                    placeholder="Enter your password"
+                    required
                     className="w-full pl-11 pr-12 py-3.5 rounded-xl text-sm outline-none transition-all"
-                    style={{ border: '1.5px solid #DDF4E7', background: '#F8FFFE', color: '#124170', fontFamily: "'DM Sans', sans-serif" }}
-                    onFocus={e => e.target.style.borderColor = '#67C090'}
-                    onBlur={e => e.target.style.borderColor = '#DDF4E7'}
+                    style={{
+                      border: fieldErrors.password ? '1.5px solid #B91C1C' : '1.5px solid #DDF4E7',
+                      background: '#F8FFFE', color: '#124170', fontFamily: "'DM Sans', sans-serif",
+                    }}
+                    onFocus={e => { if (!fieldErrors.password) e.target.style.borderColor = '#67C090'; }}
+                    onBlurCapture={e => { if (!fieldErrors.password) e.target.style.borderColor = '#DDF4E7'; }}
                   />
                   <button type="button" onClick={() => setShowPassword(!showPassword)}
                     className="absolute right-4 top-1/2 -translate-y-1/2" style={{ color: '#67C090' }}>
@@ -186,6 +284,12 @@ export default function Login() {
                     }
                   </button>
                 </div>
+                {fieldErrors.password && (
+                  <p style={inlineErrorStyle}>
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="10" stroke="#B91C1C" strokeWidth="2"/><path d="M12 8v4M12 16h.01" stroke="#B91C1C" strokeWidth="2" strokeLinecap="round"/></svg>
+                    {fieldErrors.password}
+                  </p>
+                )}
               </div>
 
               {/* Remember me */}

@@ -72,6 +72,115 @@ router.post('/auth/login', (req, res) => {
   proxyRequest(req, res, SERVICES.auth, '/api/auth/login');
 });
 
+// ─────────────────────────────────────────────
+// PATIENT SERVICE
+// ─────────────────────────────────────────────
+// Routes with /api prefix (from nginx proxy)
+router.get('/api/patients/profile', (req, res) => {
+  proxyRequest(req, res, SERVICES.patient, '/api/patients/profile');
+});
+
+router.post('/api/patients/profile', (req, res) => {
+  proxyRequest(req, res, SERVICES.patient, '/api/patients/profile');
+});
+
+router.post('/api/patients/sync', (req, res) => {
+  proxyRequest(req, res, SERVICES.patient, '/api/patients/sync');
+});
+
+// Patient reports (with file upload support)
+router.post('/api/patients/reports', async (req, res) => {
+  try {
+    const url = `${SERVICES.patient}/api/patients/reports`;
+    
+    // Forward multipart/form-data for file upload
+    const response = await fetch(url, {
+      method: 'POST',
+      headers: {
+        'Content-Type': req.headers['content-type'],
+        Authorization: req.headers.authorization || '',
+      },
+      body: req,
+      duplex: 'half',
+    });
+    
+    const data = await response.json();
+    res.status(response.status).json(data);
+  } catch (error) {
+    console.error(`Proxy error to ${SERVICES.patient}/api/patients/reports:`, error.message);
+    res.status(502).json({ error: 'Service unavailable', detail: error.message });
+  }
+});
+
+router.get('/api/patients/reports', (req, res) => {
+  const query = new URLSearchParams(req.query).toString();
+  proxyRequest(req, res, SERVICES.patient, `/api/patients/reports?${query}`);
+});
+
+router.delete('/api/patients/reports/:id', (req, res) => {
+  proxyRequest(req, res, SERVICES.patient, `/api/patients/reports/${req.params.id}`);
+});
+
+// Patient prescriptions - TODO: This endpoint needs to be implemented in patient-service
+// For now, prescriptions are managed in doctor-service
+// router.get('/api/patients/prescriptions', (req, res) => {
+//   const query = new URLSearchParams(req.query).toString();
+//   proxyRequest(req, res, SERVICES.patient, `/api/patients/prescriptions?${query}`);
+// });
+
+// Routes without /api prefix (for direct calls)
+router.get('/patients/profile', (req, res) => {
+  proxyRequest(req, res, SERVICES.patient, '/api/patients/profile');
+});
+
+router.post('/patients/profile', (req, res) => {
+  proxyRequest(req, res, SERVICES.patient, '/api/patients/profile');
+});
+
+router.post('/patients/sync', (req, res) => {
+  proxyRequest(req, res, SERVICES.patient, '/api/patients/sync');
+});
+
+// Patient reports (with file upload support)
+router.post('/patients/reports', async (req, res) => {
+  try {
+    const url = `${SERVICES.patient}/api/patients/reports`;
+    
+    // Forward multipart/form-data for file upload
+    const response = await fetch(url, {
+      method: 'POST',
+      headers: {
+        'Content-Type': req.headers['content-type'],
+        Authorization: req.headers.authorization || '',
+      },
+      body: req,
+      duplex: 'half',
+    });
+    
+    const data = await response.json();
+    res.status(response.status).json(data);
+  } catch (error) {
+    console.error(`Proxy error to ${SERVICES.patient}/api/patients/reports:`, error.message);
+    res.status(502).json({ error: 'Service unavailable', detail: error.message });
+  }
+});
+
+router.get('/patients/reports', (req, res) => {
+  const query = new URLSearchParams(req.query).toString();
+  proxyRequest(req, res, SERVICES.patient, `/api/patients/reports?${query}`);
+});
+
+router.delete('/patients/reports/:id', (req, res) => {
+  proxyRequest(req, res, SERVICES.patient, `/api/patients/reports/${req.params.id}`);
+});
+
+// Patient prescriptions - TODO: This endpoint needs to be implemented in patient-service
+// For now, prescriptions are managed in doctor-service
+// router.get('/patients/prescriptions', (req, res) => {
+//   const query = new URLSearchParams(req.query).toString();
+//   proxyRequest(req, res, SERVICES.patient, `/api/patients/prescriptions?${query}`);
+// });
+
 // ─── DOCTOR SERVICE ROUTES ─────────────────────────────────────────────────────
 
 // Doctor registration (public - includes file upload)
@@ -112,7 +221,75 @@ router.get('/doctors', (req, res) => {
   proxyRequest(req, res, SERVICES.doctor, `/doctors?${query}`);
 });
 
-// Get doctor by ID (public)
+// Get all doctors - alternative path for patient service
+router.get('/api/doctors', (req, res) => {
+  const query = new URLSearchParams(req.query).toString();
+  proxyRequest(req, res, SERVICES.doctor, `/doctors?${query}`);
+});
+
+// Doctor profile routes (authenticated) - MUST be before /doctors/:id
+router.get('/doctors/me/profile', (req, res) => {
+  console.log('API Gateway: Proxying GET /doctors/me/profile to', SERVICES.doctor);
+  proxyRequest(req, res, SERVICES.doctor, '/doctors/me/profile');
+});
+
+router.put('/doctors/me/profile', (req, res) => {
+  console.log('API Gateway: Proxying PUT /doctors/me/profile to', SERVICES.doctor);
+  proxyRequest(req, res, SERVICES.doctor, '/doctors/me/profile');
+});
+
+// Doctor availability routes (authenticated)
+router.get('/doctors/me/availability', (req, res) => {
+  proxyRequest(req, res, SERVICES.doctor, '/doctors/me/availability');
+});
+
+router.post('/doctors/me/availability', (req, res) => {
+  proxyRequest(req, res, SERVICES.doctor, '/doctors/me/availability');
+});
+
+router.put('/doctors/me/availability/:slotId', (req, res) => {
+  proxyRequest(req, res, SERVICES.doctor, `/doctors/me/availability/${req.params.slotId}`);
+});
+
+router.delete('/doctors/me/availability/:slotId', (req, res) => {
+  proxyRequest(req, res, SERVICES.doctor, `/doctors/me/availability/${req.params.slotId}`);
+});
+
+router.get('/doctors/me/availability/exceptions', (req, res) => {
+  proxyRequest(req, res, SERVICES.doctor, '/doctors/me/availability/exceptions');
+});
+
+router.post('/doctors/me/availability/block', (req, res) => {
+  proxyRequest(req, res, SERVICES.doctor, '/doctors/me/availability/block');
+});
+
+router.put('/doctors/me/availability/exceptions/:exceptionId', (req, res) => {
+  proxyRequest(req, res, SERVICES.doctor, `/doctors/me/availability/exceptions/${req.params.exceptionId}`);
+});
+
+router.delete('/doctors/me/availability/exceptions/:exceptionId', (req, res) => {
+  proxyRequest(req, res, SERVICES.doctor, `/doctors/me/availability/exceptions/${req.params.exceptionId}`);
+});
+
+// Doctor appointments
+router.get('/doctors/me/appointments', (req, res) => {
+  const query = new URLSearchParams(req.query).toString();
+  proxyRequest(req, res, SERVICES.doctor, `/doctors/me/appointments?${query}`);
+});
+
+// Doctor prescriptions
+router.get('/doctors/me/prescriptions', (req, res) => {
+  const query = new URLSearchParams(req.query).toString();
+  proxyRequest(req, res, SERVICES.doctor, `/doctors/me/prescriptions?${query}`);
+});
+
+// Doctor reports
+router.get('/doctors/me/reports', (req, res) => {
+  const query = new URLSearchParams(req.query).toString();
+  proxyRequest(req, res, SERVICES.doctor, `/doctors/me/reports?${query}`);
+});
+
+// Get doctor by ID (public) - MUST be after /doctors/me/* routes
 router.get('/doctors/:id', (req, res) => {
   proxyRequest(req, res, SERVICES.doctor, `/doctors/${req.params.id}`);
 });
@@ -197,6 +374,10 @@ router.get('/payments/:paymentId/status', (req, res) => {
 
 router.get('/payments/:paymentId', (req, res) => {
   proxyRequest(req, res, SERVICES.payment, `/api/payments/${req.params.paymentId}`);
+});
+
+router.get('/payments/order/:orderId', (req, res) => {
+  proxyRequest(req, res, SERVICES.payment, `/api/payments/order/${req.params.orderId}`);
 });
 
 router.get('/payments/patient/my-payments', (req, res) => {

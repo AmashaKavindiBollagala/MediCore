@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import DushaniAppointmentCard from '../components/dushani-AppointmentCard';
 import DushaniRescheduleModal from '../components/dushani-RescheduleModal';
 
@@ -23,6 +23,8 @@ const STATUS_CONFIG = {
 
 const DushaniMyAppointments = () => {
   const navigate = useNavigate();
+  const location = useLocation();
+  const [user, setUser] = useState(null);
   const [appointments, setAppointments] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -31,8 +33,22 @@ const DushaniMyAppointments = () => {
   const [rescheduleModal, setRescheduleModal] = useState(null);
 
   useEffect(() => {
+    // Get user from localStorage
+    const storedUser = localStorage.getItem('user');
+    if (storedUser) {
+      setUser(JSON.parse(storedUser));
+    }
     fetchAppointments();
   }, []);
+
+  // Refresh appointments if coming from booking page
+  useEffect(() => {
+    if (location.state?.refresh) {
+      fetchAppointments();
+      // Clear the state to prevent repeated refreshes
+      window.history.replaceState({}, document.title);
+    }
+  }, [location.state]);
 
   const fetchAppointments = async () => {
     setLoading(true);
@@ -103,21 +119,36 @@ const DushaniMyAppointments = () => {
 
   const filteredAppointments = appointments.filter((appt) => {
     const matchesStatus = activeFilter === 'ALL' || appt.status === activeFilter;
+    // Treat 'online' and 'video' as the same type for filtering
     const matchesType =
-      appointmentType === 'ALL' || appt.consultation_type === appointmentType;
+      appointmentType === 'ALL' || 
+      appt.consultation_type === appointmentType ||
+      (appointmentType === 'video' && appt.consultation_type === 'online');
     return matchesStatus && matchesType;
   });
 
   const stats = {
     today: appointments.filter(
-      (a) => new Date(a.scheduled_at).toDateString() === new Date().toDateString()
+      (a) => 
+        new Date(a.scheduled_at).toDateString() === new Date().toDateString() &&
+        a.status !== 'CANCELLED' // Exclude cancelled appointments
     ).length,
     confirmed: appointments.filter((a) => a.status === 'CONFIRMED').length,
     completed: appointments.filter((a) => a.status === 'COMPLETED').length,
-    video: appointments.filter((a) => a.consultation_type === 'video').length,
-    physical: appointments.filter(
-      (a) => a.consultation_type === 'physical' || a.consultation_type === 'in-person'
+    video: appointments.filter((a) => 
+      (a.consultation_type === 'video' || a.consultation_type === 'online') &&
+      a.status !== 'CANCELLED' // Exclude cancelled appointments
     ).length,
+    physical: appointments.filter(
+      (a) => a.consultation_type === 'physical' && a.status !== 'CANCELLED' // Exclude cancelled appointments
+    ).length,
+  };
+
+  const greeting = () => {
+    const h = new Date().getHours();
+    if (h < 12) return 'Good morning';
+    if (h < 17) return 'Good afternoon';
+    return 'Good evening';
   };
 
   return (
@@ -128,9 +159,11 @@ const DushaniMyAppointments = () => {
       <div className="mb-6 md:mb-7">
         <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
           <div>
-            <h1 className="m-0 text-2xl md:text-3xl font-bold text-[#184E77]">
-              My Appointments
-            </h1>
+            {user && (
+              <h1 className="m-0 text-2xl md:text-3xl font-bold text-[#184E77]">
+                {greeting()}, {user.name?.split(' ')[0]} 👋
+              </h1>
+            )}
             <p className="m-0 mt-1 text-sm text-gray-500">
               {new Date().toLocaleDateString('en-US', {
                 weekday: 'long',
@@ -139,6 +172,11 @@ const DushaniMyAppointments = () => {
                 day: 'numeric',
               })}
             </p>
+            {!user && (
+              <h1 className="m-0 text-2xl md:text-3xl font-bold text-[#184E77] mt-2">
+                My Appointments
+              </h1>
+            )}
           </div>
           <div className="flex gap-2.5">
             <button

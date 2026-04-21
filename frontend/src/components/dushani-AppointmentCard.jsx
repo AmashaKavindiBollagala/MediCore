@@ -12,16 +12,44 @@ const STATUS_CONFIG = {
 const DushaniAppointmentCard = ({ appointment, onCancel, onReschedule, userRole }) => {
   const navigate = useNavigate();
   const statusConfig = STATUS_CONFIG[appointment.status] || STATUS_CONFIG.PENDING_PAYMENT;
-  const date = new Date(appointment.scheduled_at);
-  const isVideo = appointment.consultation_type === 'video';
+  // Treat both 'video' and 'online' as video consultation
+  const isVideo = appointment.consultation_type === 'video' || appointment.consultation_type === 'online';
 
-  const formatTime = (d) =>
-    new Date(d).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
+  // Parse date and time directly from the string to avoid timezone conversion
+  const formatTime = (dateTimeStr) => {
+    if (!dateTimeStr) return '';
+    // Extract time directly from the string (format: "YYYY-MM-DDTHH:MM:SS")
+    const timeMatch = dateTimeStr.match(/T(\d{2}:\d{2})/);
+    if (timeMatch) {
+      const [hours, minutes] = timeMatch[1].split(':');
+      const hour = parseInt(hours);
+      const ampm = hour >= 12 ? 'PM' : 'AM';
+      const displayHour = hour % 12 || 12;
+      return `${displayHour}:${minutes} ${ampm}`;
+    }
+    return dateTimeStr;
+  };
 
-  const formatDate = (d) =>
-    new Date(d).toLocaleDateString('en-US', {
+  const formatDate = (dateTimeStr) => {
+    if (!dateTimeStr) return '';
+    // Extract date directly from the string (format: "YYYY-MM-DDTHH:MM:SS")
+    const datePart = dateTimeStr.split('T')[0];
+    const [year, month, day] = datePart.split('-').map(Number);
+    const date = new Date(year, month - 1, day);
+    return date.toLocaleDateString('en-US', {
       weekday: 'short', month: 'short', day: 'numeric', year: 'numeric',
     });
+  };
+  
+  // Get the date object for displaying the day number
+  const getDateObject = (dateTimeStr) => {
+    if (!dateTimeStr) return new Date();
+    const datePart = dateTimeStr.split('T')[0];
+    const [year, month, day] = datePart.split('-').map(Number);
+    return new Date(year, month - 1, day);
+  };
+  
+  const date = getDateObject(appointment.scheduled_at);
 
   const handlePayment = () => {
     // Store appointment details for payment
@@ -30,8 +58,8 @@ const DushaniAppointmentCard = ({ appointment, onCancel, onReschedule, userRole 
     const amount = appointment.consultation_fee || 1000;
     localStorage.setItem('pendingAppointmentAmount', amount.toString());
     
-    // Navigate to payment checkout
-    navigate('/payment/checkout');
+    // Navigate to payment checkout with appointment ID in URL
+    navigate(`/payment/checkout/${appointment.id}`);
   };
 
   return (
@@ -88,13 +116,14 @@ const DushaniAppointmentCard = ({ appointment, onCancel, onReschedule, userRole 
                 <p className="text-sm text-[#184E77] font-medium">{appointment.symptoms}</p>
               </div>
             )}
-            {appointment.patient_name && userRole === 'doctor' && (
+            {/* Show patient info for both doctor and patient roles */}
+            {appointment.patient_name && (
               <div>
                 <p className="text-xs text-gray-400 mb-1">Patient Name</p>
                 <p className="text-sm text-[#184E77] font-medium">{appointment.patient_name}</p>
               </div>
             )}
-            {appointment.patient_age && userRole === 'doctor' && (
+            {appointment.patient_age && (
               <div>
                 <p className="text-xs text-gray-400 mb-1">Patient Age</p>
                 <p className="text-sm text-[#184E77] font-medium">{appointment.patient_age} years</p>

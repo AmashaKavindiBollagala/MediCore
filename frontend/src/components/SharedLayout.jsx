@@ -7,7 +7,7 @@ const NAV_LINKS = [
   { label: "Appointments",       href: "/appointments",      icon: "📅", protected: true  },
   { label: "AI Symptom Checker", href: "/symptom-checker",   icon: "🤖", protected: true  },
   { label: "Consultation",       href: "/appointments/book", icon: "🎥", protected: true  },
-  { label: "Profile",            href: "/patient-profile",   icon: "👤", protected: true  },
+  { label: "Profile",            href: "/patient-dashboard",   icon: "👤", protected: true  },
 ];
 
 // ─── HELPERS ──────────────────────────────────────────────────────────

@@ -15,8 +15,13 @@ import KaveeshaDoctorDashboard from './pages/kaveesha-DoctorDashboard';
 import RegisterDetails from './pages/amasha-patientRegister';
 import PatientDashboard from './pages/amasha-patientDashboard';
 import PatientProfile from './pages/amasha-patientProfile';
+
 import MedicalReports from './pages/amasha-medicalReportsPage';
 import DilsharaSymptomChecker from './pages/dilshara-SymptomChecker';
+
+import AmashaPatientReports from './pages/amasha-patientreports';
+import AmashaPatientPrescriptions from './pages/amasha-patientprescriptions ';
+>>>>>>> origin
 import DilsharaAdminRoute               from './components/dilshara-AdminRoute';
 import DilsharaAdminDashboard           from './pages/dilshara-AdminDashboard';
 import DilsharaDoctorVerificationList   from './pages/dilshara-DoctorVerificationList';
@@ -116,7 +121,15 @@ function App() {
           <Route path="/patient-reports" element={
             <SharedLayout>
               <PatientLayout>
-                <MedicalReports />
+                <AmashaPatientReports />
+              </PatientLayout>
+            </SharedLayout>
+          } />
+
+           <Route path="/patient-prescription" element={
+            <SharedLayout>
+              <PatientLayout>
+                <AmashaPatientPrescriptions />
               </PatientLayout>
             </SharedLayout>
           } />

@@ -11,8 +11,8 @@ const config = {
   jwtSecret: process.env.JWT_SECRET || 'your_super_secret_jwt_key_12345',
   //PayHere
   payhere: {
-    merchantId: process.env.PAYHERE_MERCHANT_ID,
-    merchantSecret: process.env.PAYHERE_MERCHANT_SECRET,
+    merchantId: process.env.PAYHERE_MERCHANT_ID || '1234755',
+    merchantSecret: process.env.PAYHERE_MERCHANT_SECRET || 'MzQ1MDM1MzI2NTM4OTQ0NDk5MzMyMDk0ODQ1NzkxMzEzMTM1OTczMw==',
     sandbox: process.env.PAYHERE_SANDBOX === 'true',
     checkoutUrl: process.env.PAYHERE_SANDBOX === 'true' 
       ? 'https://sandbox.payhere.lk/pay/checkout'
@@ -23,3 +23,11 @@ const config = {
 };
 
 module.exports = config;
+
+// Debug: Log PayHere configuration on startup
+console.log('=== PayHere Configuration ===');
+console.log('Merchant ID:', config.payhere.merchantId);
+console.log('Merchant Secret Length:', config.payhere.merchantSecret ? config.payhere.merchantSecret.length : 'UNDEFINED');
+console.log('Sandbox Mode:', config.payhere.sandbox);
+console.log('Checkout URL:', config.payhere.checkoutUrl);
+console.log('=============================');

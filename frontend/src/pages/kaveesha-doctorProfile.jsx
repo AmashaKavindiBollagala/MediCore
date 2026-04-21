@@ -111,35 +111,6 @@ const STYLES = `
 `;
 
 // ── Mock doctor data ──────────────────────────────────────────────────
-const MOCK_DOCTOR = {
-  id: 'DOC-2024-0047',
-  first_name: 'Arjuna',
-  last_name: 'Wickramasinghe',
-  email: 'arjuna.w@medconnect.lk',
-  phone: '0771234567',
-  date_of_birth: '1985-03-12',
-  gender: 'male',
-  specialty: 'Cardiology',
-  sub_specialty: 'Interventional Cardiology',
-  medical_license_number: 'SLMC-34521',
-  license_issuing_authority: 'Sri Lanka Medical Council (SLMC)',
-  years_of_experience: 14,
-  hospital: 'Nawaloka Hospital',
-  hospital_address: '23 Deshamanya H.K. Dharmadasa Mawatha, Colombo 00200',
-  bio: 'Specialist cardiologist with 14 years of experience in interventional procedures. Committed to delivering patient-centered care with compassion and precision.',
-  verification_status: 'approved',
-  verified: true,
-  consultation_fee_online: 2500,
-  consultation_fee_physical: 4000,
-  profile_photo_url: null,
-  documents: {
-    profile_photo: 'profile_arjuna.jpg',
-    id_card_front: 'nic_front_arjuna.jpg',
-    id_card_back: 'nic_back_arjuna.jpg',
-    medical_license: 'slmc_license_arjuna.pdf',
-    degree_certificates: 'mbbs_md_arjuna.pdf',
-  },
-};
 
 // ── Sub-components ───────────────────────────────────────────────────
 
@@ -206,43 +177,84 @@ function Avatar({ doctor, size = 108 }) {
   );
 }
 
-function DocChip({ icon, label, filename }) {
+function DocChip({ icon, label, filename, imageUrl }) {
+  const isImage = imageUrl && (imageUrl.match(/\.(jpg|jpeg|png|gif|webp)$/i));
+  
   return (
     <div className="dp-doc-chip" style={{
-      display: 'flex', alignItems: 'center', gap: 14,
-      background: C.cream, border: `1.5px solid ${C.mint}55`,
-      borderRadius: 14, padding: '15px 18px',
+      display: 'flex',
+      flexDirection: isImage ? 'column' : 'row',
+      alignItems: 'center',
+      gap: isImage ? 12 : 14,
+      background: C.cream,
+      border: `1.5px solid ${C.mint}55`,
+      borderRadius: 14,
+      padding: isImage ? '15px' : '15px 18px',
+      overflow: 'hidden',
     }}>
-      <div style={{
-        width: 46, height: 46, borderRadius: 12, flexShrink: 0,
-        background: `linear-gradient(135deg, ${C.teal}18, ${C.mint}18)`,
-        display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 22,
-      }}>
-        {icon}
-      </div>
-      <div style={{ flex: 1, minWidth: 0 }}>
-        <div style={{ fontSize: 14, fontWeight: 700, color: C.navy, marginBottom: 3 }}>{label}</div>
-        <div style={{ fontSize: 12.5, color: C.gray400, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-          {filename || 'Not uploaded'}
-        </div>
-      </div>
-      {filename && (
-        <div style={{
-          width: 30, height: 30, borderRadius: 8, background: C.mint + '30', flexShrink: 0,
-          display: 'flex', alignItems: 'center', justifyContent: 'center',
-        }}>
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none">
-            <path d="M5 13l4 4L19 7" stroke={C.mintDark} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"/>
-          </svg>
-        </div>
+      {isImage ? (
+        <>
+          <img
+            src={imageUrl}
+            alt={label}
+            style={{
+              width: '100%',
+              maxHeight: 200,
+              objectFit: 'contain',
+              borderRadius: 10,
+              border: `1px solid ${C.gray200}`,
+              background: C.white,
+            }}
+          />
+          <div style={{ width: '100%' }}>
+            <div style={{ fontSize: 14, fontWeight: 700, color: C.navy, marginBottom: 3 }}>{label}</div>
+            <div style={{ fontSize: 12.5, color: C.gray400, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+              {filename || 'Not uploaded'}
+            </div>
+          </div>
+        </>
+      ) : (
+        <>
+          <div style={{
+            width: 46, height: 46, borderRadius: 12, flexShrink: 0,
+            background: `linear-gradient(135deg, ${C.teal}18, ${C.mint}18)`,
+            display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 22,
+          }}>
+            {icon}
+          </div>
+          <div style={{ flex: 1, minWidth: 0 }}>
+            <div style={{ fontSize: 14, fontWeight: 700, color: C.navy, marginBottom: 3 }}>{label}</div>
+            <div style={{ fontSize: 12.5, color: C.gray400, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+              {filename || 'Not uploaded'}
+            </div>
+          </div>
+          {filename && (
+            <div style={{
+              width: 30, height: 30, borderRadius: 8, background: C.mint + '30', flexShrink: 0,
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+            }}>
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none">
+                <path d="M5 13l4 4L19 7" stroke={C.mintDark} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"/>
+              </svg>
+            </div>
+          )}
+        </>
       )}
     </div>
   );
 }
 
+// Helper function to extract filename from URL
+function extractFilename(url) {
+  if (!url) return null;
+  // Handle both full URLs and relative paths
+  const parts = url.split('/');
+  return parts[parts.length - 1] || null;
+}
+
 // ── Main export ──────────────────────────────────────────────────────
 export default function KaveeshaDoctorProfile({ doctor: propDoctor, onRefresh, token }) {
-  const [doctor, setDoctor] = useState(propDoctor || MOCK_DOCTOR);
+  const [doctor, setDoctor] = useState(propDoctor);
   const [activeSection, setActiveSection] = useState('info');
   const [editing, setEditing] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -706,12 +718,32 @@ export default function KaveeshaDoctorProfile({ doctor: propDoctor, onRefresh, t
                   </div>
                 </div>
 
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(260px, 1fr))', gap: 14 }}>
-                  <DocChip icon="📷" label="Profile Photo" filename={doctor.documents?.profile_photo} />
-                  <DocChip icon="🪪" label="National ID (Front)" filename={doctor.documents?.id_card_front} />
-                  <DocChip icon="🪪" label="National ID (Back)" filename={doctor.documents?.id_card_back} />
-                  <DocChip icon="📜" label="Medical License" filename={doctor.documents?.medical_license} />
-                  <DocChip icon="🎓" label="Degree Certificate" filename={doctor.documents?.degree_certificates} />
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: 16 }}>
+                  {/* Profile Photo - excluded as per requirements */}
+                  <DocChip 
+                    icon="🪪" 
+                    label="National ID (Front)" 
+                    filename={extractFilename(doctor.id_card_front_url)}
+                    imageUrl={doctor.id_card_front_url}
+                  />
+                  <DocChip 
+                    icon="🪪" 
+                    label="National ID (Back)" 
+                    filename={extractFilename(doctor.id_card_back_url)}
+                    imageUrl={doctor.id_card_back_url}
+                  />
+                  <DocChip 
+                    icon="📜" 
+                    label="Medical License" 
+                    filename={extractFilename(doctor.medical_license_url)}
+                    imageUrl={doctor.medical_license_url}
+                  />
+                  <DocChip 
+                    icon="🎓" 
+                    label="Degree Certificate" 
+                    filename={extractFilename(doctor.degree_certificates_url)}
+                    imageUrl={doctor.degree_certificates_url}
+                  />
                 </div>
 
                 <div style={{

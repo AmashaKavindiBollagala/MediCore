@@ -3,7 +3,7 @@ const pool = require('../config/kaveesha-doctorPool');
 // Helper: get doctor profile id from user id
 const getDoctorProfileId = async (userId) => {
   const result = await pool.query(
-    'SELECT id FROM doctors.profiles WHERE user_id = $1',
+    'SELECT id FROM profiles WHERE user_id = $1',
     [userId]
   );
   return result.rows[0]?.id || null;
@@ -25,6 +25,7 @@ const getMyAppointments = async (req, res) => {
       FROM appointments.bookings a
       LEFT JOIN patients.profiles p ON p.user_id::text = a.patient_id::text
       WHERE a.doctor_id = $1
+        AND a.status NOT IN ('CANCELLED', 'PENDING_PAYMENT')
     `;
     const params = [doctorId];
 

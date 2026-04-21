@@ -67,25 +67,27 @@ const registerDoctor = async (req, res) => {
 
 // ─── GET /doctors/me ───────────────────────────────────────────────────────────
 const getMyProfile = async (req, res) => {
+  console.log('getMyProfile called, req.user.id:', req.user?.id);
   try {
+    // req.user.id contains the doctor's profile id (UUID) from the JWT token
     const result = await pool.query(
-      `SELECT p.*, u.email as auth_email
-       FROM doctors.profiles p
-       JOIN auth.users u ON u.id = p.user_id
-       WHERE p.user_id = $1`,
+      `SELECT * FROM profiles WHERE id = $1`,
       [req.user.id]
     );
+    console.log('Query result rows:', result.rows.length);
     if (!result.rows.length)
       return res.status(404).json({ error: 'Doctor profile not found' });
+    console.log('Returning doctor profile:', result.rows[0].first_name, result.rows[0].last_name);
     res.json(result.rows[0]);
   } catch (err) {
+    console.error('getMyProfile error:', err.message);
     res.status(500).json({ error: err.message });
   }
 };
 
 // ─── PUT /doctors/me ───────────────────────────────────────────────────────────
 const updateMyProfile = async (req, res) => {
-  const allowed = ['bio', 'phone', 'hospital', 'sub_specialty',
+  const allowed = ['bio', 'phone', 'hospital', 'hospital_address', 'sub_specialty',
     'consultation_fee_online', 'consultation_fee_physical', 'years_of_experience'];
 
   const updates = [];
@@ -107,7 +109,7 @@ const updateMyProfile = async (req, res) => {
 
   try {
     const result = await pool.query(
-      `UPDATE doctors.profiles SET ${updates.join(', ')} WHERE user_id = $${i} RETURNING *`,
+      `UPDATE profiles SET ${updates.join(', ')} WHERE id = $${i} RETURNING *`,
       values
     );
     if (!result.rows.length)
@@ -124,7 +126,7 @@ const listDoctors = async (req, res) => {
   let query = `SELECT id, full_name, first_name, last_name, specialty,
     sub_specialty, hospital, years_of_experience, bio,
     consultation_fee_online, consultation_fee_physical, profile_photo_url
-    FROM doctors.profiles WHERE verification_status = 'approved'`;
+    FROM profiles WHERE verification_status = 'approved'`;
   const params = [];
 
   if (specialty) {
@@ -152,7 +154,7 @@ const getDoctorById = async (req, res) => {
       `SELECT id, full_name, first_name, last_name, specialty, sub_specialty,
         hospital, years_of_experience, bio, consultation_fee_online,
         consultation_fee_physical, profile_photo_url
-       FROM doctors.profiles WHERE id = $1 AND verification_status = 'approved'`,
+       FROM profiles WHERE id = $1 AND verification_status = 'approved'`,
       [req.params.id]
     );
     if (!result.rows.length)
@@ -166,7 +168,7 @@ const getDoctorById = async (req, res) => {
 // ─── ADMIN: GET /admin/doctors — all pending/verified ─────────────────────────
 const adminListDoctors = async (req, res) => {
   const { status } = req.query;
-  let query = 'SELECT * FROM doctors.profiles';
+  let query = 'SELECT * FROM profiles';
   const params = [];
   if (status) {
     params.push(status);
@@ -189,7 +191,7 @@ const verifyDoctor = async (req, res) => {
 
   try {
     const result = await pool.query(
-      `UPDATE doctors.profiles SET verification_status = $1, verified = $2
+      `UPDATE profiles SET verification_status = $1, verified = $2
        WHERE id = $3 RETURNING id, full_name, verification_status`,
       [status, status === 'approved', req.params.id]
     );

@@ -1,14 +1,14 @@
 import React, { useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 
-const PATIENT_API = import.meta.env.VITE_PATIENT_API_URL || 'http://localhost:3001';
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8080';
 
 const navItems = [
-  { to: '/dashboard',      label: 'Dashboard',       path: 'M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6' },
-  { to: '/profile',        label: 'My Profile',      path: 'M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z' },
+  { to: '/patient-dashboard',      label: 'Dashboard',       path: 'M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6' },
+  { to: '/patient-profile',        label: 'My Profile',      path: 'M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z' },
   { to: '/appointments',   label: 'Appointments',    path: 'M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z' },
-  { to: '/reports',        label: 'Medical Reports', path: 'M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z' },
-  { to: '/prescriptions',  label: 'Prescriptions',   path: 'M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2' },
+  { to: '/patient-reports',        label: 'Medical Reports', path: 'M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z' },
+  { to: '/patient-prescription',  label: 'Prescriptions',   path: 'M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2' },
 ];
 
 function Sidebar({ user, onLogout }) {
@@ -16,7 +16,7 @@ function Sidebar({ user, onLogout }) {
   return (
     <aside className="w-64 min-h-screen flex flex-col" style={{ background: 'linear-gradient(180deg, #124170 0%, #1a5a8a 100%)' }}>
       {/* Brand */}
-      <div className="p-6 border-b border-white/10">
+      {/* <div className="p-6 border-b border-white/10">
         <div className="flex items-center gap-3">
           <div className="w-9 h-9 rounded-xl flex items-center justify-center" style={{ background: '#67C090' }}>
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
@@ -25,7 +25,7 @@ function Sidebar({ user, onLogout }) {
           </div>
           <span className="text-white font-bold text-lg" style={{ fontFamily: "'Playfair Display', serif" }}>MediCore</span>
         </div>
-      </div>
+      </div> */}
 
       {/* User pill */}
       <div className="px-4 py-4 border-b border-white/10">
@@ -64,7 +64,7 @@ function Sidebar({ user, onLogout }) {
       </nav>
 
       {/* Logout */}
-      <div className="p-4 border-t border-white/10">
+      {/* <div className="p-4 border-t border-white/10">
         <button onClick={onLogout}
           className="w-full flex items-center gap-3 px-4 py-2.5 rounded-xl text-sm transition-all"
           style={{ color: 'rgba(255,255,255,0.6)' }}
@@ -75,7 +75,7 @@ function Sidebar({ user, onLogout }) {
           </svg>
           Sign out
         </button>
-      </div>
+      </div> */}
     </aside>
   );
 }
@@ -110,10 +110,14 @@ export default function PatientDashboard() {
     const token = localStorage.getItem('token');
     const headers = { Authorization: `Bearer ${token}` };
 
-    fetch(`${PATIENT_API}/api/patients/reports`, { headers })
-      .then(r => r.json()).then(setReports).catch(() => {});
-    fetch(`${PATIENT_API}/api/patients/prescriptions`, { headers })
-      .then(r => r.json()).then(setPrescriptions).catch(() => {});
+    fetch(`${API_URL}/api/patients/reports`, { headers })
+      .then(r => r.ok ? r.json() : [])
+      .then(setReports)
+      .catch(() => setReports([]));
+    fetch(`${API_URL}/api/patients/prescriptions`, { headers })
+      .then(r => r.ok ? r.json() : [])
+      .then(setPrescriptions)
+      .catch(() => setPrescriptions([]));
   }, [navigate]);
 
   const handleLogout = () => {
@@ -161,9 +165,9 @@ export default function PatientDashboard() {
           </h2>
           <div className="flex flex-wrap gap-3">
             {[
-              { to: '/profile',      label: 'Update profile',    bg: '#124170' },
-              { to: '/reports',      label: 'Upload report',     bg: '#34A0A4' },
-              { to: '/appointments', label: 'Book appointment',  bg: '#76C893' },
+              { to: '/patient-profile',      label: 'Update profile',    bg: '#124170' },
+              { to: '/patient-reports',      label: 'Upload report',     bg: '#34A0A4' },
+              { to: '/appointments/book',    label: 'Book appointment',  bg: '#76C893' },
             ].map(({ to, label, bg }) => (
               <Link key={to} to={to}
                 className="px-5 py-2.5 rounded-xl text-sm font-semibold text-white transition-opacity hover:opacity-85"
@@ -180,7 +184,7 @@ export default function PatientDashboard() {
             <h2 className="text-lg font-semibold" style={{ color: '#124170', fontFamily: "'Playfair Display', serif" }}>
               Recent medical reports
             </h2>
-            <Link to="/reports" className="text-sm font-medium" style={{ color: '#34A0A4' }}>View all →</Link>
+            <Link to="/patient-reports" className="text-sm font-medium" style={{ color: '#34A0A4' }}>View all →</Link>
           </div>
 
           {reports.length === 0 ? (
@@ -191,7 +195,7 @@ export default function PatientDashboard() {
                 </svg>
               </div>
               <p className="text-sm" style={{ color: '#26667F' }}>No reports uploaded yet.</p>
-              <Link to="/reports" className="text-sm font-semibold mt-1 inline-block" style={{ color: '#124170' }}>Upload your first report →</Link>
+              <Link to="/patient-reports" className="text-sm font-semibold mt-1 inline-block" style={{ color: '#124170' }}>Upload your first report →</Link>
             </div>
           ) : (
             <div className="space-y-3">
