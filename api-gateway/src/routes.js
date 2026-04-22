@@ -407,6 +407,73 @@ router.post('/payments/:paymentId/refund', (req, res) => {
 });
 
 // ─────────────────────────────────────────────
+// AI SYMPTOM SERVICE
+// ─────────────────────────────────────────────
+router.post('/ai/symptoms/text', (req, res) => {
+  proxyRequest(req, res, SERVICES.ai, '/api/symptoms/text');
+});
+
+router.post('/ai/symptoms/file', async (req, res) => {
+  try {
+    const url = `${SERVICES.ai}/api/symptoms/file`;
+    
+    const response = await fetch(url, {
+      method: 'POST',
+      headers: {
+        Authorization: req.headers.authorization || '',
+        'Content-Type': req.headers['content-type'] || '',
+      },
+      body: req,
+      duplex: 'half',
+    });
+    
+    const contentType = response.headers.get('content-type');
+    if (contentType && contentType.includes('application/json')) {
+      const data = await response.json();
+      res.status(response.status).json(data);
+    } else {
+      const text = await response.text();
+      res.status(response.status).send(text);
+    }
+  } catch (error) {
+    console.error(`Proxy error to AI symptom file upload:`, error.message);
+    res.status(502).json({ error: 'Service unavailable', detail: error.message });
+  }
+});
+
+router.post('/ai/symptoms/voice', async (req, res) => {
+  try {
+    const url = `${SERVICES.ai}/api/symptoms/voice`;
+    
+    const response = await fetch(url, {
+      method: 'POST',
+      headers: {
+        Authorization: req.headers.authorization || '',
+        'Content-Type': req.headers['content-type'] || '',
+      },
+      body: req,
+      duplex: 'half',
+    });
+    
+    const contentType = response.headers.get('content-type');
+    if (contentType && contentType.includes('application/json')) {
+      const data = await response.json();
+      res.status(response.status).json(data);
+    } else {
+      const text = await response.text();
+      res.status(response.status).send(text);
+    }
+  } catch (error) {
+    console.error(`Proxy error to AI symptom voice upload:`, error.message);
+    res.status(502).json({ error: 'Service unavailable', detail: error.message });
+  }
+});
+
+router.get('/ai/symptoms/history', (req, res) => {
+  proxyRequest(req, res, SERVICES.ai, '/api/symptoms/history');
+});
+
+// ─────────────────────────────────────────────
 // ADMIN SERVICE
 // ─────────────────────────────────────────────
 router.get('/admin/stats', (req, res) => {
