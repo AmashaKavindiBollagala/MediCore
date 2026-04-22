@@ -88,7 +88,7 @@ export default function PatientProfile() {
   ];
 
   if (fetching) return (
-    <div className="flex-1 flex items-center justify-center" style={{ background: '#F1FAEE' }}>
+    <div className="flex-1 flex items-center justify-center min-h-screen" style={{ background: '#F1FAEE' }}>
       <svg className="animate-spin" width="32" height="32" viewBox="0 0 24 24" fill="none">
         <circle cx="12" cy="12" r="10" stroke="#DDF4E7" strokeWidth="3"/>
         <path d="M12 2a10 10 0 010 20" stroke="#124170" strokeWidth="3" strokeLinecap="round"/>
@@ -97,8 +97,8 @@ export default function PatientProfile() {
   );
 
   return (
-    <div className="flex-1 p-8 min-h-screen" style={{ background: '#F1FAEE' }}>
-      <div className="max-w-2xl">
+    <div className="flex-1 flex items-center justify-center min-h-screen py-10" style={{ background: '#F1FAEE' }}>
+      <div className="w-full max-w-2xl px-4">
         <div className="mb-7">
           <h1 className="text-3xl font-bold" style={{ color: '#124170', fontFamily: "'Playfair Display', serif" }}>
             My Profile

@@ -881,7 +881,17 @@ export default function KaveeshaDoctorAvailability({ token }) {
           console.log('All slots:', slots.map(s => ({ id: s.id, date: s.slot_date, day: s.day_of_week })));
           
           return weekDays.map((dayInfo) => {
-            const daySlots = slots.filter(s => s.slot_date === dayInfo.dateStr);
+            // Filter slots: show date-specific slots OR recurring weekly slots matching the day of week
+            const daySlots = slots.filter(s => {
+              // If slot has a specific date, match by date
+              if (s.slot_date) {
+                // Extract just the date part (YYYY-MM-DD) from ISO string if needed
+                const slotDateStr = s.slot_date.includes('T') ? s.slot_date.split('T')[0] : s.slot_date;
+                return slotDateStr === dayInfo.dateStr;
+              }
+              // If slot is recurring (no date), match by day of week
+              return s.day_of_week === dayInfo.dayOfWeek;
+            });
             console.log(`Date ${dayInfo.dateStr} has ${daySlots.length} slots`);
             const hasSlots = daySlots.length > 0;
             const isToday = dayInfo.dateStr === new Date().toISOString().split('T')[0];

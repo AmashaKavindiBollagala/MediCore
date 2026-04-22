@@ -8,6 +8,7 @@ app.use(cors({ origin: 'http://localhost:3000', credentials: true }));
 app.use(express.json());
 
 app.use('/api/patients', require('./src/routes/amasha-patientRoutes'));
+app.use('/api/patients', require('./src/routes/amasha-reportRoutes'));
 
 app.get('/health', (req, res) => res.json({ status: 'patient-service OK' }));
 

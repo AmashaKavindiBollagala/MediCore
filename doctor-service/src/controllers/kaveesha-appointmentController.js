@@ -25,6 +25,7 @@ const getMyAppointments = async (req, res) => {
       FROM appointments.bookings a
       LEFT JOIN patients.profiles p ON p.user_id::text = a.patient_id::text
       WHERE a.doctor_id = $1
+        AND a.status NOT IN ('CANCELLED', 'PENDING_PAYMENT')
     `;
     const params = [doctorId];
 

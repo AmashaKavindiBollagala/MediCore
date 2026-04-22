@@ -13,18 +13,139 @@ export default function RegisterDetails() {
   const [showConfirm, setShowConfirm]   = useState(false);
   const [loading, setLoading]           = useState(false);
   const [error, setError]               = useState('');
+  const [fieldErrors, setFieldErrors]   = useState({
+    name: '', email: '', phone: '', password: '', confirmPassword: '',
+  });
+
+  const validateName = (value) => {
+    if (!value.trim()) return 'Full name is required.';
+    if (value.trim().length < 2) return 'Name must be at least 2 characters.';
+    if (!/^[a-zA-Z\s'-]+$/.test(value.trim())) return 'Name can only contain letters, spaces, hyphens, or apostrophes.';
+    return '';
+  };
+
+  const validateEmail = (value) => {
+    if (!value) return 'Email is required.';
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value)) return 'Enter a valid email address.';
+    if (!value.toLowerCase().endsWith('@gmail.com')) return 'Only Gmail addresses (@gmail.com) are accepted.';
+    return '';
+  };
+
+  const validatePhone = (value) => {
+    if (!value) return '';
+    // Strip non-digit characters for length check
+    const digitsOnly = value.replace(/\D/g, '');
+    if (digitsOnly.length > 10) return 'Phone number cannot exceed 10 digits.';
+    if (digitsOnly.length > 0 && !/^\+?[\d\s\-().]{7,20}$/.test(value)) return 'Enter a valid phone number.';
+    return '';
+  };
+
+  const validatePassword = (value) => {
+    if (!value) return 'Password is required.';
+    if (value.length < 8) return 'Password must be at least 8 characters.';
+    return '';
+  };
+
+  const validateConfirmPassword = (value) => {
+    if (!value) return 'Please confirm your password.';
+    if (value !== form.password) return 'Passwords do not match.';
+    return '';
+  };
+
+  const getValidator = (name) => {
+    switch (name) {
+      case 'name':            return validateName;
+      case 'email':           return validateEmail;
+      case 'phone':           return validatePhone;
+      case 'password':        return validatePassword;
+      case 'confirmPassword': return validateConfirmPassword;
+      default:                return () => '';
+    }
+  };
 
   const handleChange = (e) => {
-    setForm({ ...form, [e.target.name]: e.target.value });
+    const { name, value } = e.target;
+    setForm({ ...form, [name]: value });
     setError('');
+    if (fieldErrors[name]) {
+      setFieldErrors((prev) => ({ ...prev, [name]: '' }));
+    }
+    if (name === 'password' && form.confirmPassword) {
+      setFieldErrors((prev) => ({
+        ...prev,
+        confirmPassword: value !== form.confirmPassword ? 'Passwords do not match.' : '',
+      }));
+    }
+  };
+
+  const handleBlur = (e) => {
+    const { name, value } = e.target;
+    const msg = getValidator(name)(value);
+    setFieldErrors((prev) => ({ ...prev, [name]: msg }));
+  };
+
+  // ── Email: block characters that can't lead to @gmail.com ──────────────────
+  const handleEmailKeyDown = (e) => {
+    const value = e.target.value;
+    const atIndex = value.indexOf('@');
+
+    if (atIndex !== -1) {
+      const domain = value.slice(atIndex + 1).toLowerCase();
+      const isPrintable = e.key.length === 1 && !e.ctrlKey && !e.metaKey;
+
+      if (isPrintable) {
+        const gmailPrefix = 'gmail.com';
+        const couldStillBeGmail = gmailPrefix.startsWith(domain + e.key);
+        if (domain.length > 0 && !couldStillBeGmail && !domain.startsWith('gmail')) {
+          e.preventDefault();
+          setFieldErrors((prev) => ({ ...prev, email: 'Only Gmail addresses (@gmail.com) are accepted.' }));
+          return;
+        }
+      }
+    }
+
+    if (e.key === 'Enter') {
+      setFieldErrors((prev) => ({ ...prev, email: validateEmail(value) }));
+    }
+  };
+
+  // ── Phone: block the 11th digit from being typed ───────────────────────────
+  const handlePhoneKeyDown = (e) => {
+    const value = e.target.value;
+    const digitsOnly = value.replace(/\D/g, '');
+    const isDigit = /^[0-9]$/.test(e.key);
+
+    if (isDigit && digitsOnly.length >= 10) {
+      e.preventDefault();
+      setFieldErrors((prev) => ({ ...prev, phone: 'Phone number cannot exceed 10 digits.' }));
+      return;
+    }
+
+    if (e.key === 'Enter') {
+      setFieldErrors((prev) => ({ ...prev, phone: validatePhone(value) }));
+    }
+  };
+
+  const handleKeyDown = (e) => {
+    if (e.key === 'Enter') {
+      const { name, value } = e.target;
+      const msg = getValidator(name)(value);
+      setFieldErrors((prev) => ({ ...prev, [name]: msg }));
+    }
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (form.password !== form.confirmPassword) {
-      setError('Passwords do not match.');
-      return;
-    }
+    const errors = {
+      name:            validateName(form.name),
+      email:           validateEmail(form.email),
+      phone:           validatePhone(form.phone),
+      password:        validatePassword(form.password),
+      confirmPassword: validateConfirmPassword(form.confirmPassword),
+    };
+    setFieldErrors(errors);
+    if (Object.values(errors).some(Boolean)) return;
+
     setLoading(true);
     try {
       const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:8080';
@@ -39,14 +160,14 @@ export default function RegisterDetails() {
           role,
         }),
       });
-      
+
       const contentType = res.headers.get('content-type');
       if (!contentType || !contentType.includes('application/json')) {
         const text = await res.text();
         console.error('Non-JSON response:', text);
         throw new Error('Server returned invalid response');
       }
-      
+
       const data = await res.json();
       if (!res.ok) throw new Error(data.message || 'Registration failed');
       navigate('/login');
@@ -58,12 +179,29 @@ export default function RegisterDetails() {
     }
   };
 
-  const inputStyle = {
-    border: '1.5px solid #DDF4E7',
+  const inputStyle = (fieldName) => ({
+    border: fieldErrors[fieldName] ? '1.5px solid #B91C1C' : '1.5px solid #DDF4E7',
     background: '#F8FFFE',
     color: '#124170',
     fontFamily: "'DM Sans', sans-serif",
+  });
+
+  const inlineErrorStyle = {
+    color: '#B91C1C',
+    fontSize: '12px',
+    marginTop: '4px',
+    display: 'flex',
+    alignItems: 'center',
+    gap: '4px',
+    fontFamily: "'DM Sans', sans-serif",
   };
+
+  const ErrorMsg = ({ field }) => fieldErrors[field] ? (
+    <p style={inlineErrorStyle}>
+      <svg width="12" height="12" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="10" stroke="#B91C1C" strokeWidth="2"/><path d="M12 8v4M12 16h.01" stroke="#B91C1C" strokeWidth="2" strokeLinecap="round"/></svg>
+      {fieldErrors[field]}
+    </p>
+  ) : null;
 
   const EyeOpen = () => (
     <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
@@ -168,19 +306,22 @@ export default function RegisterDetails() {
                       <circle cx="12" cy="7" r="4" stroke="#67C090" strokeWidth="1.8"/>
                     </svg>
                   </div>
-                  <input type="text" name="name" value={form.name} onChange={handleChange}
+                  <input type="text" name="name" value={form.name} onChange={handleChange} onBlur={handleBlur} onKeyDown={handleKeyDown}
                     placeholder="John Silva" required
                     className="w-full pl-11 pr-4 py-3.5 rounded-xl text-sm outline-none transition-all"
-                    style={inputStyle}
-                    onFocus={e => e.target.style.borderColor = '#67C090'}
-                    onBlur={e => e.target.style.borderColor = '#DDF4E7'}
+                    style={inputStyle('name')}
+                    onFocus={e => { if (!fieldErrors.name) e.target.style.borderColor = '#67C090'; }}
+                    onBlurCapture={e => { if (!fieldErrors.name) e.target.style.borderColor = '#DDF4E7'; }}
                   />
                 </div>
+                <ErrorMsg field="name" />
               </div>
 
               {/* Email */}
               <div>
-                <label className="block text-sm font-medium mb-2" style={{ color: '#124170' }}>Email address</label>
+                <label className="block text-sm font-medium mb-2" style={{ color: '#124170' }}>
+                  Email address <span style={{ color: '#67C090', fontSize: '11px', fontWeight: 400 }}>(@gmail.com only)</span>
+                </label>
                 <div className="relative">
                   <div className="absolute left-4 top-1/2 -translate-y-1/2">
                     <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
@@ -188,33 +329,51 @@ export default function RegisterDetails() {
                       <polyline points="22,6 12,13 2,6" stroke="#67C090" strokeWidth="1.8" strokeLinecap="round"/>
                     </svg>
                   </div>
-                  <input type="email" name="email" value={form.email} onChange={handleChange}
-                    placeholder="you@example.com" required
+                  <input
+                    type="email"
+                    name="email"
+                    value={form.email}
+                    onChange={handleChange}
+                    onBlur={handleBlur}
+                    onKeyDown={handleEmailKeyDown}
+                    placeholder="you@gmail.com"
+                    required
                     className="w-full pl-11 pr-4 py-3.5 rounded-xl text-sm outline-none transition-all"
-                    style={inputStyle}
-                    onFocus={e => e.target.style.borderColor = '#67C090'}
-                    onBlur={e => e.target.style.borderColor = '#DDF4E7'}
+                    style={inputStyle('email')}
+                    onFocus={e => { if (!fieldErrors.email) e.target.style.borderColor = '#67C090'; }}
+                    onBlurCapture={e => { if (!fieldErrors.email) e.target.style.borderColor = '#DDF4E7'; }}
                   />
                 </div>
+                <ErrorMsg field="email" />
               </div>
 
               {/* Phone */}
               <div>
-                <label className="block text-sm font-medium mb-2" style={{ color: '#124170' }}>Phone number</label>
+                <label className="block text-sm font-medium mb-2" style={{ color: '#124170' }}>
+                  Phone number <span style={{ color: '#67C090', fontSize: '11px', fontWeight: 400 }}>(max 10 digits)</span>
+                </label>
                 <div className="relative">
                   <div className="absolute left-4 top-1/2 -translate-y-1/2">
                     <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
                       <path d="M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07A19.5 19.5 0 013.07 9.81a19.79 19.79 0 01-3.07-8.72A2 2 0 012 .9h3a2 2 0 012 1.72c.127.96.361 1.903.7 2.81a2 2 0 01-.45 2.11L6.09 8.91a16 16 0 006 6l1.27-1.27a2 2 0 012.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0122 16.92z" stroke="#67C090" strokeWidth="1.8" strokeLinecap="round"/>
                     </svg>
                   </div>
-                  <input type="tel" name="phone" value={form.phone} onChange={handleChange}
-                    placeholder="+94 77 123 4567"
+                  <input
+                    type="tel"
+                    name="phone"
+                    value={form.phone}
+                    onChange={handleChange}
+                    onBlur={handleBlur}
+                    onKeyDown={handlePhoneKeyDown}
+                    placeholder="0 77 123 456"
+                    maxLength={15}
                     className="w-full pl-11 pr-4 py-3.5 rounded-xl text-sm outline-none transition-all"
-                    style={inputStyle}
-                    onFocus={e => e.target.style.borderColor = '#67C090'}
-                    onBlur={e => e.target.style.borderColor = '#DDF4E7'}
+                    style={inputStyle('phone')}
+                    onFocus={e => { if (!fieldErrors.phone) e.target.style.borderColor = '#67C090'; }}
+                    onBlurCapture={e => { if (!fieldErrors.phone) e.target.style.borderColor = '#DDF4E7'; }}
                   />
                 </div>
+                <ErrorMsg field="phone" />
               </div>
 
               {/* Password */}
@@ -227,18 +386,19 @@ export default function RegisterDetails() {
                       <path d="M7 11V7a5 5 0 0110 0v4" stroke="#67C090" strokeWidth="1.8" strokeLinecap="round"/>
                     </svg>
                   </div>
-                  <input type={showPassword ? 'text' : 'password'} name="password" value={form.password} onChange={handleChange}
+                  <input type={showPassword ? 'text' : 'password'} name="password" value={form.password} onChange={handleChange} onBlur={handleBlur} onKeyDown={handleKeyDown}
                     placeholder="Min. 8 characters" required minLength={8}
                     className="w-full pl-11 pr-12 py-3.5 rounded-xl text-sm outline-none transition-all"
-                    style={inputStyle}
-                    onFocus={e => e.target.style.borderColor = '#67C090'}
-                    onBlur={e => e.target.style.borderColor = '#DDF4E7'}
+                    style={inputStyle('password')}
+                    onFocus={e => { if (!fieldErrors.password) e.target.style.borderColor = '#67C090'; }}
+                    onBlurCapture={e => { if (!fieldErrors.password) e.target.style.borderColor = '#DDF4E7'; }}
                   />
                   <button type="button" onClick={() => setShowPassword(!showPassword)}
                     className="absolute right-4 top-1/2 -translate-y-1/2">
                     {showPassword ? <EyeOff /> : <EyeOpen />}
                   </button>
                 </div>
+                <ErrorMsg field="password" />
               </div>
 
               {/* Confirm password */}
@@ -250,18 +410,19 @@ export default function RegisterDetails() {
                       <path d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" stroke="#67C090" strokeWidth="1.8" strokeLinecap="round"/>
                     </svg>
                   </div>
-                  <input type={showConfirm ? 'text' : 'password'} name="confirmPassword" value={form.confirmPassword} onChange={handleChange}
+                  <input type={showConfirm ? 'text' : 'password'} name="confirmPassword" value={form.confirmPassword} onChange={handleChange} onBlur={handleBlur} onKeyDown={handleKeyDown}
                     placeholder="Re-enter your password" required
                     className="w-full pl-11 pr-12 py-3.5 rounded-xl text-sm outline-none transition-all"
-                    style={inputStyle}
-                    onFocus={e => e.target.style.borderColor = '#67C090'}
-                    onBlur={e => e.target.style.borderColor = '#DDF4E7'}
+                    style={inputStyle('confirmPassword')}
+                    onFocus={e => { if (!fieldErrors.confirmPassword) e.target.style.borderColor = '#67C090'; }}
+                    onBlurCapture={e => { if (!fieldErrors.confirmPassword) e.target.style.borderColor = '#DDF4E7'; }}
                   />
                   <button type="button" onClick={() => setShowConfirm(!showConfirm)}
                     className="absolute right-4 top-1/2 -translate-y-1/2">
                     {showConfirm ? <EyeOff /> : <EyeOpen />}
                   </button>
                 </div>
+                <ErrorMsg field="confirmPassword" />
               </div>
 
               <button type="submit" disabled={loading}

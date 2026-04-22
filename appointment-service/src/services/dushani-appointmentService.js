@@ -269,6 +269,7 @@ class AppointmentService {
       SELECT a.*
       FROM public.appointments a
       WHERE a.doctor_id = $1
+        AND a.status NOT IN ('CANCELLED', 'PENDING_PAYMENT')
     `;
 
     const params = [doctorId];
