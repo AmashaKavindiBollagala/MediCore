@@ -9,7 +9,7 @@ const DushaniBookAppointment = () => {
   const [doctors, setDoctors] = useState([]);
   const [selectedDoctor, setSelectedDoctor] = useState(null);
   const [availability, setAvailability] = useState([]);
-  const [selectedDate, setSelectedDate] = useState('');
+  const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split('T')[0]);
   const [selectedTime, setSelectedTime] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
@@ -73,17 +73,25 @@ const DushaniBookAppointment = () => {
   const handleDoctorSelect = (doctor) => {
     setSelectedDoctor(doctor);
     setFormData((prev) => ({ ...prev, doctor_id: doctor.id }));
-    setStep(3); // Go to date/time selection
+    setStep(3); 
+
+    
+
+    const today = new Date().toISOString().split('T')[0];
+    handleDateSelect(today, doctor.id);
   };
 
-  const handleDateSelect = async (dateStr) => {
+  const handleDateSelect = async (dateStr, doctorIdOverride) => {
+    const doctorId = doctorIdOverride || formData.doctor_id;
+    if (!dateStr || !doctorId) return;
+    
     setSelectedDate(dateStr);
     setLoading(true);
     
     try {
-      // Fetch availability for selected date
+
       const response = await fetch(
-        `${API_BASE}/appointments/doctors/${formData.doctor_id}/availability?date=${dateStr}`
+        `${API_BASE}/appointments/doctors/${doctorId}/availability?date=${dateStr}`
       );
       const data = await response.json();
       if (data.success) {
@@ -98,29 +106,39 @@ const DushaniBookAppointment = () => {
 
   const handleTimeSelect = (time, consultationType) => {
     setSelectedTime(time);
-    // Combine date and time
+
     const scheduledAt = `${selectedDate}T${time}`;
     
-    // Use the consultation type from the availability slot
+
     const finalConsultationType = consultationType === 'both' ? 'video' : (consultationType || 'video');
     
     setFormData((prev) => ({ 
       ...prev, 
       scheduled_at: scheduledAt,
-      consultation_type: finalConsultationType // Auto-set from availability slot
+      consultation_type: finalConsultationType 
+
     }));
-    setStep(4); // Go to booking form
+    setStep(4); 
+
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    
+    // Validate age
+    const age = parseInt(formData.patient_age);
+    if (!age || age < 1 || age > 120) {
+      setError('Please enter a valid age between 1 and 120');
+      return;
+    }
+    
     setLoading(true);
     setError('');
 
     try {
       const token = localStorage.getItem('token');
       
-      // Calculate consultation fee based on the consultation type from availability slot
+
       let consultationFee = 0;
       if (formData.consultation_type === 'video' || formData.consultation_type === 'online') {
         consultationFee = selectedDoctor?.consultation_fee_online || 0;
@@ -147,14 +165,14 @@ const DushaniBookAppointment = () => {
       const data = await response.json();
 
       if (data.success) {
-        // Store appointment ID and amount for payment
+
         localStorage.setItem('pendingAppointmentId', data.data.id);
-        // Use the calculated consultation fee
+
         const amount = consultationFee || 1000;
         localStorage.setItem('pendingAppointmentAmount', amount.toString());
         
         alert('Appointment booked successfully! Redirecting to your appointments...');
-        // Navigate to patient's appointments page with refresh flag
+
         navigate('/appointments', { state: { refresh: true, newAppointmentId: data.data.id } });
       } else {
         setError(data.error || 'Failed');
@@ -169,7 +187,7 @@ const DushaniBookAppointment = () => {
   return (
     <div className="min-h-screen bg-gradient-to-br from-[#F1FAEE] to-[#34A0A4]/20 font-sans p-4 sm:p-6 md:p-8">
       <div className="max-w-4xl mx-auto">
-        {/* Header */}
+
         <div className="mb-6 md:mb-8">
           <div className="flex items-center justify-between">
             <div>
@@ -192,7 +210,7 @@ const DushaniBookAppointment = () => {
           </div>
         </div>
 
-        {/* Progress Steps */}
+
         <div className="bg-white rounded-2xl p-4 md:p-6 mb-6 border-2 border-teal-200/50">
           <div className="flex items-center justify-between">
             {[1, 2, 3, 4].map((s) => (
@@ -232,14 +250,14 @@ const DushaniBookAppointment = () => {
           </div>
         </div>
 
-        {/* Error */}
+
         {error && (
           <div className="bg-red-100 border-2 border-red-200 text-red-800 rounded-lg px-4 py-3 mb-5 text-sm">
             {error}
           </div>
         )}
 
-        {/* Step 1: Search */}
+
         {step === 1 && (
           <div className="bg-white rounded-2xl p-5 md:p-8 border-2 border-teal-200/50">
             <h2 className="text-xl font-bold text-[#184E77] mb-4">Search for a Doctor</h2>
@@ -278,7 +296,7 @@ const DushaniBookAppointment = () => {
           </div>
         )}
 
-        {/* Step 2: Select Doctor */}
+
         {step === 2 && (
           <div className="bg-white rounded-2xl p-5 md:p-8 border-2 border-teal-200/50">
             <div className="flex items-center justify-between mb-4">
@@ -333,7 +351,7 @@ const DushaniBookAppointment = () => {
           </div>
         )}
 
-        {/* Step 3: Select Date and Time */}
+
         {step === 3 && (
           <div className="bg-white rounded-2xl p-5 md:p-8 border-2 border-teal-200/50">
             <div className="flex items-center justify-between mb-6">
@@ -353,7 +371,7 @@ const DushaniBookAppointment = () => {
               </button>
             </div>
 
-            {/* Date Selection */}
+
             <div className="mb-6">
               <label className="block text-sm font-semibold text-[#184E77] mb-2">
                 Select Date *
@@ -368,7 +386,7 @@ const DushaniBookAppointment = () => {
               />
             </div>
 
-            {/* Time Slots */}
+
             {loading ? (
               <div className="text-center py-8">
                 <svg className="animate-spin h-8 w-8 mx-auto text-[#34A0A4]" viewBox="0 0 24 24">
@@ -384,12 +402,13 @@ const DushaniBookAppointment = () => {
                 </p>
                 <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
                   {availability.map((slot, i) => {
-                    // Calculate fee based on slot's consultation type
+
                     let slotFee = 0;
                     let slotType = slot.consultation_type || 'video';
                     
                     if (slotType === 'both') {
-                      slotType = 'video'; // Default to video for 'both'
+                      slotType = 'video'; 
+
                     }
                     
                     if (slotType === 'video' || slotType === 'online') {
@@ -425,7 +444,7 @@ const DushaniBookAppointment = () => {
           </div>
         )}
 
-        {/* Step 4: Book Appointment Form */}
+
         {step === 4 && (
           <div className="bg-white rounded-2xl p-5 md:p-8 border-2 border-teal-200/50">
             <div className="flex items-center justify-between mb-6">
@@ -445,7 +464,7 @@ const DushaniBookAppointment = () => {
               </button>
             </div>
 
-            {/* Doctor Info Card */}
+
             {selectedDoctor && (
               <div className="mb-6 p-4 bg-gradient-to-r from-[#184E77] to-[#34A0A4] rounded-xl text-white">
                 <div className="flex items-start gap-4">
@@ -476,7 +495,7 @@ const DushaniBookAppointment = () => {
             )}
 
             <form onSubmit={handleSubmit}>
-              {/* Patient Information */}
+
               <div className="mb-6">
                 <h3 className="text-sm font-bold text-[#184E77] mb-3">Patient Information</h3>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -504,14 +523,14 @@ const DushaniBookAppointment = () => {
                       placeholder="Enter your age"
                       className="w-full border-2 border-slate-200 rounded-lg px-4 py-3 text-sm focus:outline-none focus:border-[#34A0A4] transition-colors"
                       min="1"
-                      max="150"
+                      max="120"
                       required
                     />
                   </div>
                 </div>
               </div>
 
-              {/* Appointment Details */}
+
               <div className="mb-6">
                 <h3 className="text-sm font-bold text-[#184E77] mb-3">Appointment Details</h3>
                 <div className="mb-4">
@@ -552,7 +571,7 @@ const DushaniBookAppointment = () => {
                 </div>
               </div>
 
-              {/* Summary */}
+
               <div className="mb-6 p-4 bg-blue-50 rounded-lg border-2 border-blue-200">
                 <h3 className="text-sm font-bold text-[#184E77] mb-2">Booking Summary</h3>
                 <div className="space-y-2 text-sm">

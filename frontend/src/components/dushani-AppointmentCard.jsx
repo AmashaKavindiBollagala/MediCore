@@ -142,6 +142,26 @@ const DushaniAppointmentCard = ({ appointment, onCancel, onReschedule, userRole 
             {/* Patient Actions */}
             {userRole === 'patient' && (
               <>
+                {/* Refund notification for cancelled appointments */}
+                {appointment.status === 'CANCELLED' && appointment.cancelled_by === 'doctor' && (
+                  <div className="w-full bg-gradient-to-r from-blue-50 to-blue-100 border-2 border-blue-300 rounded-lg p-4 mb-2">
+                    <div className="flex items-start gap-3">
+                      <div className="text-2xl">💰</div>
+                      <div className="flex-1">
+                        <p className="font-bold text-blue-900 mb-1">Appointment Cancelled by Doctor</p>
+                        <p className="text-sm text-blue-800">
+                          This appointment has been cancelled by the doctor. A full refund of <strong>LKR {appointment.consultation_fee}</strong> has been processed to your payment method.
+                        </p>
+                        {appointment.refund_amount && (
+                          <p className="text-sm text-blue-700 mt-2 font-semibold">
+                            Refund Amount: LKR {appointment.refund_amount}
+                          </p>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                )}
+
                 {/* Payment button for PENDING_PAYMENT status */}
                 {appointment.status === 'PENDING_PAYMENT' && (
                   <button

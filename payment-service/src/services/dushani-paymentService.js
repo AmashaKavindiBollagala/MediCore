@@ -26,6 +26,21 @@ class PaymentService {
       console.log('  Patient ID (UUID):', patientIdUuid);
       console.log('  Doctor ID (UUID):', doctorIdUuid);
       
+      // Check if payment already exists for this appointment (prevent duplicates)
+      const existingPaymentQuery = `
+        SELECT id FROM public.transactions 
+        WHERE appointment_id::text = $1
+      `;
+      const existingPayment = await client.query(existingPaymentQuery, [appointmentId]);
+      
+      if (existingPayment.rows.length > 0) {
+        console.log('Payment - Returning existing payment for this appointment:', existingPayment.rows[0].id);
+        await client.query('COMMIT');
+        const fullQuery = `SELECT * FROM public.transactions WHERE id = $1`;
+        const fullResult = await pool.query(fullQuery, [existingPayment.rows[0].id]);
+        return fullResult.rows[0];
+      }
+      
       const paymentQuery = `
         INSERT INTO public.transactions 
           (appointment_id, patient_id, doctor_id, amount, currency, payment_method, payment_gateway, status)
@@ -44,6 +59,7 @@ class PaymentService {
       ]);
       
       await client.query('COMMIT');
+      console.log('Payment - Created new transaction:', paymentResult.rows[0].id);
       return paymentResult.rows[0];
       
     } catch (error) {
@@ -56,30 +72,202 @@ class PaymentService {
 
   // Get payment by ID with user authorization check
   async getPaymentById(paymentId, userId, userRole) {
+    console.log('=== GetPaymentById START ===');
+    console.log('Payment ID:', paymentId);
+    console.log('User ID:', userId);
+    console.log('User Role:', userRole);
+    
+    // Extract actual payment UUID if it has ORDER_ prefix
+    const actualPaymentId = paymentId.startsWith('ORDER_') 
+      ? paymentId.replace('ORDER_', '') 
+      : paymentId;
+    
+    console.log('Actual Payment ID (after removing ORDER_):', actualPaymentId);
+    
+    // Convert userId to UUID format if it's numeric
+    const userIdStr = userId.toString();
+    const userIdUuid = userIdStr.includes('-')
+      ? userIdStr 
+      : `00000000-0000-0000-0000-${userIdStr.padStart(12, '0')}`;
+    
+    console.log('User ID (UUID format):', userIdUuid);
+    
+    // Try to find payment by ID first
     let query = `
       SELECT p.*, 
-             a.scheduled_at, a.status as appointment_status
+             a.scheduled_at, a.status as appointment_status, a.doctor_id, a.specialty
       FROM public.transactions p
       JOIN public.appointments a ON p.appointment_id = a.id
       WHERE p.id = $1
     `;
     
-    const params = [paymentId];
+    let params = [actualPaymentId];
     
-    if (userRole === 'patient') {
-      query += ' AND p.patient_id = $2';
-      params.push(userId);
+    // For patient role, we'll check authorization AFTER fetching
+    // This avoids the UUID mismatch issue
+    const result = await pool.query(query, params);
+    
+    console.log('Query result rows:', result.rows.length);
+    
+    if (result.rows.length === 0) {
+      console.log('Payment not found by ID:', actualPaymentId);
+      console.log('=== GetPaymentById END - NOT FOUND ===');
+      return null;
     }
     
-    const result = await pool.query(query, params);
-    return result.rows[0];
+    const payment = result.rows[0];
+    console.log('Payment found:', payment.id);
+    console.log('Payment patient_id:', payment.patient_id);
+    console.log('Payment doctor_id:', payment.doctor_id);
+    
+    // Now check authorization
+    if (userRole === 'patient') {
+      // Check if patient_id matches (try both formats)
+      const patientMatches = 
+        payment.patient_id === userId || 
+        payment.patient_id === userIdUuid ||
+        payment.patient_id === userIdStr;
+      
+      if (!patientMatches) {
+        console.log('Authorization failed - patient_id mismatch');
+        console.log('Expected:', userId, 'or', userIdUuid);
+        console.log('Got:', payment.patient_id);
+        console.log('=== GetPaymentById END - UNAUTHORIZED ===');
+        return null;
+      }
+      
+      console.log('Authorization successful');
+    }
+    
+    // Enrich with doctor details
+    try {
+      const doctorServiceUrl = process.env.DOCTOR_SERVICE_URL || 'http://localhost:3003';
+      const doctorResponse = await fetch(`${doctorServiceUrl}/doctors/${payment.doctor_id}`);
+      
+      if (doctorResponse.ok) {
+        const doctorData = await doctorResponse.json();
+        const doctor = doctorData.success ? doctorData.data : doctorData;
+        
+        payment.doctor_name = doctor.full_name || (doctor.first_name + ' ' + doctor.last_name);
+        payment.doctor_specialty = doctor.specialty;
+        payment.doctor_photo = doctor.profile_photo_url;
+        
+        console.log('Doctor details enriched:', payment.doctor_name);
+      } else {
+        console.error('Failed to fetch doctor details, status:', doctorResponse.status);
+        payment.doctor_name = 'Unknown Doctor';
+      }
+    } catch (err) {
+      console.error('Error fetching doctor details for payment:', err.message);
+      payment.doctor_name = 'Unknown Doctor';
+    }
+    
+    console.log('=== GetPaymentById END - SUCCESS ===');
+    return payment;
+  }
+
+  // Get payment by appointment_id with user authorization check
+  async getPaymentByAppointmentId(appointmentId, userId, userRole) {
+    console.log('=== GetPaymentByAppointmentId START ===');
+    console.log('Appointment ID:', appointmentId);
+    console.log('User ID:', userId);
+    console.log('User Role:', userRole);
+    
+    // Convert userId to UUID format if it's numeric
+    const userIdStr = userId.toString();
+    const userIdUuid = userIdStr.includes('-')
+      ? userIdStr 
+      : `00000000-0000-0000-0000-${userIdStr.padStart(12, '0')}`;
+    
+    console.log('User ID (UUID format):', userIdUuid);
+    
+    // Find payment by appointment_id
+    let query = `
+      SELECT p.*, 
+             a.scheduled_at, a.status as appointment_status, a.doctor_id, a.specialty
+      FROM public.transactions p
+      JOIN public.appointments a ON p.appointment_id::text = a.id::text
+      WHERE p.appointment_id::text = $1
+    `;
+    
+    const result = await pool.query(query, [appointmentId]);
+    
+    console.log('Query result rows:', result.rows.length);
+    
+    if (result.rows.length === 0) {
+      console.log('Payment not found for appointment_id:', appointmentId);
+      console.log('=== GetPaymentByAppointmentId END - NOT FOUND ===');
+      return null;
+    }
+    
+    const payment = result.rows[0];
+    console.log('Payment found:', payment.id);
+    console.log('Payment patient_id:', payment.patient_id);
+    console.log('Payment doctor_id:', payment.doctor_id);
+    
+    // Check authorization
+    if (userRole === 'patient') {
+      // Check if patient_id matches (try both formats)
+      const patientMatches = 
+        payment.patient_id === userId || 
+        payment.patient_id === userIdUuid ||
+        payment.patient_id === userIdStr;
+      
+      if (!patientMatches) {
+        console.log('Authorization failed - patient_id mismatch');
+        console.log('Expected:', userId, 'or', userIdUuid);
+        console.log('Got:', payment.patient_id);
+        console.log('=== GetPaymentByAppointmentId END - UNAUTHORIZED ===');
+        return null;
+      }
+      
+      console.log('Authorization successful');
+    }
+    
+    // Enrich with doctor details
+    try {
+      const doctorServiceUrl = process.env.DOCTOR_SERVICE_URL || 'http://localhost:3003';
+      console.log('[getPaymentByAppointmentId] Fetching doctor details from:', `${doctorServiceUrl}/doctors/${payment.doctor_id}`);
+      console.log('[getPaymentByAppointmentId] Doctor ID:', payment.doctor_id);
+      
+      const doctorResponse = await fetch(`${doctorServiceUrl}/doctors/${payment.doctor_id}`);
+      
+      console.log('[getPaymentByAppointmentId] Doctor response status:', doctorResponse.status);
+      
+      if (doctorResponse.ok) {
+        const doctorData = await doctorResponse.json();
+        console.log('[getPaymentByAppointmentId] Doctor data received:', JSON.stringify(doctorData, null, 2));
+        
+        const doctor = doctorData.success ? doctorData.data : doctorData;
+        
+        payment.doctor_name = doctor.full_name || (doctor.first_name + ' ' + doctor.last_name);
+        payment.doctor_specialty = doctor.specialty;
+        payment.doctor_photo = doctor.profile_photo_url;
+        
+        console.log('[getPaymentByAppointmentId] ✅ Doctor details enriched:', payment.doctor_name, payment.doctor_specialty);
+      } else {
+        console.error('[getPaymentByAppointmentId] ❌ Failed to fetch doctor details, status:', doctorResponse.status);
+        const errorText = await doctorResponse.text();
+        console.error('[getPaymentByAppointmentId] Error response:', errorText);
+        payment.doctor_name = 'Unknown Doctor';
+        payment.doctor_specialty = payment.specialty || 'General';
+      }
+    } catch (err) {
+      console.error('[getPaymentByAppointmentId] ❌ Error fetching doctor details for payment:', err.message);
+      console.error('[getPaymentByAppointmentId] Error stack:', err.stack);
+      payment.doctor_name = 'Unknown Doctor';
+      payment.doctor_specialty = payment.specialty || 'General';
+    }
+    
+    console.log('=== GetPaymentByAppointmentId END - SUCCESS ===');
+    return payment;
   }
 
   // Get patient's payment history
   async getPatientPayments(patientId, status) {
     let query = `
       SELECT p.*, 
-             a.scheduled_at, a.status as appointment_status
+             a.scheduled_at, a.status as appointment_status, a.doctor_id, a.specialty
       FROM public.transactions p
       JOIN public.appointments a ON p.appointment_id = a.id
       WHERE p.patient_id = $1 AND p.transaction_type = 'payment'
@@ -95,7 +283,39 @@ class PaymentService {
     query += ' ORDER BY p.created_at DESC';
     
     const result = await pool.query(query, params);
-    return result.rows;
+    const payments = result.rows;
+    
+    // Enrich each payment with doctor details
+    const doctorServiceUrl = process.env.DOCTOR_SERVICE_URL || 'http://localhost:3003';
+    
+    const enrichedPayments = await Promise.all(
+      payments.map(async (payment) => {
+        try {
+          const doctorResponse = await fetch(`${doctorServiceUrl}/doctors/${payment.doctor_id}`);
+          
+          if (doctorResponse.ok) {
+            const doctorData = await doctorResponse.json();
+            const doctor = doctorData.success ? doctorData.data : doctorData;
+            
+            return {
+              ...payment,
+              doctor_name: doctor.full_name || (doctor.first_name + ' ' + doctor.last_name),
+              doctor_specialty: doctor.specialty,
+              doctor_photo: doctor.profile_photo_url,
+            };
+          }
+        } catch (err) {
+          console.error('Error fetching doctor details for payment:', err.message);
+        }
+        
+        return {
+          ...payment,
+          doctor_name: payment.doctor_name || 'Unknown Doctor',
+        };
+      })
+    );
+    
+    return enrichedPayments;
   }
 
   // Get doctor's payment history (earnings)
@@ -153,16 +373,17 @@ class PaymentService {
     const merchant_secret = config.payhere.merchantSecret;
     const currency = 'LKR';
     
-    // Format order_id properly
-    const order_id = `ORDER_${payment.id}`;
+    // Use appointment_id as the order_id (this is the unique identifier)
+    const order_id = `ORDER_${payment.appointment_id}`;
     
     // Amount should be in LKR with 2 decimal places (NOT multiplied by 100)
     const amount = parseFloat(payment.amount).toFixed(2);
     
     console.log('=== PayHere Config Generation ===');
-    console.log('Merchant ID:', merchant_id);
     console.log('Payment ID:', payment.id);
-    console.log('Order ID:', order_id);
+    console.log('Appointment ID:', payment.appointment_id);
+    console.log('Order ID (will be sent to PayHere):', order_id);
+    console.log('Merchant ID:', merchant_id);
     console.log('Amount:', amount);
     console.log('Currency:', currency);
     console.log('Sandbox Mode:', config.payhere.sandbox);
@@ -178,7 +399,7 @@ class PaymentService {
       payhere_config: {
         url: config.payhere.checkoutUrl,
         merchant_id: merchant_id,
-        order_id: order_id,
+        order_id: order_id, // Send ORDER_<appointment_id> to PayHere
         amount: amount,
         currency: currency,
         hash: hash,
@@ -198,7 +419,7 @@ class PaymentService {
       }
     };
     
-    console.log('Final PayHere Config:', JSON.stringify(payhereConfig.payhere_config, null, 2));
+    console.log('Final PayHere Config - Order ID:', payhereConfig.payhere_config.order_id);
     console.log('================================');
     
     return payhereConfig;
@@ -299,7 +520,9 @@ class PaymentService {
         status_message
       } = webhookData;
       
-      console.log('PayHere webhook received:', { order_id, status_code, status_message });
+      console.log('=== PayHere Webhook Processing ===');
+      console.log('Webhook received:', { order_id, status_code, status_message });
+      console.log('Full webhook data:', webhookData);
       
       // Verify signature
       if (!verifyPayHereWebhook(webhookData, merchantSecret)) {
@@ -319,14 +542,23 @@ class PaymentService {
         paymentStatus = 'FAILED';
       }
       
-      // Update payment
+      console.log('Determined payment status:', paymentStatus);
+      
+      // Extract appointment_id from order_id (remove "ORDER_" prefix)
+      let appointmentId = order_id;
+      if (order_id.startsWith('ORDER_')) {
+        appointmentId = order_id.replace('ORDER_', '');
+        console.log('Extracted appointment_id from order_id:', appointmentId);
+      }
+      
+      // Find payment by appointment_id (ONE appointment = ONE transaction)
       const paymentQuery = `
         UPDATE public.transactions 
         SET status = $1, 
             gateway_transaction_id = $2,
             payment_method = $3,
             updated_at = NOW()
-        WHERE id = $4 AND status = 'PENDING'
+        WHERE appointment_id::text = $4
         RETURNING *
       `;
       
@@ -334,19 +566,43 @@ class PaymentService {
         paymentStatus,
         order_id,
         method || 'card',
-        order_id
+        appointmentId
       ]);
+      
+      console.log('Payment lookup result:', paymentResult.rows.length, 'rows found');
       
       if (paymentResult.rows.length === 0) {
         await client.query('ROLLBACK');
-        console.log('Payment already processed or not found:', order_id);
-        return { error: 'Payment not found or already processed', status: 404 };
+        console.error('Payment not found for appointment_id:', appointmentId);
+        
+        // Debug: Check if appointment exists
+        const debugQuery = `SELECT id, status FROM public.appointments WHERE id::text = $1`;
+        const debugResult = await pool.query(debugQuery, [appointmentId]);
+        if (debugResult.rows.length > 0) {
+          console.error('Appointment exists with status:', debugResult.rows[0].status);
+          
+          // Check if transaction exists
+          const txnQuery = `SELECT * FROM public.transactions WHERE appointment_id::text = $1`;
+          const txnResult = await pool.query(txnQuery, [appointmentId]);
+          if (txnResult.rows.length === 0) {
+            console.error('No transaction found for this appointment - payment may not have been initiated');
+          } else {
+            console.error('Transaction exists:', txnResult.rows[0]);
+          }
+        } else {
+          console.error('Appointment does not exist in database');
+        }
+        
+        return { error: 'Payment not found', status: 404 };
       }
       
       const payment = paymentResult.rows[0];
+      console.log('Payment found and updated:', payment.id, 'Appointment:', payment.appointment_id, 'New status:', payment.status);
       
       // Handle based on payment status
       if (paymentStatus === 'SUCCESS') {
+        console.log('Processing successful payment for appointment:', payment.appointment_id);
+        
         const appointmentQuery = `
           UPDATE public.appointments 
           SET status = 'CONFIRMED', 
@@ -363,7 +619,7 @@ class PaymentService {
         
         if (appointmentResult.rows.length === 0) {
           await client.query('ROLLBACK');
-          console.error('Associated appointment not found:', payment.appointment_id);
+          console.error('Associated appointment not found or not in PENDING_PAYMENT status:', payment.appointment_id);
           return { error: 'Associated appointment not found', status: 404 };
         }
         
@@ -375,6 +631,8 @@ class PaymentService {
         });
         
       } else if (paymentStatus === 'FAILED') {
+        console.log('Processing failed payment:', payment.id);
+        
         const appointmentQuery = `
           UPDATE public.appointments 
           SET status = 'CANCELLED', 
@@ -395,10 +653,12 @@ class PaymentService {
         console.log('Payment pending:', order_id);
       }
       
+      console.log('=== Webhook Processing Complete ===');
       return { success: true };
       
     } catch (error) {
       await client.query('ROLLBACK');
+      console.error('Webhook processing error:', error);
       throw error;
     } finally {
       client.release();
@@ -415,9 +675,9 @@ class PaymentService {
       const appointmentQuery = `
         SELECT a.*, p.status as payment_status, p.id as payment_id
         FROM public.appointments a
-        LEFT JOIN public.transactions p ON a.id = p.appointment_id 
+        LEFT JOIN public.transactions p ON a.id::text = p.appointment_id::text 
           AND p.transaction_type = 'payment'
-        WHERE a.id = $1
+        WHERE a.id::text = $1
       `;
       const appointmentResult = await client.query(appointmentQuery, [appointmentId]);
       
@@ -524,6 +784,113 @@ class PaymentService {
       
     } catch (error) {
       await client.query('ROLLBACK');
+      throw error;
+    } finally {
+      client.release();
+    }
+  }
+
+  // Complete pending payment (auto-complete for localhost development)
+  async completePendingPayment(appointmentId, userId, userRole) {
+    const client = await pool.connect();
+    
+    try {
+      console.log('=== Completing Pending Payment ===');
+      console.log('Appointment ID:', appointmentId);
+      
+      await client.query('BEGIN');
+      
+      // Find the pending transaction for this appointment
+      const transactionQuery = `
+        SELECT t.*, a.patient_id, a.doctor_id, a.status as appointment_status
+        FROM public.transactions t
+        JOIN public.appointments a ON t.appointment_id::text = a.id::text
+        WHERE t.appointment_id::text = $1 AND t.status = 'PENDING' AND t.transaction_type = 'payment'
+      `;
+      
+      const transactionResult = await client.query(transactionQuery, [appointmentId]);
+      
+      if (transactionResult.rows.length === 0) {
+        await client.query('ROLLBACK');
+        
+        // Check if payment is already completed
+        const checkQuery = `
+          SELECT t.status, a.status as appointment_status
+          FROM public.transactions t
+          JOIN public.appointments a ON t.appointment_id::text = a.id::text
+          WHERE t.appointment_id::text = $1
+        `;
+        const checkResult = await pool.query(checkQuery, [appointmentId]);
+        
+        if (checkResult.rows.length > 0) {
+          if (checkResult.rows[0].status === 'SUCCESS') {
+            return { error: 'Payment already completed', status: 400, alreadyDone: true };
+          }
+        }
+        
+        return { error: 'No pending payment found for this appointment', status: 404 };
+      }
+      
+      const transaction = transactionResult.rows[0];
+      
+      console.log('Found pending transaction:', transaction.id);
+      console.log('Updating to SUCCESS...');
+      
+      // Update transaction to SUCCESS
+      const updateTransactionQuery = `
+        UPDATE public.transactions 
+        SET status = 'SUCCESS',
+            gateway_transaction_id = $1,
+            payment_method = COALESCE(payment_method, 'card'),
+            updated_at = NOW()
+        WHERE id = $2
+        RETURNING *
+      `;
+      
+      const gatewayTransactionId = `ORDER_${appointmentId}`;
+      const updatedTransaction = await client.query(updateTransactionQuery, [
+        gatewayTransactionId,
+        transaction.id
+      ]);
+      
+      console.log('Transaction updated to SUCCESS');
+      
+      // Update appointment to CONFIRMED
+      const updateAppointmentQuery = `
+        UPDATE public.appointments 
+        SET status = 'CONFIRMED',
+            payment_id = $1,
+            updated_at = NOW()
+        WHERE id = $2 AND status = 'PENDING_PAYMENT'
+        RETURNING *
+      `;
+      
+      const updatedAppointment = await client.query(updateAppointmentQuery, [
+        transaction.id,
+        appointmentId
+      ]);
+      
+      if (updatedAppointment.rows.length > 0) {
+        console.log('Appointment updated to CONFIRMED');
+      } else {
+        console.log('Appointment was not in PENDING_PAYMENT status (may already be confirmed)');
+      }
+      
+      await client.query('COMMIT');
+      
+      console.log('=== Payment Completed Successfully ===');
+      
+      return {
+        success: true,
+        data: {
+          transaction: updatedTransaction.rows[0],
+          appointment: updatedAppointment.rows[0]
+        }
+      };
+      
+    } catch (error) {
+      await client.query('ROLLBACK');
+      console.error('Error completing payment:', error);
       throw error;
     } finally {
       client.release();

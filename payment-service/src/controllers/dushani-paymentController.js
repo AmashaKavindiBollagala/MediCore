@@ -68,6 +68,10 @@ class PaymentController {
 
   // Get payment details
   async getPaymentDetails(req, res) {
+    console.log('=== getPaymentDetails CONTROLLER START ===');
+    console.log('Request params:', req.params);
+    console.log('Request user:', req.user);
+    
     try {
       const { paymentId } = req.params;
       const userId = req.user.id;
@@ -78,9 +82,11 @@ class PaymentController {
       const payment = await paymentService.getPaymentById(paymentId, userId, userRole);
       
       if (!payment) {
+        console.log('getPaymentDetails - Payment not found, returning 404');
         return res.status(404).json({ error: 'Payment not found' });
       }
       
+      console.log('getPaymentDetails - Payment found, returning success');
       res.json({
         success: true,
         data: payment
@@ -101,14 +107,15 @@ class PaymentController {
       
       console.log('GetPaymentByOrderId - Order ID:', orderId);
       
-      // Extract payment ID from order_id (remove "ORDER_" prefix if present)
-      const paymentId = orderId.startsWith('ORDER_') 
+      // Extract appointment_id from order_id (remove "ORDER_" prefix if present)
+      const appointmentId = orderId.startsWith('ORDER_') 
         ? orderId.replace('ORDER_', '') 
         : orderId;
       
-      console.log('Extracted Payment ID:', paymentId);
+      console.log('Extracted Appointment ID:', appointmentId);
       
-      const payment = await paymentService.getPaymentById(paymentId, userId, userRole);
+      // Find payment by appointment_id
+      const payment = await paymentService.getPaymentByAppointmentId(appointmentId, userId, userRole);
       
       if (!payment) {
         return res.status(404).json({ error: 'Payment not found' });
@@ -243,6 +250,45 @@ class PaymentController {
     } catch (error) {
       console.error('Cancel with refund error:', error);
       res.status(500).json({ error: 'Failed to cancel appointment with refund' });
+    }
+  }
+
+  // Auto-complete pending payment (for localhost development)
+  async completePendingPayment(req, res) {
+    try {
+      const { appointment_id } = req.body;
+      const userId = req.user.id;
+      const userRole = req.user.role;
+      
+      console.log('=== Auto-Complete Payment ===');
+      console.log('Appointment ID:', appointment_id);
+      console.log('User ID:', userId);
+      
+      if (!appointment_id) {
+        return res.status(400).json({ error: 'Appointment ID is required' });
+      }
+      
+      const result = await paymentService.completePendingPayment(
+        appointment_id,
+        userId,
+        userRole
+      );
+      
+      if (result.error) {
+        return res.status(result.status).json({ error: result.error });
+      }
+      
+      console.log('Payment completed successfully');
+      
+      res.json({
+        success: true,
+        message: 'Payment completed successfully',
+        data: result.data
+      });
+      
+    } catch (error) {
+      console.error('Complete payment error:', error);
+      res.status(500).json({ error: 'Failed to complete payment' });
     }
   }
 }
