@@ -19,7 +19,7 @@ const C = {
 };
 
 const API_BASE = "http://localhost:8080/ai/symptoms";
-const getToken = () => localStorage.getItem("token");
+const getToken = () => localStorage.getItem("token") || ""; // Return empty string if no token
 
 // ── Icons ─────────────────────────────────────────────────────────────────────
 const IconText = () => (
@@ -72,7 +72,7 @@ const UrgencyBadge = ({ urgency }) => {
 // ── Result Card ───────────────────────────────────────────────────────────────
 const ResultCard = ({ result, transcript }) => {
   if (!result) return null;
-  const r = result.raw_response ? null : result;
+  const r = result.summary ? result : null;
   return (
     <div style={{
       marginTop: 24,
@@ -118,6 +118,26 @@ const ResultCard = ({ result, transcript }) => {
               <ul style={{ margin: 0, paddingLeft: 18 }}>
                 {r.recommendations.map((rec, i) => (
                   <li key={i} style={{ color: C.text, fontSize: 14, marginBottom: 5 }}>{rec}</li>
+                ))}
+              </ul>
+            </div>
+          )}
+          {r.home_remedies?.length > 0 && (
+            <div style={{ marginBottom: 14, background: C.green + "18", border: `1px solid ${C.green}44`, borderRadius: 10, padding: "12px 16px" }}>
+              <div style={{ color: "#1a7a3a", fontSize: 10, letterSpacing: 2, textTransform: "uppercase", marginBottom: 8, fontWeight: 700 }}>🌿 Home Remedies</div>
+              <ul style={{ margin: 0, paddingLeft: 18 }}>
+                {r.home_remedies.map((rem, i) => (
+                  <li key={i} style={{ color: C.text, fontSize: 14, marginBottom: 5 }}>{rem}</li>
+                ))}
+              </ul>
+            </div>
+          )}
+          {r.important_notes?.length > 0 && (
+            <div style={{ marginBottom: 14, background: "#fff8e1", border: "1px solid #f59e0b44", borderRadius: 10, padding: "12px 16px" }}>
+              <div style={{ color: "#92600a", fontSize: 10, letterSpacing: 2, textTransform: "uppercase", marginBottom: 8, fontWeight: 700 }}>⚠️ Important Notes</div>
+              <ul style={{ margin: 0, paddingLeft: 18 }}>
+                {r.important_notes.map((note, i) => (
+                  <li key={i} style={{ color: "#92600a", fontSize: 14, marginBottom: 5 }}>{note}</li>
                 ))}
               </ul>
             </div>

@@ -20,7 +20,8 @@ services:
       - appointment-service
       - payment-service
       - notification-service
-      - telemedicine-service
+      - telemedicine-service 
+      - ai-symptom-service
 
   auth-service:
     build: ./auth-service
@@ -29,6 +30,9 @@ services:
     env_file: ./auth-service/.env
     volumes:
       - ./shared:/app/shared
+    depends_on:           
+      postgres:
+        condition: service_healthy
 
   patient-service:
     build: ./patient-service
@@ -37,6 +41,9 @@ services:
     env_file: ./patient-service/.env
     volumes:
       - ./shared:/app/shared
+    depends_on:           
+      postgres:
+        condition: service_healthy
 
   doctor-service:
     build: ./doctor-service
@@ -45,7 +52,6 @@ services:
     env_file: ./doctor-service/.env
     volumes:
       - ./shared:/app/shared
-    # No depends_on - using external Neon database
 
   appointment-service:
     build: ./appointment-service
@@ -130,3 +136,23 @@ services:
     container_name: medicore-redis
     ports:
       - "6379:6379"
+
+  postgres:
+    image: postgres:15
+    container_name: medicore-postgres
+    ports:
+      - "5432:5432"
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: yourpassword
+      POSTGRES_DB: medicore
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+volumes:
+  postgres_data:

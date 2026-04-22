@@ -15,13 +15,13 @@ import KaveeshaDoctorDashboard from './pages/kaveesha-DoctorDashboard';
 import RegisterDetails from './pages/amasha-patientRegister';
 import PatientDashboard from './pages/amasha-patientDashboard';
 import PatientProfile from './pages/amasha-patientProfile';
-
+//>>>>>>main
 import MedicalReports from './pages/amasha-medicalReportsPage';
 import DilsharaSymptomChecker from './pages/dilshara-SymptomChecker';
-
+// ==============
 import AmashaPatientReports from './pages/amasha-patientreports';
 import AmashaPatientPrescriptions from './pages/amasha-patientprescriptions ';
->>>>>>> origin
+//  >>>>>>> origin
 import DilsharaAdminRoute               from './components/dilshara-AdminRoute';
 import DilsharaAdminDashboard           from './pages/dilshara-AdminDashboard';
 import DilsharaDoctorVerificationList   from './pages/dilshara-DoctorVerificationList';

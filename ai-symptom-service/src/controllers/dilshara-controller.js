@@ -2,7 +2,11 @@ const pool = require('../config/db');
 const aiService = require('../services/ai.service');
 const fs = require('fs');
 const pdfParse = require('pdf-parse');
+const Tesseract = require('tesseract.js');
+const { GoogleGenerativeAI } = require('@google/generative-ai');
 require('dotenv').config();
+
+const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
 
 // ─── Save to DB ───────────────────────────────────────────────────────────────
 async function saveToDb({ userId, inputType, originalInput, languageDetected, aiResponse, specialtyRecommended }) {
@@ -12,6 +16,55 @@ async function saveToDb({ userId, inputType, originalInput, languageDetected, ai
      VALUES ($1, $2, $3, $4, $5, $6)`,
     [userId, inputType, originalInput, languageDetected, aiResponse, specialtyRecommended]
   );
+}
+
+// ─── Extract text from plain image using Tesseract OCR ───────────────────────
+async function extractTextFromImage(filePath) {
+  const { data: { text } } = await Tesseract.recognize(filePath, 'eng+sin+tam', {
+    logger: () => {}
+  });
+  return text?.trim();
+}
+
+// ─── Extract text from scanned/image PDF using Gemini Vision ─────────────────
+async function extractTextFromImagePDF(buffer) {
+  const base64 = buffer.toString('base64');
+
+  try {
+    // Try Groq vision first
+    const groq = new (require('groq-sdk'))({ apiKey: process.env.GROQ_API_KEY });
+    const groqResult = await groq.chat.completions.create({
+      model: 'meta-llama/llama-4-scout-17b-16e-instruct',
+      messages: [
+        {
+          role: 'user',
+          content: [
+            {
+              type: 'image_url',
+              image_url: { url: `data:application/pdf;base64,${base64}` }
+            },
+            {
+              type: 'text',
+              text: 'Extract all text from this medical document. Return only the extracted text, nothing else.'
+            }
+          ]
+        }
+      ],
+      max_tokens: 2000,
+    });
+    return groqResult.choices[0]?.message?.content?.trim();
+  } catch (err) {
+    console.error('❌ Groq PDF Vision failed, trying Gemini...', err.message);
+    // Fallback to Gemini
+    const model = genAI.getGenerativeModel({ model: 'gemini-2.0-flash' });
+    const result = await model.generateContent([
+      {
+        inlineData: { mimeType: 'application/pdf', data: base64 }
+      },
+      { text: 'Extract all text from this medical document. Return only the extracted text, nothing else.' }
+    ]);
+    return result.response.text()?.trim();
+  }
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -43,7 +96,7 @@ exports.checkByText = async (req, res) => {
 };
 
 // ─────────────────────────────────────────────────────────────────────────────
-// CONTROLLER 2: PDF Upload (no image support)
+// CONTROLLER 2: File Upload (text PDF + image PDF + plain image)
 // POST /api/symptoms/file
 // ─────────────────────────────────────────────────────────────────────────────
 exports.checkByFile = async (req, res) => {
@@ -54,29 +107,86 @@ exports.checkByFile = async (req, res) => {
   }
 
   const { mimetype, path: filePath, originalname } = req.file;
+  const allowedTypes = ['application/pdf', 'image/jpeg', 'image/jpg', 'image/png', 'image/webp'];
 
-  // Only PDF allowed
-  if (mimetype !== 'application/pdf') {
+  if (!allowedTypes.includes(mimetype)) {
     if (fs.existsSync(filePath)) fs.unlinkSync(filePath);
-    return res.status(415).json({ 
-      error: 'Only PDF files are supported.' 
-    });
+    return res.status(415).json({ error: 'Only PDF and image files (JPG, PNG, WEBP) are supported.' });
   }
 
   try {
-    const buffer = fs.readFileSync(filePath);
-    const pdfData = await pdfParse(buffer);
-    const extractedText = pdfData.text?.trim();
+    let extractedText = '';
 
-    if (!extractedText) {
-      return res.status(422).json({ error: 'Could not extract text from PDF.' });
+    if (mimetype === 'application/pdf') {
+      // Step 1: Try text extraction (text-based PDF)
+      const buffer = fs.readFileSync(filePath);
+      const pdfData = await pdfParse(buffer);
+      extractedText = pdfData.text?.trim();
+
+      // Step 2: If no text, it's scanned → use Gemini Vision
+      if (!extractedText || extractedText.length < 20) {
+        console.log('📄 No text in PDF, trying Gemini Vision OCR...');
+        extractedText = await extractTextFromImagePDF(buffer);
+      }
+  } else {
+      // Step 3: Plain image → try Groq Vision first, fallback to Gemini
+      console.log('🖼️ Image file detected, using Groq Vision...');
+      const buffer = fs.readFileSync(filePath);
+      const base64 = buffer.toString('base64');
+
+      try {
+        // Try Groq vision first (llama-4 supports vision)
+        const groq = new (require('groq-sdk'))({ apiKey: process.env.GROQ_API_KEY });
+        const groqResult = await groq.chat.completions.create({
+          model: 'meta-llama/llama-4-scout-17b-16e-instruct',
+          messages: [
+            {
+              role: 'user',
+              content: [
+                {
+                  type: 'image_url',
+                  image_url: {
+                    url: `data:${mimetype};base64,${base64}`
+                  }
+                },
+                {
+                  type: 'text',
+                  text: 'Extract all text and data from this medical report/image. Include all values, normal ranges, and units. Return only the extracted text, nothing else.'
+                }
+              ]
+            }
+          ],
+          max_tokens: 2000,
+        });
+        extractedText = groqResult.choices[0]?.message?.content?.trim();
+        console.log('✅ Groq Vision extraction successful');
+      } catch (groqErr) {
+        console.error('❌ Groq Vision failed, trying Gemini...', groqErr.message);
+        // Fallback to Gemini
+        const model = genAI.getGenerativeModel({ model: 'gemini-2.0-flash' });
+        const result = await model.generateContent([
+          {
+            inlineData: { mimeType: mimetype, data: base64 }
+          },
+          { text: 'Extract all text and data from this medical report/image. Include all values, normal ranges, and units. Return only the extracted text, nothing else.' }
+        ]);
+        extractedText = result.response.text()?.trim();
+      }
     }
 
+    if (!extractedText || extractedText.length < 10) {
+      if (fs.existsSync(filePath)) fs.unlinkSync(filePath);
+      return res.status(422).json({ error: 'Could not extract text from file. Please upload a clearer document.' });
+    }
+
+    console.log(`✅ Extracted ${extractedText.length} characters from file`);
+
     const result = await aiService.analyzeSymptoms(
-      `The following is extracted from a medical document (${originalname}):\n\n${extractedText}`
+      `The following data is extracted from a medical lab report (${originalname}). 
+Analyze ALL values carefully, identify which ones are OUTSIDE the normal range (marked in red or flagged), and provide detailed medical insights based on the abnormal values found.\n\n${extractedText}`
     );
 
-    fs.unlinkSync(filePath);
+    if (fs.existsSync(filePath)) fs.unlinkSync(filePath);
 
     await saveToDb({
       userId, inputType: 'file', originalInput: `File: ${originalname}`,
@@ -85,6 +195,7 @@ exports.checkByFile = async (req, res) => {
     });
 
     res.json({ success: true, result });
+
   } catch (err) {
     if (fs.existsSync(filePath)) fs.unlinkSync(filePath);
     console.error('checkByFile error:', err.message);
@@ -103,13 +214,17 @@ exports.checkByVoice = async (req, res) => {
     return res.status(400).json({ error: 'No audio file uploaded.' });
   }
 
-  const { path: filePath } = req.file;
+  const { path: filePath, originalname } = req.file;
 
   try {
-    // Step 1: Transcribe with Groq Whisper
+    // Rename file to add .webm extension (Groq Whisper requires proper extension)
+    const path = require('path');
+    const newPath = filePath + '.webm';
+    fs.renameSync(filePath, newPath);
+
     const groq = new (require('groq-sdk'))({ apiKey: process.env.GROQ_API_KEY });
     const transcription = await groq.audio.transcriptions.create({
-      file: fs.createReadStream(filePath),
+      file: fs.createReadStream(newPath),
       model: 'whisper-large-v3',
       response_format: 'text',
     });
@@ -120,10 +235,9 @@ exports.checkByVoice = async (req, res) => {
       return res.status(422).json({ error: 'Could not transcribe audio.' });
     }
 
-    // Step 2: Analyze transcript with AI Service
     const result = await aiService.analyzeSymptoms(transcript);
 
-    fs.unlinkSync(filePath);
+    fs.unlinkSync(newPath);
 
     await saveToDb({
       userId, inputType: 'voice', originalInput: transcript,
@@ -134,6 +248,7 @@ exports.checkByVoice = async (req, res) => {
     res.json({ success: true, transcript, result });
   } catch (err) {
     if (fs.existsSync(filePath)) fs.unlinkSync(filePath);
+    if (fs.existsSync(filePath + '.webm')) fs.unlinkSync(filePath + '.webm');
     console.error('checkByVoice error:', err.message);
     res.status(500).json({ error: 'Voice processing failed.', detail: err.message });
   }

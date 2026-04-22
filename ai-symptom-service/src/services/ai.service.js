@@ -6,48 +6,95 @@ const config = require('../config/ai.config');
 const groq = new Groq({ apiKey: config.groqKey });
 const genAI = new GoogleGenerativeAI(config.geminiKey);
 
+// ----------------- LANGUAGE DETECTION -----------------
+function detectLanguage(text) {
+  // Check for Sinhala characters (Unicode range: 0D80-0DFF)
+  const sinhalaRegex = /[\u0D80-\u0DFF]/;
+  // Check for Tamil characters (Unicode range: 0B80-0BFF)
+  const tamilRegex = /[\u0B80-\u0BFF]/;
+  
+  if (sinhalaRegex.test(text)) return 'Sinhala';
+  if (tamilRegex.test(text)) return 'Tamil';
+  return 'English';
+}
+
 // ----------------- SYSTEM PROMPT -----------------
-function buildSystemPrompt() {
+function buildSystemPrompt(detectedLanguage) {
+  const languageInstructions = {
+    'Sinhala': `LANGUAGE: SINHALA - You MUST respond ENTIRELY in Sinhala (සිංහල) language ONLY.
+- All JSON fields must be 100% in Sinhala script
+- Do NOT use any English words
+- Example: "හිසරදය සහ උණ රෝග ලක්ෂණ"`,
+    'Tamil': `LANGUAGE: TAMIL - You MUST respond ENTIRELY in Tamil (தமிழ்) language ONLY.
+- All JSON fields must be 100% in Tamil script
+- Do NOT use any English words
+- Example: "தலைவலி மற்றும் காய்ச்சல் அறிகுறிகள்"`,
+    'English': `LANGUAGE: ENGLISH - You MUST respond ENTIRELY in English language ONLY.
+- All JSON fields must be 100% in English
+- Do NOT use any other languages
+- Example: "Headache and fever symptoms"`
+  };
+
   return `You are a multilingual medical triage AI assistant for MediCore healthcare platform.
 
-CRITICAL RULES:
+${languageInstructions[detectedLanguage]}
+
+CRITICAL MEDICAL RULES:
 - NEVER diagnose diseases definitively
 - ONLY suggest POSSIBLE conditions based on symptoms
 - ALWAYS recommend consulting a healthcare professional
 - Be cautious and conservative in your assessments
-- Respond in the SAME language the user used
 - Return ONLY valid JSON, no markdown, no explanations
+
+LAB REPORT RULES:
+- When given lab report data, identify ALL abnormal values (above or below normal range)
+- Explain what each abnormal value may indicate
+- List possible conditions based on the combination of abnormal values
+- Provide specific recommendations based on the findings
+- Be thorough - patients need to understand their results
 
 RESPONSE FORMAT (MUST BE VALID JSON):
 {
-  "summary": "Brief summary of symptoms identified (in user's language)",
+  "summary": "Brief summary of symptoms",
   "possible_conditions": ["condition1", "condition2", "condition3"],
   "recommendations": ["recommendation1", "recommendation2", "recommendation3"],
-  "specialty_recommended": "e.g. Cardiologist, General Practitioner, Dermatologist, Neurologist",
+  "home_remedies": ["remedy1", "remedy2", "remedy3"],
+  "important_notes": ["note1", "note2"],
+  "specialty_recommended": "Medical specialist type",
   "urgency": "low or medium or high",
-  "disclaimer": "This is not a medical diagnosis. Please consult a healthcare professional for proper medical advice."
+  "disclaimer": "Medical disclaimer"
 }
+
+HOME REMEDIES RULES:
+- Suggest 2-4 safe, practical home remedies relevant to the symptoms
+- Include things like hydration, rest, warm compress, ginger tea, steam inhalation etc.
+- Only suggest remedies that are safe and widely accepted
+- Never suggest remedies that could be harmful
+
+IMPORTANT NOTES RULES:
+- Include 1-3 warning signs that mean the patient should seek immediate care
+- Example: "Go to emergency if fever exceeds 39°C"
+- Keep these concise and actionable
 
 URGENCY LEVELS:
 - low: Mild symptoms, can wait for regular appointment
-- medium: Should see doctor within a few days
-- high: Seek medical attention promptly (not emergency, but urgent)
+- medium: Should see doctor within a few days  
+- high: Seek medical attention promptly
 
-If symptoms appear to be a medical emergency (chest pain, difficulty breathing, severe bleeding, etc.), set urgency to "high" and emphasize seeking immediate medical care in recommendations.`;
+If symptoms appear to be a medical emergency (chest pain, difficulty breathing, severe bleeding), set urgency to "high" and emphasize seeking immediate medical care in recommendations.`;
 }
-
 // ----------------- GROQ PROVIDER -----------------
-async function callGroq(text) {
-  console.log('🔄 Attempting Groq AI analysis...');
+async function callGroq(text, detectedLanguage) {
+  console.log(`🔄 Attempting Groq AI analysis (${detectedLanguage})...`);
   
   const res = await groq.chat.completions.create({
-    model: 'llama3-8b-8192',
+    model: 'llama-3.1-8b-instant',
     messages: [
-      { role: 'system', content: buildSystemPrompt() },
+      { role: 'system', content: buildSystemPrompt(detectedLanguage) },
       { role: 'user', content: text }
     ],
     temperature: 0.2,
-    max_tokens: 800,
+    max_tokens: 1200,
   });
 
   const content = res.choices[0]?.message?.content;
@@ -58,12 +105,12 @@ async function callGroq(text) {
 }
 
 // ----------------- GEMINI PROVIDER -----------------
-async function callGemini(text) {
-  console.log('🔄 Attempting Gemini AI analysis...');
+async function callGemini(text, detectedLanguage) {
+  console.log(`🔄 Attempting Gemini AI analysis (${detectedLanguage})...`);
   
-  const model = genAI.getGenerativeModel({ model: 'gemini-1.5-flash' });
+  const model = genAI.getGenerativeModel({ model: 'gemini-2.0-flash' });
   
-  const prompt = `${buildSystemPrompt()}\n\nUser Symptoms: ${text}`;
+  const prompt = `${buildSystemPrompt(detectedLanguage)}\n\nUser Symptoms: ${text}`;
   
   const result = await model.generateContent(prompt);
   const response = await result.response;
@@ -116,9 +163,13 @@ function getFallbackResponse(rawText) {
 async function analyzeSymptoms(text) {
   let lastError = null;
   
+  // Detect language first
+  const detectedLanguage = detectLanguage(text);
+  console.log(`🌐 Detected language: ${detectedLanguage}`);
+  
   // Try Groq first (faster, free tier)
   try {
-    const groqResult = await callGroq(text);
+    const groqResult = await callGroq(text, detectedLanguage);
     return parseResponse(groqResult);
   } catch (err1) {
     console.error('❌ Groq failed:', err1.message);
@@ -127,7 +178,7 @@ async function analyzeSymptoms(text) {
     // Fallback to Gemini
     try {
       console.log('🔄 Switching to Gemini fallback...');
-      const geminiResult = await callGemini(text);
+      const geminiResult = await callGemini(text, detectedLanguage);
       return parseResponse(geminiResult);
     } catch (err2) {
       console.error('❌ Gemini also failed:', err2.message);
@@ -144,5 +195,6 @@ async function analyzeSymptoms(text) {
 module.exports = {
   analyzeSymptoms,
   buildSystemPrompt,
-  parseResponse
+  parseResponse,
+  detectLanguage
 };
