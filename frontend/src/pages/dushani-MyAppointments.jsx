@@ -33,7 +33,7 @@ const DushaniMyAppointments = () => {
   const [rescheduleModal, setRescheduleModal] = useState(null);
 
   useEffect(() => {
-    // Get user from localStorage
+
     const storedUser = localStorage.getItem('user');
     if (storedUser) {
       setUser(JSON.parse(storedUser));
@@ -41,11 +41,11 @@ const DushaniMyAppointments = () => {
     fetchAppointments();
   }, []);
 
-  // Refresh appointments if coming from booking page
+
   useEffect(() => {
     if (location.state?.refresh) {
       fetchAppointments();
-      // Clear the state to prevent repeated refreshes
+
       window.history.replaceState({}, document.title);
     }
   }, [location.state]);
@@ -119,7 +119,7 @@ const DushaniMyAppointments = () => {
 
   const filteredAppointments = appointments.filter((appt) => {
     const matchesStatus = activeFilter === 'ALL' || appt.status === activeFilter;
-    // Treat 'online' and 'video' as the same type for filtering
+
     const matchesType =
       appointmentType === 'ALL' || 
       appt.consultation_type === appointmentType ||
@@ -131,16 +131,19 @@ const DushaniMyAppointments = () => {
     today: appointments.filter(
       (a) => 
         new Date(a.scheduled_at).toDateString() === new Date().toDateString() &&
-        a.status !== 'CANCELLED' // Exclude cancelled appointments
+        a.status !== 'CANCELLED' 
+
     ).length,
     confirmed: appointments.filter((a) => a.status === 'CONFIRMED').length,
     completed: appointments.filter((a) => a.status === 'COMPLETED').length,
     video: appointments.filter((a) => 
       (a.consultation_type === 'video' || a.consultation_type === 'online') &&
-      a.status !== 'CANCELLED' // Exclude cancelled appointments
+      a.status !== 'CANCELLED' 
+
     ).length,
     physical: appointments.filter(
-      (a) => a.consultation_type === 'physical' && a.status !== 'CANCELLED' // Exclude cancelled appointments
+      (a) => a.consultation_type === 'physical' && a.status !== 'CANCELLED' 
+
     ).length,
   };
 
@@ -155,7 +158,7 @@ const DushaniMyAppointments = () => {
     <div
       className="min-h-screen bg-gradient-to-br from-[#F1FAEE] to-[#34A0A4]/20 font-sans p-4 sm:p-6 md:p-8"
     >
-      {/* Header */}
+
       <div className="mb-6 md:mb-7">
         <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
           <div>
@@ -180,22 +183,16 @@ const DushaniMyAppointments = () => {
           </div>
           <div className="flex gap-2.5">
             <button
-              onClick={() => navigate('/book-appointment')}
+              onClick={() => navigate('/appointments/book')}
               className="bg-white border-2 border-[#34A0A4] rounded-lg px-4 py-2 text-[#184E77] text-xs md:text-sm font-semibold cursor-pointer hover:bg-gray-50 transition"
             >
-              + Book New
-            </button>
-            <button
-              onClick={fetchAppointments}
-              className="bg-[#184E77] border-none rounded-lg px-4 py-2 text-white text-xs md:text-sm font-semibold cursor-pointer hover:bg-[#124170] transition"
-            >
-              ↻ Refresh
+              + Book New Appointment
             </button>
           </div>
         </div>
       </div>
 
-      {/* Error */}
+
       {error && (
         <div
           className="bg-[#FFE5EC] border border-[#FFE5EC] text-red-800 rounded-lg px-4 py-3 mb-5 text-sm"
@@ -204,7 +201,7 @@ const DushaniMyAppointments = () => {
         </div>
       )}
 
-      {/* Stats Cards */}
+
       <div
         className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4 mb-7"
       >
@@ -234,7 +231,7 @@ const DushaniMyAppointments = () => {
         ))}
       </div>
 
-      {/* Filters */}
+
       <div
         className="bg-white rounded-2xl p-5 mb-6 border-2"
         style={{ borderColor: `${COLORS.secondary}30` }}
@@ -282,7 +279,7 @@ const DushaniMyAppointments = () => {
         </div>
       </div>
 
-      {/* Appointments List */}
+
       {loading ? (
         <div
           className="text-center py-16 px-5 bg-white rounded-2xl border-2"

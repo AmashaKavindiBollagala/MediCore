@@ -262,22 +262,22 @@ router.get('/appointments/:appointmentId', (req, res) => {
 });
 
 // ─────────────────────────────────────────────
-// PAYMENT SERVICE
+// PAYMENT SERVICE - ORDER MATTERS! Specific routes before parameterized routes
 // ─────────────────────────────────────────────
 router.post('/payments/initiate', (req, res) => {
   proxyRequest(req, res, SERVICES.payment, '/api/payments/initiate');
 });
 
-router.get('/payments/:paymentId/status', (req, res) => {
-  proxyRequest(req, res, SERVICES.payment, `/api/payments/${req.params.paymentId}/status`);
+router.post('/payments/webhook/payhere', (req, res) => {
+  proxyRequest(req, res, SERVICES.payment, '/api/payments/webhook/payhere');
 });
 
-router.get('/payments/:paymentId', (req, res) => {
-  proxyRequest(req, res, SERVICES.payment, `/api/payments/${req.params.paymentId}`);
+router.post('/payments/complete-manual', (req, res) => {
+  proxyRequest(req, res, SERVICES.payment, '/api/payments/complete-manual');
 });
 
-router.get('/payments/order/:orderId', (req, res) => {
-  proxyRequest(req, res, SERVICES.payment, `/api/payments/order/${req.params.orderId}`);
+router.post('/payments/cancel-with-refund', (req, res) => {
+  proxyRequest(req, res, SERVICES.payment, '/api/payments/cancel-with-refund');
 });
 
 router.get('/payments/patient/my-payments', (req, res) => {
@@ -290,17 +290,20 @@ router.get('/payments/doctor/my-earnings', (req, res) => {
   proxyRequest(req, res, SERVICES.payment, `/api/payments/doctor/my-earnings?${query}`);
 });
 
+router.get('/payments/order/:orderId', (req, res) => {
+  proxyRequest(req, res, SERVICES.payment, `/api/payments/order/${req.params.orderId}`);
+});
+
+router.get('/payments/:paymentId/status', (req, res) => {
+  proxyRequest(req, res, SERVICES.payment, `/api/payments/${req.params.paymentId}/status`);
+});
+
+router.get('/payments/:paymentId', (req, res) => {
+  proxyRequest(req, res, SERVICES.payment, `/api/payments/${req.params.paymentId}`);
+});
+
 router.post('/payments/:paymentId/refund', (req, res) => {
   proxyRequest(req, res, SERVICES.payment, `/api/payments/${req.params.paymentId}/refund`);
-});
-
-router.post('/payments/cancel-with-refund', (req, res) => {
-  proxyRequest(req, res, SERVICES.payment, '/api/payments/cancel-with-refund');
-});
-
-// ✅ FIXED WEBHOOK (THIS WAS YOUR CRASH)
-router.post('/payments/webhook/payhere', (req, res) => {
-  proxyRequest(req, res, SERVICES.payment, '/api/payments/webhook/payhere');
 });
 
 // ─────────────────────────────────────────────

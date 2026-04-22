@@ -75,22 +75,54 @@ const DoctorAppointments = () => {
 
   const handleAppointmentAction = async (appointmentId, action) => {
     try {
-      const endpoint = action === 'complete' ? 'status' : action;
-      const method = action === 'complete' ? 'PATCH' : 'PATCH';
+      if (action === 'cancel') {
+        // Cancel with refund
+        const confirmCancel = window.confirm(
+          'Are you sure you want to cancel this appointment? A full refund will be issued to the patient.'
+        );
+        
+        if (!confirmCancel) return;
+        
+        const response = await fetch('/api/payments/cancel-with-refund', {
+          method: 'POST',
+          headers: {
+            Authorization: `Bearer ${token}`,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            appointment_id: appointmentId,
+            reason: 'Cancelled by doctor'
+          }),
+        });
+        
+        const result = await response.json();
+        
+        if (!response.ok) {
+          alert(result.error || 'Failed to cancel appointment');
+          return;
+        }
+        
+        alert('Appointment cancelled successfully. Refund has been processed.');
+      } else {
+        // Complete appointment
+        const endpoint = action === 'complete' ? 'status' : action;
+        
+        await fetch(`/api/appointments/${appointmentId}/${endpoint}`, {
+          method: 'PATCH',
+          headers: {
+            Authorization: `Bearer ${token}`,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            status: action === 'complete' ? 'COMPLETED' : undefined,
+          }),
+        });
+      }
       
-      await fetch(`/api/appointments/${appointmentId}/${endpoint}`, {
-        method,
-        headers: {
-          Authorization: `Bearer ${token}`,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          status: action === 'complete' ? 'COMPLETED' : undefined,
-        }),
-      });
       fetchAppointments();
     } catch (err) {
       console.error(`Failed to ${action} appointment:`, err);
+      alert(`Failed to ${action} appointment. Please try again.`);
     }
   };
 

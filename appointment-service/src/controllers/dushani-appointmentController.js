@@ -1,7 +1,7 @@
 const appointmentService = require('../services/dushani-appointmentService');
 
 class AppointmentController {
-  // Search doctors by specialty
+
   async searchDoctors(req, res) {
     try {
       const { specialty } = req.query;
@@ -23,7 +23,7 @@ class AppointmentController {
     }
   }
 
-  // Get doctor availability
+
   async getDoctorAvailability(req, res) {
     try {
       const { doctorId } = req.params;
@@ -45,7 +45,7 @@ class AppointmentController {
     }
   }
 
-  // Book appointment
+
   async bookAppointment(req, res) {
     try {
       const { doctor_id, scheduled_at, consultation_type, symptoms, specialty, patient_name, patient_age, consultation_fee } = req.body;
@@ -75,7 +75,7 @@ class AppointmentController {
     }
   }
 
-  // Update appointment status
+
   async updateAppointmentStatus(req, res) {
     try {
       const { appointmentId } = req.params;
@@ -102,7 +102,7 @@ class AppointmentController {
     }
   }
 
-  // Get patient's appointments
+
   async getPatientAppointments(req, res) {
     try {
       const patient_id = req.user.id;
@@ -120,7 +120,7 @@ class AppointmentController {
     }
   }
 
-  // Get doctor's appointments
+
   async getDoctorAppointments(req, res) {
     try {
       const doctor_id = req.user.id;
@@ -141,7 +141,7 @@ class AppointmentController {
     }
   }
 
-  // Get single appointment
+
   async getAppointment(req, res) {
     try {
       const { appointmentId } = req.params;
@@ -162,7 +162,7 @@ class AppointmentController {
     }
   }
 
-  // Cancel appointment
+
   async cancelAppointment(req, res) {
     try {
       const { appointmentId } = req.params;
@@ -192,7 +192,7 @@ class AppointmentController {
     }
   }
 
-  // Reschedule appointment
+
   async rescheduleAppointment(req, res) {
     try {
       const { appointmentId } = req.params;
@@ -226,7 +226,7 @@ class AppointmentController {
     }
   }
 
-  // Reject appointment
+
   async rejectAppointment(req, res) {
     try {
       const { appointmentId } = req.params;

@@ -18,11 +18,11 @@ async function initPaymentTable() {
   try {
     console.log('Connected to Neon database...');
     
-    // Enable UUID support
+
     await client.query('CREATE EXTENSION IF NOT EXISTS "pgcrypto"');
     console.log('✅ pgcrypto extension enabled');
     
-    // Create transactions table
+
     await client.query(`
       CREATE TABLE IF NOT EXISTS public.transactions (
         id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -43,7 +43,7 @@ async function initPaymentTable() {
     `);
     console.log('✅ transactions table created');
     
-    // Create indexes
+
     await client.query('CREATE INDEX IF NOT EXISTS idx_transactions_appointment_id ON public.transactions(appointment_id)');
     await client.query('CREATE INDEX IF NOT EXISTS idx_transactions_patient_id ON public.transactions(patient_id)');
     await client.query('CREATE INDEX IF NOT EXISTS idx_transactions_doctor_id ON public.transactions(doctor_id)');

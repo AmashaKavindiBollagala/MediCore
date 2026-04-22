@@ -1,10 +1,10 @@
 const pool = require('../config/appointmentdb');
 
 class AppointmentService {
-  // Search doctors by specialty - calls doctor service API
+
   async searchDoctorsBySpecialty(specialty) {
     try {
-      // Call doctor service API to get approved doctors
+
       const doctorServiceUrl = process.env.DOCTOR_SERVICE_URL || 'http://localhost:3003';
       
       const response = await fetch(
@@ -18,20 +18,24 @@ class AppointmentService {
       
       const doctors = await response.json();
       
-      // For each doctor, fetch their availability
+
       const doctorsWithAvailability = await Promise.all(
         doctors.map(async (doctor) => {
           try {
+            console.log(`Fetching availability from: ${doctorServiceUrl}/doctors/${doctor.id}/availability`);
             const availResponse = await fetch(
-              `${doctorServiceUrl}/api/doctors/${doctor.id}/availability`
+              `${doctorServiceUrl}/doctors/${doctor.id}/availability`
             );
             
             if (availResponse.ok) {
               const availability = await availResponse.json();
+              console.log(`Fetched ${availability.length} slots for doctor ${doctor.id}`);
               return {
                 ...doctor,
                 availability: availability
               };
+            } else {
+              console.error(`Failed to fetch availability (status ${availResponse.status}) for ${doctor.id}`);
             }
           } catch (err) {
             console.error(`Failed to fetch availability for doctor ${doctor.id}:`, err);
@@ -51,7 +55,7 @@ class AppointmentService {
     }
   }
 
-  // Get doctor availability for a specific date
+
   async getDoctorAvailability(doctorId, date) {
     try {
       const doctorServiceUrl = process.env.DOCTOR_SERVICE_URL || 'http://localhost:3003';
@@ -73,7 +77,7 @@ class AppointmentService {
     }
   }
 
-  // Book a new appointment
+
   async bookAppointment(appointmentData, patientId) {
     const client = await pool.connect();
 
@@ -85,7 +89,7 @@ class AppointmentService {
 
       const { doctor_id, scheduled_at, consultation_type, symptoms, specialty, patient_name, patient_age, consultation_fee } = appointmentData;
 
-      // Fetch doctor details to get correct consultation fee
+
       const doctorServiceUrl = process.env.DOCTOR_SERVICE_URL || 'http://doctor-service:3000';
       let correctConsultationFee = consultation_fee ? parseFloat(consultation_fee) : 0;
       
@@ -95,7 +99,7 @@ class AppointmentService {
           const doctorData = await doctorResponse.json();
           const doctor = doctorData.success ? doctorData.data : doctorData;
           
-          // Get correct fee based on consultation type
+
           if (consultation_type === 'video' || consultation_type === 'online') {
             correctConsultationFee = doctor.consultation_fee_online || correctConsultationFee;
           } else if (consultation_type === 'physical') {
@@ -113,14 +117,14 @@ class AppointmentService {
         console.error('Warning: Could not fetch doctor details for consultation fee:', err.message);
       }
 
-      // Convert patient_id from integer to UUID format
-      // Format: 00000000-0000-0000-0000-000000000009 for patient ID 9
+
+
       const patientIdStr = patientId.toString();
       const finalPatientId = patientIdStr.includes('-') 
         ? patientIdStr 
         : `00000000-0000-0000-0000-${patientIdStr.padStart(12, '0')}`;
 
-      // Check if slot is already booked
+
       const conflictQuery = `
         SELECT id FROM public.appointments
         WHERE doctor_id = $1
@@ -150,7 +154,7 @@ class AppointmentService {
         specialty || '',
         patient_name || '',
         patient_age ? parseInt(patient_age) : null,
-        correctConsultationFee,  // Use the correct fee from doctor service
+        correctConsultationFee,  
       ]);
 
       await client.query('COMMIT');
@@ -164,7 +168,7 @@ class AppointmentService {
     }
   }
 
-  // Update appointment status
+
   async updateAppointmentStatus(appointmentId, status, paymentId) {
     const validStatuses = ['PENDING_PAYMENT', 'CONFIRMED', 'CANCELLED', 'COMPLETED', 'REJECTED'];
     if (!validStatuses.includes(status)) {
@@ -187,9 +191,9 @@ class AppointmentService {
     return { success: true, data: result.rows[0] };
   }
 
-  // Get patient's appointments
+
   async getPatientAppointments(patientId, status) {
-    // Convert patient_id from integer to UUID format (same as booking)
+
     const patientIdStr = patientId.toString();
     const finalPatientId = patientIdStr.includes('-') 
       ? patientIdStr 
@@ -213,20 +217,20 @@ class AppointmentService {
     const result = await pool.query(query, params);
     const appointments = result.rows;
 
-    // Enrich appointments with doctor details
+
     const doctorServiceUrl = process.env.DOCTOR_SERVICE_URL || 'http://doctor-service:3000';
     
     const enrichedAppointments = await Promise.all(
       appointments.map(async (appointment) => {
         try {
-          // Fetch doctor details from doctor service
+
           const doctorResponse = await fetch(`${doctorServiceUrl}/doctors/${appointment.doctor_id}`);
           
           if (doctorResponse.ok) {
             const doctorData = await doctorResponse.json();
             const doctor = doctorData.success ? doctorData.data : doctorData;
             
-            // Determine correct consultation fee based on consultation type
+
             let correctFee = appointment.consultation_fee;
             if (appointment.consultation_type === 'video' || appointment.consultation_type === 'online') {
               correctFee = doctor.consultation_fee_online || appointment.consultation_fee;
@@ -246,7 +250,7 @@ class AppointmentService {
           console.error('Error fetching doctor details:', err.message);
         }
         
-        // Return appointment as-is if doctor fetch fails
+
         return {
           ...appointment,
           doctor_name: appointment.doctor_name || 'Unknown Doctor',
@@ -257,7 +261,7 @@ class AppointmentService {
     return enrichedAppointments;
   }
 
-  // Get doctor's appointments
+
   async getDoctorAppointments(doctorId, filters) {
     const { status, date } = filters;
 
@@ -285,7 +289,7 @@ class AppointmentService {
     return result.rows;
   }
 
-  // Get single appointment by ID
+
   async getAppointmentById(appointmentId) {
     const query = `
       SELECT a.*
@@ -294,10 +298,39 @@ class AppointmentService {
     `;
 
     const result = await pool.query(query, [appointmentId]);
-    return result.rows[0];
+    const appointment = result.rows[0];
+    
+    if (!appointment) {
+      return null;
+    }
+    
+    // Enrich with doctor details
+    try {
+      const doctorServiceUrl = process.env.DOCTOR_SERVICE_URL || 'http://doctor-service:3000';
+      const doctorResponse = await fetch(`${doctorServiceUrl}/doctors/${appointment.doctor_id}`);
+      
+      if (doctorResponse.ok) {
+        const doctorData = await doctorResponse.json();
+        const doctor = doctorData.success ? doctorData.data : doctorData;
+        
+        return {
+          ...appointment,
+          doctor_name: doctor.full_name || (doctor.first_name + ' ' + doctor.last_name),
+          doctor_specialty: doctor.specialty,
+          doctor_photo: doctor.profile_photo_url,
+        };
+      }
+    } catch (err) {
+      console.error('Error fetching doctor details for appointment:', err.message);
+    }
+    
+    return {
+      ...appointment,
+      doctor_name: appointment.doctor_name || 'Unknown Doctor',
+    };
   }
 
-  // Cancel appointment
+
   async cancelAppointment(appointmentId, userId, userRole, reason) {
     const client = await pool.connect();
 
@@ -311,14 +344,14 @@ class AppointmentService {
         return { error: 'Appointment not found', status: 404 };
       }
 
-      // Debug logging
+
       console.log('Cancel appointment - User ID from JWT:', userId, 'Type:', typeof userId);
       console.log('Cancel appointment - Patient ID from DB:', appointment.patient_id, 'Type:', typeof appointment.patient_id);
       console.log('Cancel appointment - User Role:', userRole);
 
-      // Verify authorization
+
       if (userRole === 'patient') {
-        // Convert userId to UUID format for comparison (same as booking)
+
         const userIdStr = userId.toString();
         const userIdUuid = userIdStr.includes('-')
           ? userIdStr 
@@ -338,7 +371,7 @@ class AppointmentService {
         return { error: 'Not authorized', status: 403 };
       }
 
-      // Update appointment status
+
       const updateQuery = `
         UPDATE public.appointments
         SET status = 'CANCELLED', cancelled_by = $2, cancellation_reason = $3, updated_at = NOW()
@@ -352,7 +385,7 @@ class AppointmentService {
         reason || '',
       ]);
 
-      // If payment was confirmed, trigger refund via payment service
+
       if (appointment.payment_id && appointment.status === 'CONFIRMED') {
         try {
           const paymentServiceUrl = process.env.PAYMENT_SERVICE_URL || 'http://localhost:3005';
@@ -377,22 +410,22 @@ class AppointmentService {
           }
         } catch (refundError) {
           console.error('Error processing refund:', refundError);
-          // Don't fail the cancellation if refund fails - it can be processed manually
+            // Don't fail the cancellation if refund fails - it can be processed manually
         }
       }
 
-      // Delete the availability slot to free up the time for other users
+
       try {
         const doctorServiceUrl = process.env.DOCTOR_SERVICE_URL || 'http://localhost:3003';
         
-        // Extract date and time from scheduled_at
+
         const scheduledDate = new Date(appointment.scheduled_at);
-        const slotDate = scheduledDate.toISOString().split('T')[0]; // YYYY-MM-DD
-        const startTime = scheduledDate.toTimeString().split(' ')[0]; // HH:MM:SS
+        const slotDate = scheduledDate.toISOString().split('T')[0]; 
+        const startTime = scheduledDate.toTimeString().split(' ')[0]; 
         
         console.log(`Deleting availability slot for doctor ${appointment.doctor_id} on ${slotDate} at ${startTime}`);
         
-        // Call doctor service to delete the availability slot
+
         const deleteSlotResponse = await fetch(
           `${doctorServiceUrl}/api/doctors/${appointment.doctor_id}/availability/delete-by-slot`,
           {
@@ -414,7 +447,7 @@ class AppointmentService {
         }
       } catch (slotError) {
         console.error('Error deleting availability slot:', slotError);
-        // Don't fail the cancellation if slot deletion fails
+
       }
 
       await client.query('COMMIT');
@@ -428,7 +461,7 @@ class AppointmentService {
     }
   }
 
-  // Reschedule appointment
+
   async rescheduleAppointment(appointmentId, newScheduledAt, userId, userRole) {
     const client = await pool.connect();
 
@@ -442,9 +475,9 @@ class AppointmentService {
         return { error: 'Appointment not found', status: 404 };
       }
 
-      // Only the patient who owns the appointment can reschedule
+
       if (userRole === 'patient') {
-        // Convert userId to UUID format for comparison
+
         const userIdStr = userId.toString();
         const userIdUuid = userIdStr.includes('-')
           ? userIdStr 
@@ -456,7 +489,7 @@ class AppointmentService {
         }
       }
 
-      // Check new slot availability
+
       const conflictQuery = `
         SELECT id FROM public.appointments
         WHERE doctor_id = $1
@@ -475,14 +508,14 @@ class AppointmentService {
         return { error: 'This time slot is already booked', status: 409 };
       }
 
-      // Fetch the new availability slot to get consultation_type
-      // Parse the ISO date string directly to avoid timezone issues
+
+
       const newScheduledAtStr = newScheduledAt.toString();
       const [slotDate, timePart] = newScheduledAtStr.split('T');
       const startTime = timePart || '00:00:00';
       
       // Ensure startTime is in HH:MM:SS format
-      const startTimeFormatted = startTime.length === 5 ? `${startTime}:00` : startTime; // If HH:MM, add :00
+      const startTimeFormatted = startTime.length === 5 ? `${startTime}:00` : startTime; 
       
       console.log('Rescheduling - Appointment ID:', appointmentId);
       console.log('Rescheduling - New scheduled_at string:', newScheduledAtStr);
@@ -492,24 +525,24 @@ class AppointmentService {
       console.log('Rescheduling - Old consultation type:', appointment.consultation_type);
       console.log('Rescheduling - Old fee:', appointment.consultation_fee);
       
-      // Call doctor service to get availability for the new date
+
       const doctorServiceUrl = process.env.DOCTOR_SERVICE_URL || 'http://doctor-service:3000';
       const availabilityUrl = `${doctorServiceUrl}/doctors/${appointment.doctor_id}/availability?date=${slotDate}`;
       console.log('Rescheduling - Fetching availability from:', availabilityUrl);
       
       const availabilityResponse = await fetch(availabilityUrl);
       
-      let newConsultationType = appointment.consultation_type; // Keep old type by default
-      let newConsultationFee = appointment.consultation_fee; // Keep old fee by default
+      let newConsultationType = appointment.consultation_type; 
+      let newConsultationFee = appointment.consultation_fee; 
       
       if (availabilityResponse.ok) {
         const availabilitySlots = await availabilityResponse.json();
         console.log('Rescheduling - Available slots count:', availabilitySlots.length);
         console.log('Rescheduling - Available slots:', JSON.stringify(availabilitySlots, null, 2));
         
-        // Find the matching slot
+
         const matchingSlot = availabilitySlots.find(slot => {
-          const slotStart = slot.start_time.toString().padStart(8, '0'); // Ensure HH:MM:SS
+          const slotStart = slot.start_time.toString().padStart(8, '0'); 
           const match = slotStart === startTimeFormatted;
           if (match) {
             console.log('Rescheduling - ✅ MATCH FOUND! Slot start:', slotStart, 'requested:', startTimeFormatted);
@@ -521,14 +554,14 @@ class AppointmentService {
           console.log('Rescheduling - Found matching availability slot:', JSON.stringify(matchingSlot, null, 2));
           newConsultationType = matchingSlot.consultation_type || 'online';
           
-          // Handle 'both' type - default to online
+
           if (newConsultationType === 'both') {
             newConsultationType = 'online';
           }
           
           console.log('Rescheduling - New consultation type from slot:', newConsultationType);
           
-          // Fetch doctor details to get the correct fee
+
           try {
             const doctorUrl = `${doctorServiceUrl}/doctors/${appointment.doctor_id}`;
             console.log('Rescheduling - Fetching doctor details from:', doctorUrl);
@@ -543,7 +576,7 @@ class AppointmentService {
                 consultation_fee_physical: doctor.consultation_fee_physical
               }));
               
-              // Get fee based on consultation type
+
               if (newConsultationType === 'online' || newConsultationType === 'video') {
                 newConsultationFee = doctor.consultation_fee_online || 0;
               } else if (newConsultationType === 'physical') {
@@ -564,7 +597,7 @@ class AppointmentService {
         console.error('Rescheduling - Failed to fetch availability, status:', availabilityResponse.status);
       }
 
-      // Update appointment with new scheduled_at, consultation_type, and consultation_fee
+
       const result = await client.query(
         `UPDATE public.appointments
          SET scheduled_at = $2, consultation_type = $3, consultation_fee = $4, updated_at = NOW()
@@ -573,18 +606,18 @@ class AppointmentService {
         [appointmentId, newScheduledAt, newConsultationType, newConsultationFee]
       );
 
-      // Delete the old availability slot to free up the old time
+
       try {
         const doctorServiceUrl = process.env.DOCTOR_SERVICE_URL || 'http://doctor-service:3000';
         
-        // Extract date and time from the OLD scheduled_at
+
         const oldScheduledAtStr = appointment.scheduled_at.toString();
         const [oldSlotDate, oldTimePart] = oldScheduledAtStr.split('T');
         const oldStartTime = oldTimePart ? (oldTimePart.length === 5 ? `${oldTimePart}:00` : oldTimePart) : '00:00:00';
         
         console.log(`Rescheduling - Deleting OLD availability slot for doctor ${appointment.doctor_id} on ${oldSlotDate} at ${oldStartTime}`);
         
-        // Call doctor service to delete the old availability slot
+
         const deleteSlotResponse = await fetch(
           `${doctorServiceUrl}/doctors/${appointment.doctor_id}/availability/delete-by-slot`,
           {
@@ -607,7 +640,7 @@ class AppointmentService {
         }
       } catch (slotError) {
         console.error('Rescheduling - Error deleting old availability slot:', slotError.message);
-        // Don't fail the reschedule if slot deletion fails
+
       }
 
       await client.query('COMMIT');
@@ -621,7 +654,7 @@ class AppointmentService {
     }
   }
 
-  // Reject appointment (doctor only)
+
   async rejectAppointment(appointmentId, doctorId) {
     const query = `
       UPDATE public.appointments

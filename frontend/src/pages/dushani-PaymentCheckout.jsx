@@ -8,6 +8,7 @@ const PaymentCheckout = () => {
   const [error, setError] = useState('');
   const [paymentData, setPaymentData] = useState(null);
   const [appointmentData, setAppointmentData] = useState(null);
+  const [isProcessing, setIsProcessing] = useState(false); // Prevent multiple clicks
   
   // Get appointment ID from URL or localStorage
   const appointmentId = urlAppointmentId || localStorage.getItem('pendingAppointmentId');
@@ -26,7 +27,14 @@ const PaymentCheckout = () => {
   }, [appointmentId]);
 
   const initiatePayment = async () => {
+    // Prevent multiple simultaneous requests
+    if (isProcessing) {
+      console.log('Payment already in progress, ignoring duplicate request');
+      return;
+    }
+    
     try {
+      setIsProcessing(true);
       setLoading(true);
       setError('');
 
@@ -82,11 +90,18 @@ const PaymentCheckout = () => {
       setError(err.message || 'Failed to initiate payment');
     } finally {
       setLoading(false);
+      setIsProcessing(false);
     }
   };
 
   const handleSubmitPayment = () => {
     if (!paymentData?.payhere_config) return;
+
+    // Store appointment_id in localStorage before redirecting to PayHere
+    // This is needed because PayHere doesn't pass order_id back to return_url
+    const appointmentId = paymentData.appointment_id;
+    localStorage.setItem('pendingPaymentAppointmentId', appointmentId);
+    console.log('Stored appointment_id in localStorage:', appointmentId);
 
     // Create form for PayHere checkout
     const form = document.createElement('form');
@@ -110,7 +125,9 @@ const PaymentCheckout = () => {
       address: 'Colombo',
       city: 'Colombo',
       country: 'Sri Lanka',
-      items: 'Doctor Appointment Consultation'
+      items: 'Doctor Appointment Consultation',
+      // Store appointment_id in custom_1 for reference
+      custom_1: appointmentId
     };
 
     Object.entries(fields).forEach(([key, value]) => {
@@ -186,8 +203,8 @@ const PaymentCheckout = () => {
                     </svg>
                     <div>
                       <p className="text-sm text-gray-500">Doctor</p>
-                      <p className="font-semibold text-gray-800">{appointmentData.doctor_name}</p>
-                      <p className="text-sm" style={{color: '#34A0A4'}}>{appointmentData.specialty}</p>
+                      <p className="font-semibold text-gray-800">{appointmentData.doctor_name || 'Loading...'}</p>
+                      <p className="text-sm" style={{color: '#34A0A4'}}>{appointmentData.doctor_specialty || appointmentData.specialty || 'General'}</p>
                     </div>
                   </div>
 
@@ -301,16 +318,17 @@ const PaymentCheckout = () => {
               {/* Pay Now Button */}
               <button
                 onClick={handleSubmitPayment}
-                className="w-full text-white font-bold py-4 px-6 rounded-lg transition-all transform hover:scale-105 shadow-lg mt-6"
+                disabled={isProcessing || !paymentData?.payhere_config}
+                className="w-full text-white font-bold py-4 px-6 rounded-lg transition-all transform hover:scale-105 shadow-lg mt-6 disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none"
                 style={{background: 'linear-gradient(90deg, #184E77 0%, #34A0A4 100%)'}}
-                onMouseEnter={(e) => e.target.style.background = 'linear-gradient(90deg, #34A0A4 0%, #76C893 100%)'}
-                onMouseLeave={(e) => e.target.style.background = 'linear-gradient(90deg, #184E77 0%, #34A0A4 100%)'}
+                onMouseEnter={(e) => !isProcessing && (e.target.style.background = 'linear-gradient(90deg, #34A0A4 0%, #76C893 100%)')}
+                onMouseLeave={(e) => !isProcessing && (e.target.style.background = 'linear-gradient(90deg, #184E77 0%, #34A0A4 100%)')}
               >
                 <span className="flex items-center justify-center space-x-2">
                   <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
                   </svg>
-                  <span>Proceed to Pay LKR {(appointmentData?.consultation_fee || parseFloat(localStorage.getItem('pendingAppointmentAmount') || 1500)).toLocaleString('en-US', {minimumFractionDigits: 2})}</span>
+                  <span>{isProcessing ? 'Processing...' : 'Proceed to Pay LKR ' + (appointmentData?.consultation_fee || parseFloat(localStorage.getItem('pendingAppointmentAmount') || 1500)).toLocaleString('en-US', {minimumFractionDigits: 2})}</span>
                 </span>
               </button>
 
