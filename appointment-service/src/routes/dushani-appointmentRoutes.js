@@ -27,10 +27,16 @@ router.get('/:appointmentId', authenticateToken, appointmentController.getAppoin
 // Cancel appointment
 router.delete('/:appointmentId/cancel', authenticateToken, appointmentController.cancelAppointment);
 
+// Complete appointment
+router.put('/:appointmentId/complete', authenticateToken, appointmentController.completeAppointment);
+
 // Reschedule appointment
 router.patch('/:appointmentId/reschedule', authenticateToken, appointmentController.rescheduleAppointment);
 
 // Reject appointment
 router.patch('/:appointmentId/reject', authenticateToken, appointmentController.rejectAppointment);
+
+// Check telemedicine eligibility
+router.get('/:appointmentId/telemedicine-eligibility', authenticateToken, appointmentController.checkTelemedicineEligibility);
 
 module.exports = router;

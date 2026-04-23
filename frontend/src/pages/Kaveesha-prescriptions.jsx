@@ -1,5 +1,34 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
+
+const COLORS = {
+  navy: '#184E77',
+  teal: '#34A0A4',
+  mint: '#76C893',
+  cream: '#F1FAEE',
+  blush: '#FFE5EC',
+  navyLight: '#1B6CA8',
+  tealLight: '#52B5BA',
+  mintLight: '#A8DDB5',
+  navyDark: '#0D3352',
+};
+
+const NAV_ITEMS = [
+  { id: 'overview', label: 'Overview', route: '/doctor-dashboard',
+    icon: <svg width="20" height="20" viewBox="0 0 24 24" fill="none"><rect x="3" y="3" width="7" height="7" rx="2" stroke="currentColor" strokeWidth="1.8"/><rect x="14" y="3" width="7" height="7" rx="2" stroke="currentColor" strokeWidth="1.8"/><rect x="3" y="14" width="7" height="7" rx="2" stroke="currentColor" strokeWidth="1.8"/><rect x="14" y="14" width="7" height="7" rx="2" stroke="currentColor" strokeWidth="1.8"/></svg> },
+  { id: 'appointments', label: 'Appointments', route: '/doctor-appointments',
+    icon: <svg width="20" height="20" viewBox="0 0 24 24" fill="none"><rect x="3" y="4" width="18" height="18" rx="3" stroke="currentColor" strokeWidth="1.8"/><path d="M16 2v4M8 2v4M3 10h18" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round"/></svg> },
+  { id: 'telemedicine', label: 'My Consultations', route: '/doctor-telemedicine',
+    icon: <svg width="20" height="20" viewBox="0 0 24 24" fill="none"><path d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" stroke="currentColor" strokeWidth="1.8"/></svg> },
+  { id: 'availability', label: 'Availability', route: '/doctor-availability',
+    icon: <svg width="20" height="20" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="9" stroke="currentColor" strokeWidth="1.8"/><path d="M12 6v6l4 2" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round"/></svg> },
+  { id: 'prescriptions', label: 'Prescriptions', route: '/doctor-prescriptions',
+    icon: <svg width="20" height="20" viewBox="0 0 24 24" fill="none"><path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" stroke="currentColor" strokeWidth="1.8"/></svg> },
+  { id: 'reports', label: 'Patient Reports', route: '/doctor-reports',
+    icon: <svg width="20" height="20" viewBox="0 0 24 24" fill="none"><path d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" stroke="currentColor" strokeWidth="1.8"/></svg> },
+  { id: 'profile', label: 'My Profile', route: '/doctor-profile',
+    icon: <svg width="20" height="20" viewBox="0 0 24 24" fill="none"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round"/><circle cx="12" cy="7" r="4" stroke="currentColor" strokeWidth="1.8"/></svg> },
+];
 
 const C = {
   navy: '#0F3460',
@@ -154,7 +183,10 @@ function PrescriptionModal({ rx, onClose }) {
 
 export default function KaveeshaPrescriptions() {
   const navigate = useNavigate();
+  const location = useLocation();
   const token = localStorage.getItem('token');
+  const [sidebarOpen, setSidebarOpen] = useState(true);
+  const [doctor, setDoctor] = useState(null);
   const [tab, setTab] = useState('list');
   const [prescriptions, setPrescriptions] = useState([]);
   const [patients, setPatients] = useState([]);
@@ -163,6 +195,29 @@ export default function KaveeshaPrescriptions() {
   const [viewRx, setViewRx] = useState(null);
   const [success, setSuccess] = useState(false);
   const [search, setSearch] = useState('');
+  
+  // Completed appointments state
+  const [completedAppointments, setCompletedAppointments] = useState([]);
+  const [selectedAppointment, setSelectedAppointment] = useState(null);
+  const [showPrescriptionForm, setShowPrescriptionForm] = useState(false);
+  const [showReportsModal, setShowReportsModal] = useState(false);
+  const [appointmentReports, setAppointmentReports] = useState([]);
+  const [loadingReports, setLoadingReports] = useState(false);
+
+  useEffect(() => {
+    const storedUser = localStorage.getItem('user');
+    if (storedUser) {
+      const userData = JSON.parse(storedUser);
+      setDoctor({
+        first_name: userData.first_name || userData.name?.split(' ')[0] || 'Doctor',
+        last_name: userData.last_name || userData.name?.split(' ')[1] || '',
+        specialty: userData.specialty || 'General Physician',
+        verification_status: userData.verification_status || 'approved',
+      });
+    }
+  }, []);
+
+  const initials = doctor ? `${doctor.first_name?.[0] || ''}${doctor.last_name?.[0] || ''}`.toUpperCase() : 'D';
 
   // Form state
   const [form, setForm] = useState({
@@ -172,7 +227,7 @@ export default function KaveeshaPrescriptions() {
     medications: [{ name: '', dosage: '', frequency: '', duration: '', instructions: '' }],
   });
 
-  useEffect(() => { fetchData(); }, []);
+  useEffect(() => { fetchData(); fetchCompletedAppointments(); }, []);
 
   const fetchData = async () => {
     setLoading(true);
@@ -185,6 +240,67 @@ export default function KaveeshaPrescriptions() {
       if (ptRes.ok) setPatients(await ptRes.json());
     } catch {}
     finally { setLoading(false); }
+  };
+
+  const fetchCompletedAppointments = async () => {
+    try {
+      const response = await fetch('/api/appointments/doctor/my-appointments', {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      const data = await response.json();
+      if (data.success || data.data) {
+        const completed = (data.data || []).filter(appt => 
+          appt.status === 'COMPLETED' && 
+          (appt.consultation_type === 'video' || appt.consultation_type === 'online')
+        );
+        setCompletedAppointments(completed);
+      }
+    } catch (err) {
+      console.error('Error fetching completed appointments:', err);
+    }
+  };
+
+  const handleSelectForPrescription = (appt) => {
+    setSelectedAppointment(appt);
+    setForm(f => ({
+      ...f,
+      patient_id: appt.patient_id,
+      diagnosis: appt.symptoms || '',
+    }));
+    setTab('new');
+    setShowPrescriptionForm(true);
+  };
+
+  const handleViewReports = async (appt) => {
+    console.log('🔍 View Reports clicked for appointment:', appt.id);
+    console.log('🔍 Fetching URL:', `/api/doctors/me/reports/appointment/${appt.id}`);
+    
+    setSelectedAppointment(appt);
+    setLoadingReports(true);
+    setShowReportsModal(true);
+    
+    try {
+      const response = await fetch(`/api/doctors/me/reports/appointment/${appt.id}`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      
+      console.log('📡 Response status:', response.status);
+      console.log('📡 Response ok:', response.ok);
+      
+      if (response.ok) {
+        const data = await response.json();
+        console.log('✅ Reports loaded:', data.length, 'reports');
+        setAppointmentReports(data);
+      } else {
+        console.error('❌ Failed to load reports:', response.status);
+        setAppointmentReports([]);
+      }
+    } catch (error) {
+      console.error('❌ Error fetching reports:', error);
+      setAppointmentReports([]);
+    } finally {
+      setLoadingReports(false);
+    }
   };
 
   const addMed = () => setForm(f => ({ ...f, medications: [...f.medications, { name: '', dosage: '', frequency: '', duration: '', instructions: '' }] }));
@@ -221,6 +337,49 @@ export default function KaveeshaPrescriptions() {
   });
 
   return (
+    <div style={{ display: 'flex', minHeight: '100vh' }}>
+      <aside style={{ width: sidebarOpen ? 260 : 78, minHeight: '100vh', background: COLORS.navy, display: 'flex', flexDirection: 'column', transition: 'width 0.3s cubic-bezier(.4,0,.2,1)', overflow: 'hidden', flexShrink: 0, boxShadow: '4px 0 24px rgba(24,78,119,0.15)' }}>
+        <div style={{ padding: sidebarOpen ? '28px 22px 22px' : '28px 16px 22px', borderBottom: '1px solid rgba(255,255,255,0.1)', display: 'flex', alignItems: 'center', gap: 12 }}>
+          <div style={{ width: 42, height: 42, borderRadius: 12, background: COLORS.teal, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none"><path d="M12 5v14M5 12h14" stroke="white" strokeWidth="2.5" strokeLinecap="round"/></svg>
+          </div>
+          {sidebarOpen && <span style={{ fontSize: 22, fontWeight: 800, color: 'white', whiteSpace: 'nowrap', letterSpacing: '-0.5px' }}>Medi<span style={{ color: COLORS.mint }}>Core</span></span>}
+        </div>
+        {sidebarOpen && doctor && (
+          <div style={{ padding: '18px 22px', borderBottom: '1px solid rgba(255,255,255,0.1)' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+              <div style={{ width: 46, height: 46, borderRadius: '50%', background: `linear-gradient(135deg, ${COLORS.teal}, ${COLORS.mint})`, display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'white', fontSize: 16, fontWeight: 700, flexShrink: 0, border: '2px solid rgba(255,255,255,0.3)' }}>{initials}</div>
+              <div style={{ overflow: 'hidden' }}>
+                <p style={{ margin: 0, fontSize: 15, fontWeight: 700, color: 'white', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>Dr. {doctor.first_name} {doctor.last_name}</p>
+                <p style={{ margin: 0, fontSize: 12, color: COLORS.mintLight }}>{doctor.specialty}</p>
+              </div>
+            </div>
+            <div style={{ marginTop: 12, display: 'flex', alignItems: 'center', gap: 7, background: 'rgba(255,255,255,0.1)', borderRadius: 20, padding: '5px 12px', width: 'fit-content' }}>
+              <div style={{ width: 7, height: 7, borderRadius: '50%', background: doctor.verification_status === 'approved' ? COLORS.mint : '#F59E0B', flexShrink: 0 }} />
+              <span style={{ fontSize: 11, color: doctor.verification_status === 'approved' ? COLORS.mintLight : '#FCD34D', fontWeight: 500 }}>{doctor.verification_status === 'approved' ? 'Verified Doctor' : 'Pending Verification'}</span>
+            </div>
+          </div>
+        )}
+        <nav style={{ flex: 1, padding: '16px 12px' }}>
+          {NAV_ITEMS.map(({ id, label, route, icon }) => {
+            const active = id === 'prescriptions';
+            return (
+              <button key={id} onClick={() => navigate(route)} style={{ display: 'flex', alignItems: 'center', gap: 14, width: '100%', padding: '12px 14px', borderRadius: 12, border: 'none', cursor: 'pointer', background: active ? COLORS.teal : 'transparent', color: active ? 'white' : 'rgba(255,255,255,0.6)', marginBottom: 4, fontWeight: active ? 700 : 400, fontSize: 15, textAlign: 'left', transition: 'all 0.18s' }}>
+                <span style={{ flexShrink: 0, opacity: active ? 1 : 0.8 }}>{icon}</span>
+                {sidebarOpen && <span style={{ whiteSpace: 'nowrap' }}>{label}</span>}
+                {active && sidebarOpen && <div style={{ marginLeft: 'auto', width: 7, height: 7, borderRadius: '50%', background: COLORS.mint }} />}
+              </button>
+            );
+          })}
+        </nav>
+        <div style={{ padding: '14px 12px', borderTop: '1px solid rgba(255,255,255,0.1)' }}>
+          <button onClick={() => { localStorage.clear(); navigate('/login'); }} style={{ display: 'flex', alignItems: 'center', gap: 14, width: '100%', padding: '12px 14px', borderRadius: 12, border: 'none', cursor: 'pointer', background: 'transparent', color: COLORS.blush, fontSize: 15, fontWeight: 500 }}>
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none"><path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4M16 17l5-5-5-5M21 12H9" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/></svg>
+            {sidebarOpen && 'Logout'}
+          </button>
+        </div>
+      </aside>
+      <div style={{ flex: 1 }}>
     <div style={{ fontFamily: "'DM Sans', 'Inter', sans-serif", background: C.surface, minHeight: '100vh', padding: '32px 40px' }}>
       {/* Header */}
       <div style={{ marginBottom: 32 }}>
@@ -239,6 +398,182 @@ export default function KaveeshaPrescriptions() {
           </button>
         </div>
       </div>
+
+      {/* Completed Video Consultations Section */}
+      {completedAppointments.length > 0 && (
+        <section style={{ marginBottom: 32 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 20 }}>
+            <h2 style={{ fontSize: 22, fontWeight: 700, color: C.navy, margin: 0 }}>
+              Completed Video Consultations
+            </h2>
+            <span style={{
+              background: 'linear-gradient(135deg, #10B981, #059669)',
+              color: 'white',
+              padding: '4px 12px',
+              borderRadius: 20,
+              fontSize: 12,
+              fontWeight: 700
+            }}>
+              {completedAppointments.length}
+            </span>
+          </div>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(340px, 1fr))', gap: 18 }}>
+            {completedAppointments.map(appt => (
+              <div key={appt.id} style={{
+                background: 'linear-gradient(135deg, #FFFFFF 0%, #F8FAFC 100%)',
+                borderRadius: 18,
+                padding: 22,
+                border: `1.5px solid ${C.border}`,
+                cursor: 'pointer',
+                transition: 'all 0.25s cubic-bezier(0.4, 0, 0.2, 1)',
+                boxShadow: '0 2px 8px rgba(0,0,0,0.04)',
+                position: 'relative',
+                overflow: 'hidden'
+              }}
+              onClick={() => setSelectedAppointment(appt)}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.boxShadow = '0 8px 24px rgba(15,52,96,0.12)';
+                e.currentTarget.style.transform = 'translateY(-4px)';
+                e.currentTarget.style.borderColor = C.accent;
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.boxShadow = '0 2px 8px rgba(0,0,0,0.04)';
+                e.currentTarget.style.transform = 'translateY(0)';
+                e.currentTarget.style.borderColor = C.border;
+              }}
+              >
+                {/* Accent bar at top */}
+                <div style={{
+                  position: 'absolute',
+                  top: 0,
+                  left: 0,
+                  right: 0,
+                  height: 4,
+                  background: 'linear-gradient(90deg, #0F9B8E, #10B981)'
+                }} />
+                
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'start', marginBottom: 14 }}>
+                  <div style={{ flex: 1 }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 6 }}>
+                      <div style={{
+                        width: 40,
+                        height: 40,
+                        borderRadius: '50%',
+                        background: 'linear-gradient(135deg, #0F9B8E, #10B981)',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        color: 'white',
+                        fontSize: 16,
+                        fontWeight: 700
+                      }}>
+                        {(appt.patient_name || 'P').charAt(0).toUpperCase()}
+                      </div>
+                      <div>
+                        <h3 style={{ fontSize: 16, fontWeight: 700, color: C.navy, marginBottom: 2, margin: 0 }}>
+                          {appt.patient_name || 'Patient'}
+                        </h3>
+                        <p style={{ fontSize: 12, color: C.slate, margin: 0 }}>
+                          {new Date(appt.scheduled_at).toLocaleDateString('en-US', { day: 'numeric', month: 'short', year: 'numeric' })}
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                  <span style={{
+                    background: 'linear-gradient(135deg, #ECFDF5, #D1FAE5)',
+                    color: '#059669',
+                    padding: '5px 12px',
+                    borderRadius: 20,
+                    fontSize: 11,
+                    fontWeight: 700,
+                    border: '1px solid #A7F3D0',
+                    whiteSpace: 'nowrap'
+                  }}>
+                    ✓ Completed
+                  </span>
+                </div>
+                
+                {appt.symptoms && (
+                  <div style={{
+                    background: '#F1F5F9',
+                    padding: '10px 12px',
+                    borderRadius: 10,
+                    marginBottom: 16,
+                    border: '1px solid #E2E8F0'
+                  }}>
+                    <p style={{ fontSize: 10, fontWeight: 700, color: C.slate, marginBottom: 4, textTransform: 'uppercase', letterSpacing: 0.5, margin: '0 0 4px 0' }}>
+                      🩺 Symptoms
+                    </p>
+                    <p style={{ fontSize: 13, color: C.navy, lineHeight: 1.5, margin: 0 }}>
+                      {appt.symptoms}
+                    </p>
+                  </div>
+                )}
+                
+                <div style={{ display: 'flex', gap: 10 }}>
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleSelectForPrescription(appt);
+                    }}
+                    style={{
+                      flex: 1,
+                      background: 'linear-gradient(135deg, #0F9B8E, #0D8A7D)',
+                      color: C.white,
+                      border: 'none',
+                      padding: '10px 14px',
+                      borderRadius: 10,
+                      fontSize: 12,
+                      fontWeight: 700,
+                      cursor: 'pointer',
+                      transition: 'all 0.2s',
+                      boxShadow: '0 2px 8px rgba(15,155,142,0.25)'
+                    }}
+                    onMouseEnter={(e) => {
+                      e.currentTarget.style.transform = 'translateY(-1px)';
+                      e.currentTarget.style.boxShadow = '0 4px 12px rgba(15,155,142,0.35)';
+                    }}
+                    onMouseLeave={(e) => {
+                      e.currentTarget.style.transform = 'translateY(0)';
+                      e.currentTarget.style.boxShadow = '0 2px 8px rgba(15,155,142,0.25)';
+                    }}
+                  >
+                    💊 Add Prescription
+                  </button>
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleViewReports(appt);
+                    }}
+                    style={{
+                      flex: 1,
+                      background: 'linear-gradient(135deg, #E8FAF8, #D5F5F0)',
+                      color: C.accent,
+                      border: '1.5px solid #B2EDE7',
+                      padding: '10px 14px',
+                      borderRadius: 10,
+                      fontSize: 12,
+                      fontWeight: 700,
+                      cursor: 'pointer',
+                      transition: 'all 0.2s'
+                    }}
+                    onMouseEnter={(e) => {
+                      e.currentTarget.style.background = '#D5F5F0';
+                      e.currentTarget.style.transform = 'translateY(-1px)';
+                    }}
+                    onMouseLeave={(e) => {
+                      e.currentTarget.style.background = 'linear-gradient(135deg, #E8FAF8, #D5F5F0)';
+                      e.currentTarget.style.transform = 'translateY(0)';
+                    }}
+                  >
+                    📄 View Reports
+                  </button>
+                </div>
+              </div>
+            ))}
+          </div>
+        </section>
+      )}
 
       {/* Stats bar */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 16, marginBottom: 28 }}>
@@ -356,6 +691,162 @@ export default function KaveeshaPrescriptions() {
       )}
 
       {viewRx && <PrescriptionModal rx={viewRx} onClose={() => setViewRx(null)} />}
+
+      {/* Reports Modal */}
+      {showReportsModal && selectedAppointment && (
+        <div style={{ position: 'fixed', inset: 0, background: 'rgba(15,52,96,0.6)', zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 24 }} onClick={() => setShowReportsModal(false)}>
+          <div style={{ background: C.white, borderRadius: 24, width: '100%', maxWidth: 900, maxHeight: '90vh', overflow: 'auto', padding: 0 }} onClick={e => e.stopPropagation()}>
+            {/* Header */}
+            <div style={{ background: `linear-gradient(135deg, ${C.navy} 0%, #1a5a8a 100%)`, padding: '28px 32px', borderRadius: '24px 24px 0 0' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
+                  <div style={{ width: 56, height: 56, borderRadius: 16, background: 'rgba(255,255,255,0.15)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 28 }}>📄</div>
+                  <div>
+                    <h2 style={{ margin: 0, fontSize: 22, fontWeight: 800, color: 'white' }}>Patient Reports</h2>
+                    <p style={{ margin: '4px 0 0', fontSize: 14, color: 'rgba(255,255,255,0.85)' }}>
+                      {selectedAppointment.patient_name} · {new Date(selectedAppointment.scheduled_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+                    </p>
+                  </div>
+                </div>
+                <button onClick={() => setShowReportsModal(false)} style={{ background: 'rgba(255,255,255,0.15)', border: 'none', color: 'white', borderRadius: 12, width: 40, height: 40, cursor: 'pointer', fontSize: 20, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>×</button>
+              </div>
+            </div>
+
+            {/* Content */}
+            <div style={{ padding: '32px' }}>
+              {loadingReports ? (
+                <div style={{ textAlign: 'center', padding: '60px 20px' }}>
+                  <div style={{ fontSize: 48, marginBottom: 16 }}>⏳</div>
+                  <p style={{ color: C.slate, fontSize: 15 }}>Loading reports...</p>
+                </div>
+              ) : appointmentReports.length === 0 ? (
+                <div style={{ textAlign: 'center', padding: '60px 20px' }}>
+                  <div style={{ width: 80, height: 80, borderRadius: '50%', background: C.accentLight, display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 20px', fontSize: 36 }}>📋</div>
+                  <h3 style={{ margin: '0 0 8px', color: C.navy, fontSize: 18 }}>No Reports Uploaded</h3>
+                  <p style={{ color: C.slate, margin: 0, fontSize: 14 }}>The patient hasn't uploaded any reports for this consultation yet.</p>
+                </div>
+              ) : (
+                <div style={{ display: 'grid', gap: 16 }}>
+                  {appointmentReports.map(report => {
+                    const reportTypes = {
+                      blood_test: { label: 'Blood Test', icon: '🩸', bg: '#FEF2F2', color: '#EF4444' },
+                      xray: { label: 'X-Ray', icon: '🦴', bg: '#EEF2FF', color: '#6366F1' },
+                      mri: { label: 'MRI Scan', icon: '🧲', bg: '#F5F3FF', color: '#7C3AED' },
+                      ultrasound: { label: 'Ultrasound', icon: '📡', bg: '#ECFDF5', color: '#10B981' },
+                      urine_test: { label: 'Urine Test', icon: '🧪', bg: '#FFF7ED', color: '#F59E0B' },
+                      ct_scan: { label: 'CT Scan', icon: '🖥', bg: '#F0F9FF', color: '#0EA5E9' },
+                      ecg: { label: 'ECG', icon: '💓', bg: '#FFF1F2', color: '#F43F5E' },
+                      other: { label: 'Other Report', icon: '📄', bg: '#F8FAFC', color: '#64748B' },
+                    };
+                    const meta = reportTypes[report.report_type] || reportTypes.other;
+                    const ext = (report.report_url || '').split('.').pop()?.toLowerCase();
+                    const extColors = { pdf: { bg: '#FEF2F2', color: '#EF4444' }, jpg: { bg: '#DBEAFE', color: '#3B82F6' }, jpeg: { bg: '#DBEAFE', color: '#3B82F6' }, png: { bg: '#ECFDF5', color: '#10B981' } };
+                    const ec = extColors[ext] || { bg: '#F1F5F9', color: '#475569' };
+
+                    return (
+                      <div key={report.id} style={{ 
+                        background: '#F8FAFC', 
+                        borderRadius: 16, 
+                        border: `1.5px solid ${C.border}`, 
+                        padding: '20px 24px',
+                        transition: 'all 0.2s'
+                      }}
+                      onMouseEnter={(e) => {
+                        e.currentTarget.style.borderColor = C.accent;
+                        e.currentTarget.style.boxShadow = '0 4px 12px rgba(15,52,96,0.08)';
+                      }}
+                      onMouseLeave={(e) => {
+                        e.currentTarget.style.borderColor = C.border;
+                        e.currentTarget.style.boxShadow = 'none';
+                      }}>
+                        <div style={{ display: 'flex', alignItems: 'flex-start', gap: 16 }}>
+                          {/* Icon */}
+                          <div style={{ 
+                            width: 56, 
+                            height: 56, 
+                            borderRadius: 14, 
+                            background: meta.bg, 
+                            display: 'flex', 
+                            alignItems: 'center', 
+                            justifyContent: 'center', 
+                            fontSize: 26,
+                            flexShrink: 0
+                          }}>{meta.icon}</div>
+                          
+                          {/* Details */}
+                          <div style={{ flex: 1 }}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 8, flexWrap: 'wrap' }}>
+                              <span style={{ fontSize: 16, fontWeight: 700, color: C.navy }}>{meta.label}</span>
+                              <span style={{ background: meta.bg, color: meta.color, fontSize: 11, fontWeight: 700, padding: '3px 10px', borderRadius: 20 }}>{meta.icon} {meta.label}</span>
+                              {ext && <span style={{ background: ec.bg, color: ec.color, fontSize: 10, fontWeight: 800, padding: '2px 8px', borderRadius: 6 }}>{ext.toUpperCase()}</span>}
+                              <span style={{ background: report.uploaded_by === 'patient' ? '#ECFDF5' : '#DBEAFE', color: report.uploaded_by === 'patient' ? '#10B981' : '#3B82F6', fontSize: 10, fontWeight: 700, padding: '2px 8px', borderRadius: 6 }}>
+                                {report.uploaded_by === 'patient' ? '👤 Patient Uploaded' : '👨‍⚕️ Doctor Added'}
+                              </span>
+                            </div>
+                            
+                            {report.description && (
+                              <p style={{ margin: '0 0 10px', fontSize: 13, color: C.slate, lineHeight: 1.5 }}>
+                                {report.description}
+                              </p>
+                            )}
+                            
+                            <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
+                              <span style={{ fontSize: 12, color: C.slate }}>
+                                🕐 {new Date(report.uploaded_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric', hour: '2-digit', minute: '2-digit' })}
+                              </span>
+                            </div>
+                          </div>
+                          
+                          {/* Actions */}
+                          <div style={{ display: 'flex', gap: 10, flexShrink: 0 }}>
+                            <a href={report.report_url} target="_blank" rel="noopener noreferrer" 
+                               style={{ 
+                                 background: C.navy, 
+                                 color: 'white', 
+                                 textDecoration: 'none', 
+                                 borderRadius: 10, 
+                                 padding: '9px 18px', 
+                                 fontSize: 12, 
+                                 fontWeight: 700,
+                                 transition: 'all 0.15s',
+                                 display: 'flex',
+                                 alignItems: 'center',
+                                 gap: 6
+                               }}
+                               onMouseEnter={(e) => e.target.style.background = '#1a5a8a'}
+                               onMouseLeave={(e) => e.target.style.background = C.navy}>
+                              View ↗
+                            </a>
+                            <a href={report.report_url} download 
+                               style={{ 
+                                 background: C.accentLight, 
+                                 color: C.accent, 
+                                 textDecoration: 'none', 
+                                 borderRadius: 10, 
+                                 padding: '9px 14px', 
+                                 fontSize: 12, 
+                                 fontWeight: 700,
+                                 transition: 'all 0.15s',
+                                 display: 'flex',
+                                 alignItems: 'center'
+                               }}
+                               onMouseEnter={(e) => e.target.style.background = C.accentMid}
+                               onMouseLeave={(e) => e.target.style.background = C.accentLight}>
+                              ⬇ Download
+                            </a>
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+      </div>
     </div>
   );
 }

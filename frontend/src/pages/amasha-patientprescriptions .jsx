@@ -24,6 +24,7 @@ const navItems = [
   { to: '/patient-dashboard',   label: 'Dashboard',       path: 'M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6' },
   { to: '/patient-profile',     label: 'My Profile',      path: 'M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z' },
   { to: '/appointments',        label: 'Appointments',    path: 'M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z' },
+  { to: '/telemedicine',        label: 'My Consultations', path: 'M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z' },
   { to: '/patient-reports',     label: 'Medical Reports', path: 'M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z' },
   { to: '/patient-prescription',       label: 'Prescriptions',   path: 'M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2' },
 ];
@@ -31,30 +32,37 @@ const navItems = [
 function Sidebar({ user }) {
   const loc = window.location.pathname;
   return (
-    <aside style={{ width: 240, minHeight: '100vh', background: 'linear-gradient(180deg, #0F3460 0%, #16213E 100%)', display: 'flex', flexDirection: 'column', flexShrink: 0 }}>
-      <div style={{ padding: '24px 20px', borderBottom: '1px solid rgba(255,255,255,0.1)' }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-          <div style={{ width: 40, height: 40, borderRadius: 12, background: C.teal, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 18 }}>💊</div>
-          <span style={{ color: 'white', fontWeight: 800, fontSize: 18, letterSpacing: '-0.3px' }}>Medi<span style={{ color: '#76C893' }}>Core</span></span>
-        </div>
-      </div>
-      <div style={{ padding: '16px 14px', borderBottom: '1px solid rgba(255,255,255,0.1)' }}>
-        <div style={{ background: 'rgba(15,155,142,0.15)', borderRadius: 12, padding: '12px 14px', display: 'flex', alignItems: 'center', gap: 10 }}>
-          <div style={{ width: 36, height: 36, borderRadius: '50%', background: '#26667F', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'white', fontSize: 14, fontWeight: 700 }}>
-            {user?.name?.charAt(0)?.toUpperCase() || 'P'}
-          </div>
-          <div>
-            <p style={{ margin: 0, color: 'white', fontWeight: 600, fontSize: 13 }}>{user?.name || 'Patient'}</p>
-            <p style={{ margin: 0, color: '#76C893', fontSize: 11 }}>Patient</p>
+    <aside className="w-64 min-h-screen flex flex-col" style={{ background: 'linear-gradient(180deg, #124170 0%, #1a5a8a 100%)' }}>
+      {/* User pill */}
+      <div className="px-4 py-4 border-b border-white/10">
+        <div className="rounded-xl px-4 py-3" style={{ background: 'rgba(103,192,144,0.15)' }}>
+          <div className="flex items-center gap-3">
+            <div className="w-9 h-9 rounded-full flex items-center justify-center text-sm font-bold text-white"
+              style={{ background: '#26667F' }}>
+              {user?.name?.charAt(0)?.toUpperCase() || 'P'}
+            </div>
+            <div>
+              <p className="text-white font-medium text-sm truncate max-w-[120px]">{user?.name || 'Patient'}</p>
+              <p className="text-xs capitalize" style={{ color: '#67C090' }}>Patient</p>
+            </div>
           </div>
         </div>
       </div>
-      <nav style={{ flex: 1, padding: '14px 10px' }}>
+
+      {/* Nav links */}
+      <nav className="flex-1 px-3 py-4 space-y-1">
         {navItems.map(({ to, label, path }) => {
-          const active = loc === to;
+          const isActive = loc === to;
           return (
-            <Link key={to} to={to} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '10px 12px', borderRadius: 10, marginBottom: 3, textDecoration: 'none', background: active ? 'rgba(15,155,142,0.25)' : 'transparent', color: active ? 'white' : 'rgba(255,255,255,0.6)', fontWeight: active ? 600 : 400, fontSize: 14 }}>
-              <svg width="17" height="17" viewBox="0 0 24 24" fill="none"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.8" stroke="currentColor" d={path} /></svg>
+            <Link key={to} to={to}
+              className="flex items-center gap-3 px-4 py-2.5 rounded-xl text-sm font-medium transition-all"
+              style={{
+                background: isActive ? '#26667F' : 'transparent',
+                color: isActive ? 'white' : 'rgba(255,255,255,0.65)',
+              }}>
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.8" stroke="currentColor" d={path} />
+              </svg>
               {label}
             </Link>
           );

@@ -1,9 +1,5 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import KaveeshaDoctorAvailability from './kaveesha-DoctorAvailability';
-import KaveeshaDoctorProfile from './kaveesha-doctorProfile';
-import KaveeshaPrescriptions from './Kaveesha-prescriptions';
-import KaveeshaPatientReports from './Kaveesha-patientreports';
 
 const COLORS = {
   navy: '#184E77',
@@ -20,6 +16,7 @@ const COLORS = {
 const NAV_ITEMS = [
   { id: 'overview', label: 'Overview', icon: <svg width="20" height="20" viewBox="0 0 24 24" fill="none"><rect x="3" y="3" width="7" height="7" rx="2" stroke="currentColor" strokeWidth="1.8"/><rect x="14" y="3" width="7" height="7" rx="2" stroke="currentColor" strokeWidth="1.8"/><rect x="3" y="14" width="7" height="7" rx="2" stroke="currentColor" strokeWidth="1.8"/><rect x="14" y="14" width="7" height="7" rx="2" stroke="currentColor" strokeWidth="1.8"/></svg> },
   { id: 'appointments', label: 'Appointments', icon: <svg width="20" height="20" viewBox="0 0 24 24" fill="none"><rect x="3" y="4" width="18" height="18" rx="3" stroke="currentColor" strokeWidth="1.8"/><path d="M16 2v4M8 2v4M3 10h18" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round"/></svg> },
+  { id: 'telemedicine', label: 'My Consultations', icon: <svg width="20" height="20" viewBox="0 0 24 24" fill="none"><path d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" stroke="currentColor" strokeWidth="1.8"/></svg> },
   { id: 'availability', label: 'Availability', icon: <svg width="20" height="20" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="9" stroke="currentColor" strokeWidth="1.8"/><path d="M12 6v6l4 2" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round"/></svg> },
   { id: 'prescriptions', label: 'Prescriptions', icon: <svg width="20" height="20" viewBox="0 0 24 24" fill="none"><path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" stroke="currentColor" strokeWidth="1.8"/></svg> },
   { id: 'reports', label: 'Patient Reports', icon: <svg width="20" height="20" viewBox="0 0 24 24" fill="none"><path d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" stroke="currentColor" strokeWidth="1.8"/></svg> },
@@ -237,6 +234,16 @@ export default function KaveeshaDoctorDashboard() {
             const active = activeTab === id;
             const handleClick = id === 'appointments'
               ? () => navigate('/doctor-appointments')
+              : id === 'telemedicine'
+              ? () => navigate('/doctor-telemedicine')
+              : id === 'availability'
+              ? () => navigate('/doctor-availability')
+              : id === 'prescriptions'
+              ? () => navigate('/doctor-prescriptions')
+              : id === 'reports'
+              ? () => navigate('/doctor-reports')
+              : id === 'profile'
+              ? () => navigate('/doctor-profile')
               : () => setActiveTab(id);
             return (
               <button key={id} onClick={handleClick} style={{
@@ -416,20 +423,6 @@ export default function KaveeshaDoctorDashboard() {
           <div style={{ background: 'white', borderRadius: 20, border: '1.5px solid #E0EFF5', padding: '28px', boxShadow: '0 2px 16px rgba(24,78,119,0.06)' }}>
             <AppointmentsPanel appointments={appointments} loading={loadingAppts} onAction={handleAppointmentAction} onRefresh={fetchAppointments} />
           </div>
-        )}
-
-        {/* ── Availability tab ── */}
-        {activeTab === 'availability' && <KaveeshaDoctorAvailability token={token} />}
-
-        {/* ── Prescriptions tab ── */}
-        {activeTab === 'prescriptions' && <KaveeshaPrescriptions />}
-
-        {/* ── Reports tab ── */}
-        {activeTab === 'reports' && <KaveeshaPatientReports />}
-
-        {/* ── Profile tab ── */}
-        {activeTab === 'profile' && (
-          <KaveeshaDoctorProfile doctor={doctor} onRefresh={fetchProfile} token={token} />
         )}
       </main>
     </div>

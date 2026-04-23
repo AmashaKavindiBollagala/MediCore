@@ -192,6 +192,38 @@ class AppointmentController {
     }
   }
 
+  async completeAppointment(req, res) {
+    try {
+      const { appointmentId } = req.params;
+      const userId = req.user.id;
+      const userRole = req.user.role;
+
+      // Only doctors can mark appointments as completed
+      if (userRole !== 'doctor') {
+        return res.status(403).json({ error: 'Only doctors can mark appointments as completed' });
+      }
+
+      const result = await appointmentService.updateAppointmentStatus(
+        appointmentId,
+        'COMPLETED',
+        null
+      );
+
+      if (result.error) {
+        return res.status(result.status).json({ error: result.error });
+      }
+
+      res.json({
+        success: true,
+        message: 'Appointment marked as completed',
+        data: result.data,
+      });
+    } catch (error) {
+      console.error('Complete appointment error:', error);
+      res.status(500).json({ error: 'Failed to complete appointment' });
+    }
+  }
+
 
   async rescheduleAppointment(req, res) {
     try {
@@ -246,6 +278,33 @@ class AppointmentController {
     } catch (error) {
       console.error('Reject appointment error:', error);
       res.status(500).json({ error: 'Failed to reject appointment' });
+    }
+  }
+
+
+  async checkTelemedicineEligibility(req, res) {
+    try {
+      const { appointmentId } = req.params;
+      const userId = req.user.id;
+      const userRole = req.user.role;
+
+      const result = await appointmentService.checkTelemedicineEligibility(
+        appointmentId,
+        userId,
+        userRole
+      );
+
+      if (result.error) {
+        return res.status(result.status).json({ error: result.error });
+      }
+
+      res.json({
+        success: true,
+        data: result.data,
+      });
+    } catch (error) {
+      console.error('Check telemedicine eligibility error:', error);
+      res.status(500).json({ error: 'Failed to check telemedicine eligibility' });
     }
   }
 }

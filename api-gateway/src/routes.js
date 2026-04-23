@@ -1,5 +1,6 @@
 const express = require('express');
 const router = express.Router();
+const proxy = require('express-http-proxy');
 
 // Node 18+ has global fetch available by default
 
@@ -89,28 +90,28 @@ router.post('/api/patients/sync', (req, res) => {
 });
 
 // Patient reports (with file upload support)
-router.post('/api/patients/reports', async (req, res) => {
-  try {
-    const url = `${SERVICES.patient}/api/patients/reports`;
-    
-    // Forward multipart/form-data for file upload
-    const response = await fetch(url, {
-      method: 'POST',
-      headers: {
-        'Content-Type': req.headers['content-type'],
-        Authorization: req.headers.authorization || '',
-      },
-      body: req,
-      duplex: 'half',
-    });
-    
-    const data = await response.json();
-    res.status(response.status).json(data);
-  } catch (error) {
-    console.error(`Proxy error to ${SERVICES.patient}/api/patients/reports:`, error.message);
-    res.status(502).json({ error: 'Service unavailable', detail: error.message });
+router.post('/api/patients/reports', (req, res, next) => {
+  console.log('[API Gateway] POST /api/patients/reports - Content-Type:', req.headers['content-type']);
+  console.log('[API Gateway] Proxying to:', SERVICES.patient + '/api/patients/reports');
+  next();
+}, proxy(SERVICES.patient, {
+  proxyReqPathResolver: () => '/api/patients/reports',
+  proxyReqOptDecorator: (proxyReqOpts, srcReq) => {
+    proxyReqOpts.headers['Authorization'] = srcReq.headers.authorization || '';
+    proxyReqOpts.headers['Content-Type'] = srcReq.headers['content-type'];
+    console.log('[API Gateway] Full proxy URL:', proxyReqOpts.hostname || SERVICES.patient, proxyReqOpts.path);
+    return proxyReqOpts;
+  },
+  userResDecorator: (proxyRes, proxyResData, userReq, userRes) => {
+    console.log('[API Gateway] Response status:', proxyRes.statusCode);
+    console.log('[API Gateway] Response body:', proxyResData.toString().substring(0, 300));
+    return proxyResData;
+  },
+  onError: (err, req, res) => {
+    console.error('[API Gateway] Proxy error:', err.message);
+    res.status(502).json({ error: 'Proxy error', detail: err.message });
   }
-});
+}));
 
 router.get('/api/patients/reports', (req, res) => {
   const query = new URLSearchParams(req.query).toString();
@@ -121,12 +122,16 @@ router.delete('/api/patients/reports/:id', (req, res) => {
   proxyRequest(req, res, SERVICES.patient, `/api/patients/reports/${req.params.id}`);
 });
 
-// Patient prescriptions - TODO: This endpoint needs to be implemented in patient-service
-// For now, prescriptions are managed in doctor-service
-// router.get('/api/patients/prescriptions', (req, res) => {
-//   const query = new URLSearchParams(req.query).toString();
-//   proxyRequest(req, res, SERVICES.patient, `/api/patients/prescriptions?${query}`);
-// });
+// Patient prescriptions - Get prescriptions for a patient
+router.get('/api/patients/prescriptions', (req, res) => {
+  const query = new URLSearchParams(req.query).toString();
+  proxyRequest(req, res, SERVICES.doctor, `/doctors/patients/${req.query.patient_id}/prescriptions?${query}`);
+});
+
+router.get('/patients/prescriptions', (req, res) => {
+  const query = new URLSearchParams(req.query).toString();
+  proxyRequest(req, res, SERVICES.doctor, `/doctors/patients/${req.query.patient_id}/prescriptions?${query}`);
+});
 
 // Routes without /api prefix (for direct calls)
 router.get('/patients/profile', (req, res) => {
@@ -141,29 +146,18 @@ router.post('/patients/sync', (req, res) => {
   proxyRequest(req, res, SERVICES.patient, '/api/patients/sync');
 });
 
-// Patient reports (with file upload support)
-router.post('/patients/reports', async (req, res) => {
-  try {
-    const url = `${SERVICES.patient}/api/patients/reports`;
-    
-    // Forward multipart/form-data for file upload
-    const response = await fetch(url, {
-      method: 'POST',
-      headers: {
-        'Content-Type': req.headers['content-type'],
-        Authorization: req.headers.authorization || '',
-      },
-      body: req,
-      duplex: 'half',
-    });
-    
-    const data = await response.json();
-    res.status(response.status).json(data);
-  } catch (error) {
-    console.error(`Proxy error to ${SERVICES.patient}/api/patients/reports:`, error.message);
-    res.status(502).json({ error: 'Service unavailable', detail: error.message });
+// Patient reports (with file upload support) - without /api prefix
+router.post('/patients/reports', proxy(SERVICES.patient, {
+  proxyReqPathResolver: () => '/api/patients/reports',
+  proxyReqOptDecorator: (proxyReqOpts, srcReq) => {
+    proxyReqOpts.headers['Authorization'] = srcReq.headers.authorization || '';
+    proxyReqOpts.headers['Content-Type'] = srcReq.headers['content-type'];
+    return proxyReqOpts;
+  },
+  userResDecorator: (proxyRes, proxyResData, userReq, userRes) => {
+    return proxyResData;
   }
-});
+}));
 
 router.get('/patients/reports', (req, res) => {
   const query = new URLSearchParams(req.query).toString();
@@ -174,12 +168,7 @@ router.delete('/patients/reports/:id', (req, res) => {
   proxyRequest(req, res, SERVICES.patient, `/api/patients/reports/${req.params.id}`);
 });
 
-// Patient prescriptions - TODO: This endpoint needs to be implemented in patient-service
-// For now, prescriptions are managed in doctor-service
-// router.get('/patients/prescriptions', (req, res) => {
-//   const query = new URLSearchParams(req.query).toString();
-//   proxyRequest(req, res, SERVICES.patient, `/api/patients/prescriptions?${query}`);
-// });
+// Patient prescriptions - already defined above
 
 // ─── DOCTOR SERVICE ROUTES ─────────────────────────────────────────────────────
 
@@ -216,6 +205,11 @@ router.post('/doctors/register', async (req, res) => {
 });
 
 // Get all doctors (public)
+router.get('/api/doctors', (req, res) => {
+  const query = new URLSearchParams(req.query).toString();
+  proxyRequest(req, res, SERVICES.doctor, `/doctors?${query}`);
+});
+
 router.get('/doctors', (req, res) => {
   const query = new URLSearchParams(req.query).toString();
   proxyRequest(req, res, SERVICES.doctor, `/doctors?${query}`);
@@ -228,6 +222,16 @@ router.get('/api/doctors', (req, res) => {
 });
 
 // Doctor profile routes (authenticated) - MUST be before /doctors/:id
+router.get('/api/doctors/me/profile', (req, res) => {
+  console.log('API Gateway: Proxying GET /api/doctors/me/profile to', SERVICES.doctor);
+  proxyRequest(req, res, SERVICES.doctor, '/doctors/me/profile');
+});
+
+router.put('/api/doctors/me/profile', (req, res) => {
+  console.log('API Gateway: Proxying PUT /api/doctors/me/profile to', SERVICES.doctor);
+  proxyRequest(req, res, SERVICES.doctor, '/doctors/me/profile');
+});
+
 router.get('/doctors/me/profile', (req, res) => {
   console.log('API Gateway: Proxying GET /doctors/me/profile to', SERVICES.doctor);
   proxyRequest(req, res, SERVICES.doctor, '/doctors/me/profile');
@@ -239,6 +243,38 @@ router.put('/doctors/me/profile', (req, res) => {
 });
 
 // Doctor availability routes (authenticated)
+router.get('/api/doctors/me/availability', (req, res) => {
+  proxyRequest(req, res, SERVICES.doctor, '/doctors/me/availability');
+});
+
+router.post('/api/doctors/me/availability', (req, res) => {
+  proxyRequest(req, res, SERVICES.doctor, '/doctors/me/availability');
+});
+
+router.put('/api/doctors/me/availability/:slotId', (req, res) => {
+  proxyRequest(req, res, SERVICES.doctor, `/doctors/me/availability/${req.params.slotId}`);
+});
+
+router.delete('/api/doctors/me/availability/:slotId', (req, res) => {
+  proxyRequest(req, res, SERVICES.doctor, `/doctors/me/availability/${req.params.slotId}`);
+});
+
+router.get('/api/doctors/me/availability/exceptions', (req, res) => {
+  proxyRequest(req, res, SERVICES.doctor, '/doctors/me/availability/exceptions');
+});
+
+router.post('/api/doctors/me/availability/block', (req, res) => {
+  proxyRequest(req, res, SERVICES.doctor, '/doctors/me/availability/block');
+});
+
+router.put('/api/doctors/me/availability/exceptions/:exceptionId', (req, res) => {
+  proxyRequest(req, res, SERVICES.doctor, `/doctors/me/availability/exceptions/${req.params.exceptionId}`);
+});
+
+router.delete('/api/doctors/me/availability/exceptions/:exceptionId', (req, res) => {
+  proxyRequest(req, res, SERVICES.doctor, `/doctors/me/availability/exceptions/${req.params.exceptionId}`);
+});
+
 router.get('/doctors/me/availability', (req, res) => {
   proxyRequest(req, res, SERVICES.doctor, '/doctors/me/availability');
 });
@@ -272,21 +308,63 @@ router.delete('/doctors/me/availability/exceptions/:exceptionId', (req, res) => 
 });
 
 // Doctor appointments
+router.get('/api/doctors/me/appointments', (req, res) => {
+  const query = new URLSearchParams(req.query).toString();
+  proxyRequest(req, res, SERVICES.doctor, `/doctors/me/appointments?${query}`);
+});
+
 router.get('/doctors/me/appointments', (req, res) => {
   const query = new URLSearchParams(req.query).toString();
   proxyRequest(req, res, SERVICES.doctor, `/doctors/me/appointments?${query}`);
 });
 
 // Doctor prescriptions
+router.get('/api/doctors/me/prescriptions', (req, res) => {
+  const query = new URLSearchParams(req.query).toString();
+  proxyRequest(req, res, SERVICES.doctor, `/doctors/me/prescriptions?${query}`);
+});
+
 router.get('/doctors/me/prescriptions', (req, res) => {
   const query = new URLSearchParams(req.query).toString();
   proxyRequest(req, res, SERVICES.doctor, `/doctors/me/prescriptions?${query}`);
 });
 
+// Doctor prescriptions by appointment
+router.get('/api/doctors/me/prescriptions/appointment/:appointmentId', (req, res) => {
+  proxyRequest(req, res, SERVICES.doctor, `/doctors/me/prescriptions/appointment/${req.params.appointmentId}`);
+});
+
+router.get('/doctors/me/prescriptions/appointment/:appointmentId', (req, res) => {
+  proxyRequest(req, res, SERVICES.doctor, `/doctors/me/prescriptions/appointment/${req.params.appointmentId}`);
+});
+
 // Doctor reports
+router.get('/api/doctors/me/reports', (req, res) => {
+  const query = new URLSearchParams(req.query).toString();
+  proxyRequest(req, res, SERVICES.doctor, `/doctors/me/reports?${query}`);
+});
+
 router.get('/doctors/me/reports', (req, res) => {
   const query = new URLSearchParams(req.query).toString();
   proxyRequest(req, res, SERVICES.doctor, `/doctors/me/reports?${query}`);
+});
+
+// Doctor reports by appointment
+router.get('/api/doctors/me/reports/appointment/:appointmentId', (req, res) => {
+  proxyRequest(req, res, SERVICES.doctor, `/doctors/me/reports/appointment/${req.params.appointmentId}`);
+});
+
+router.get('/doctors/me/reports/appointment/:appointmentId', (req, res) => {
+  proxyRequest(req, res, SERVICES.doctor, `/doctors/me/reports/appointment/${req.params.appointmentId}`);
+});
+
+// Doctor patients (placeholder - returns empty array)
+router.get('/api/doctors/me/patients', (req, res) => {
+  res.json([]);
+});
+
+router.get('/doctors/me/patients', (req, res) => {
+  res.json([]);
 });
 
 // Get doctor by ID (public) - MUST be after /doctors/me/* routes
@@ -357,8 +435,16 @@ router.delete('/appointments/:appointmentId/cancel', (req, res) => {
   proxyRequest(req, res, SERVICES.appointment, `/api/appointments/${req.params.appointmentId}/cancel`);
 });
 
+router.put('/appointments/:appointmentId/complete', (req, res) => {
+  proxyRequest(req, res, SERVICES.appointment, `/api/appointments/${req.params.appointmentId}/complete`);
+});
+
 router.get('/appointments/:appointmentId', (req, res) => {
   proxyRequest(req, res, SERVICES.appointment, `/api/appointments/${req.params.appointmentId}`);
+});
+
+router.get('/appointments/:appointmentId/telemedicine-eligibility', (req, res) => {
+  proxyRequest(req, res, SERVICES.appointment, `/api/appointments/${req.params.appointmentId}/telemedicine-eligibility`);
 });
 
 // ─────────────────────────────────────────────
@@ -538,6 +624,73 @@ router.get('/admin/appointments', (req, res) => {
 router.get('/admin/payments', (req, res) => {
   const query = new URLSearchParams(req.query).toString();
   proxyRequest(req, res, SERVICES.admin, `/admin/payments?${query}`);
+});
+
+// ─────────────────────────────────────────────
+// TELEMEDICINE SERVICE
+// ─────────────────────────────────────────────
+// Session management
+router.post('/telemedicine/sessions', (req, res) => {
+  proxyRequest(req, res, SERVICES.telemedicine, '/telemedicine/sessions');
+});
+
+router.get('/telemedicine/sessions/:sessionId', (req, res) => {
+  proxyRequest(req, res, SERVICES.telemedicine, `/telemedicine/sessions/${req.params.sessionId}`);
+});
+
+router.get('/telemedicine/appointment/:appointmentId', (req, res) => {
+  proxyRequest(req, res, SERVICES.telemedicine, `/telemedicine/appointment/${req.params.appointmentId}`);
+});
+
+router.post('/telemedicine/appointment/:appointmentId/start', (req, res) => {
+  proxyRequest(req, res, SERVICES.telemedicine, `/telemedicine/appointment/${req.params.appointmentId}/start`);
+});
+
+// Token and join flow
+router.post('/telemedicine/sessions/:sessionId/token', (req, res) => {
+  proxyRequest(req, res, SERVICES.telemedicine, `/telemedicine/sessions/${req.params.sessionId}/token`);
+});
+
+router.post('/telemedicine/sessions/:sessionId/join', (req, res) => {
+  proxyRequest(req, res, SERVICES.telemedicine, `/telemedicine/sessions/${req.params.sessionId}/join`);
+});
+
+router.post('/telemedicine/sessions/:sessionId/leave', (req, res) => {
+  proxyRequest(req, res, SERVICES.telemedicine, `/telemedicine/sessions/${req.params.sessionId}/leave`);
+});
+
+router.post('/telemedicine/sessions/:sessionId/end', (req, res) => {
+  proxyRequest(req, res, SERVICES.telemedicine, `/telemedicine/sessions/${req.params.sessionId}/end`);
+});
+
+// Chat
+router.get('/telemedicine/sessions/:sessionId/chat', (req, res) => {
+  proxyRequest(req, res, SERVICES.telemedicine, `/telemedicine/sessions/${req.params.sessionId}/chat`);
+});
+
+// Clinical notes
+router.post('/telemedicine/sessions/:sessionId/notes', (req, res) => {
+  proxyRequest(req, res, SERVICES.telemedicine, `/telemedicine/sessions/${req.params.sessionId}/notes`);
+});
+
+router.get('/telemedicine/sessions/:sessionId/notes', (req, res) => {
+  proxyRequest(req, res, SERVICES.telemedicine, `/telemedicine/sessions/${req.params.sessionId}/notes`);
+});
+
+// Session history
+router.get('/telemedicine/doctor/sessions', (req, res) => {
+  const query = new URLSearchParams(req.query).toString();
+  proxyRequest(req, res, SERVICES.telemedicine, `/telemedicine/doctor/sessions?${query}`);
+});
+
+router.get('/telemedicine/patient/sessions', (req, res) => {
+  const query = new URLSearchParams(req.query).toString();
+  proxyRequest(req, res, SERVICES.telemedicine, `/telemedicine/patient/sessions?${query}`);
+});
+
+// Health check
+router.get('/telemedicine/health', (req, res) => {
+  proxyRequest(req, res, SERVICES.telemedicine, '/telemedicine/health');
 });
 
 module.exports = router;

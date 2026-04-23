@@ -12,6 +12,13 @@ import Login from './pages/amasha-Login';
 import Register from './pages/amasha-Register';
 import KaveeshaDoctorRegister from './pages/kaveesha-DoctorRegister';
 import KaveeshaDoctorDashboard from './pages/kaveesha-DoctorDashboard';
+import KaveeshaDoctorAvailability from './pages/kaveesha-DoctorAvailability';
+import KaveeshaDoctorProfile from './pages/kaveesha-doctorProfile';
+import KaveeshaPrescriptions from './pages/Kaveesha-prescriptions';
+import KaveeshaPatientReports from './pages/Kaveesha-patientreports';
+import KaveeshaVideoCallPage from './pages/kaveesha-VideoCallPage';
+import KaveeshaTelemedicinePage from './pages/kaveesha-TelemedicinePage';
+import KaveeshaDoctorTelemedicinePage from './pages/kaveesha-DoctorTelemedicinePage';
 import RegisterDetails from './pages/amasha-patientRegister';
 import PatientDashboard from './pages/amasha-patientDashboard';
 import PatientProfile from './pages/amasha-patientProfile';
@@ -57,6 +64,10 @@ function App() {
           <Route path="/doctor-register"    element={<KaveeshaDoctorRegister />} />
           <Route path="/doctor-dashboard"   element={<KaveeshaDoctorDashboard />} />
           <Route path="/doctor-appointments" element={<DushaniDoctorAppointments />} />
+          <Route path="/doctor-availability" element={<KaveeshaDoctorAvailability />} />
+          <Route path="/doctor-prescriptions" element={<KaveeshaPrescriptions />} />
+          <Route path="/doctor-reports" element={<KaveeshaPatientReports />} />
+          <Route path="/doctor-profile" element={<KaveeshaDoctorProfile />} />
 
           {/* ── Admin pages — NO shared layout ───────────────────────── */}
           <Route path="/admin"              element={<DilsharaAdminRoute><DilsharaAdminDashboard /></DilsharaAdminRoute>} />
@@ -138,6 +149,19 @@ function App() {
               <DilsharaSymptomChecker />
             </SharedLayout>
           } />
+
+          {/* ── Telemedicine Video Call — NO shared layout (fullscreen) ── */}
+          <Route path="/telemedicine/:appointmentId" element={<KaveeshaVideoCallPage />} />
+
+          {/* ── Telemedicine Dashboard (Patient) — WITH shared layout ── */}
+          <Route path="/telemedicine" element={
+            <SharedLayout>
+              <KaveeshaTelemedicinePage />
+            </SharedLayout>
+          } />
+
+          {/* ── Telemedicine Dashboard (Doctor) — NO shared layout (uses doctor dashboard sidebar) ── */}
+          <Route path="/doctor-telemedicine" element={<KaveeshaDoctorTelemedicinePage />} />
 
         </Routes>
       </div>

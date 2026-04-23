@@ -62,6 +62,11 @@ const DushaniAppointmentCard = ({ appointment, onCancel, onReschedule, userRole 
     navigate(`/payment/checkout/${appointment.id}`);
   };
 
+  const handleJoinVideoCall = () => {
+    // Navigate to video call page with appointment ID
+    navigate(`/telemedicine/${appointment.id}`);
+  };
+
   return (
     <div className="bg-white rounded-2xl p-4 md:p-6 border-2 border-teal-200/50 shadow-sm hover:shadow-lg transition-all duration-200">
       <div className="flex flex-col md:flex-row gap-4 md:gap-5">
@@ -142,6 +147,16 @@ const DushaniAppointmentCard = ({ appointment, onCancel, onReschedule, userRole 
             {/* Patient Actions */}
             {userRole === 'patient' && (
               <>
+                {/* Join Video Call button for CONFIRMED video appointments */}
+                {appointment.status === 'CONFIRMED' && isVideo && (
+                  <button
+                    onClick={handleJoinVideoCall}
+                    className="bg-gradient-to-r from-purple-600 to-purple-700 text-white px-5 py-2.5 rounded-lg text-sm font-semibold hover:shadow-lg transition-all duration-200 flex items-center gap-2"
+                  >
+                    🎥 Join Video Call
+                  </button>
+                )}
+
                 {/* Refund notification for cancelled appointments */}
                 {appointment.status === 'CANCELLED' && appointment.cancelled_by === 'doctor' && (
                   <div className="w-full bg-gradient-to-r from-blue-50 to-blue-100 border-2 border-blue-300 rounded-lg p-4 mb-2">
@@ -197,6 +212,16 @@ const DushaniAppointmentCard = ({ appointment, onCancel, onReschedule, userRole 
             {/* Doctor Actions */}
             {userRole === 'doctor' && (
               <>
+                {/* Join Video Call button for CONFIRMED video appointments */}
+                {appointment.status === 'CONFIRMED' && isVideo && (
+                  <button
+                    onClick={handleJoinVideoCall}
+                    className="bg-gradient-to-r from-purple-600 to-purple-700 text-white px-5 py-2.5 rounded-lg text-sm font-semibold hover:shadow-lg transition-all duration-200 flex items-center gap-2"
+                  >
+                    🎥 Join Video Call
+                  </button>
+                )}
+
                 {/* Cancel button - Available anytime except CANCELLED, COMPLETED, REJECTED */}
                 {appointment.status !== 'CANCELLED' && appointment.status !== 'COMPLETED' && appointment.status !== 'REJECTED' && (
                   <button

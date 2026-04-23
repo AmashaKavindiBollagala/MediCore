@@ -1,4 +1,34 @@
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
+
+const COLORS = {
+  navy: '#184E77',
+  teal: '#34A0A4',
+  mint: '#76C893',
+  cream: '#F1FAEE',
+  blush: '#FFE5EC',
+  navyLight: '#1B6CA8',
+  tealLight: '#52B5BA',
+  mintLight: '#A8DDB5',
+  navyDark: '#0D3352',
+};
+
+const NAV_ITEMS = [
+  { id: 'overview', label: 'Overview', route: '/doctor-dashboard',
+    icon: <svg width="20" height="20" viewBox="0 0 24 24" fill="none"><rect x="3" y="3" width="7" height="7" rx="2" stroke="currentColor" strokeWidth="1.8"/><rect x="14" y="3" width="7" height="7" rx="2" stroke="currentColor" strokeWidth="1.8"/><rect x="3" y="14" width="7" height="7" rx="2" stroke="currentColor" strokeWidth="1.8"/><rect x="14" y="14" width="7" height="7" rx="2" stroke="currentColor" strokeWidth="1.8"/></svg> },
+  { id: 'appointments', label: 'Appointments', route: '/doctor-appointments',
+    icon: <svg width="20" height="20" viewBox="0 0 24 24" fill="none"><rect x="3" y="4" width="18" height="18" rx="3" stroke="currentColor" strokeWidth="1.8"/><path d="M16 2v4M8 2v4M3 10h18" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round"/></svg> },
+  { id: 'telemedicine', label: 'My Consultations', route: '/doctor-telemedicine',
+    icon: <svg width="20" height="20" viewBox="0 0 24 24" fill="none"><path d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" stroke="currentColor" strokeWidth="1.8"/></svg> },
+  { id: 'availability', label: 'Availability', route: '/doctor-availability',
+    icon: <svg width="20" height="20" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="9" stroke="currentColor" strokeWidth="1.8"/><path d="M12 6v6l4 2" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round"/></svg> },
+  { id: 'prescriptions', label: 'Prescriptions', route: '/doctor-prescriptions',
+    icon: <svg width="20" height="20" viewBox="0 0 24 24" fill="none"><path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" stroke="currentColor" strokeWidth="1.8"/></svg> },
+  { id: 'reports', label: 'Patient Reports', route: '/doctor-reports',
+    icon: <svg width="20" height="20" viewBox="0 0 24 24" fill="none"><path d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" stroke="currentColor" strokeWidth="1.8"/></svg> },
+  { id: 'profile', label: 'My Profile', route: '/doctor-profile',
+    icon: <svg width="20" height="20" viewBox="0 0 24 24" fill="none"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round"/><circle cx="12" cy="7" r="4" stroke="currentColor" strokeWidth="1.8"/></svg> },
+];
 
 // ── Color Palette ────────────────────────────────────────────────────
 const C = {
@@ -254,11 +284,61 @@ function extractFilename(url) {
 
 // ── Main export ──────────────────────────────────────────────────────
 export default function KaveeshaDoctorProfile({ doctor: propDoctor, onRefresh, token }) {
+  const navigate = useNavigate();
+  const [sidebarOpen, setSidebarOpen] = useState(true);
   const [doctor, setDoctor] = useState(propDoctor);
   const [activeSection, setActiveSection] = useState('info');
   const [editing, setEditing] = useState(false);
   const [saving, setSaving] = useState(false);
   const [saveSuccess, setSaveSuccess] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const authToken = token || localStorage.getItem('token');
+
+  // Fetch doctor profile from API
+  useEffect(() => {
+    const fetchDoctorProfile = async () => {
+      try {
+        setLoading(true);
+        const res = await fetch('/api/doctors/me/profile', {
+          headers: { Authorization: `Bearer ${authToken}` },
+        });
+        if (res.ok) {
+          const data = await res.json();
+          setDoctor(data);
+        } else {
+          console.error('Failed to fetch doctor profile');
+          // Fallback to localStorage
+          const storedUser = localStorage.getItem('user');
+          if (storedUser) {
+            const userData = JSON.parse(storedUser);
+            setDoctor({
+              first_name: userData.first_name || userData.name?.split(' ')[0] || 'Doctor',
+              last_name: userData.last_name || userData.name?.split(' ')[1] || '',
+              specialty: userData.specialty || 'General Physician',
+              verification_status: userData.verification_status || 'approved',
+            });
+          }
+        }
+      } catch (err) {
+        console.error('Error fetching doctor profile:', err);
+        // Fallback to localStorage
+        const storedUser = localStorage.getItem('user');
+        if (storedUser) {
+          const userData = JSON.parse(storedUser);
+          setDoctor({
+            first_name: userData.first_name || userData.name?.split(' ')[0] || 'Doctor',
+            last_name: userData.last_name || userData.name?.split(' ')[1] || '',
+            specialty: userData.specialty || 'General Physician',
+            verification_status: userData.verification_status || 'approved',
+          });
+        }
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchDoctorProfile();
+  }, [authToken]);
   const [form, setForm] = useState({});
 
   useEffect(() => {
@@ -290,26 +370,33 @@ export default function KaveeshaDoctorProfile({ doctor: propDoctor, onRefresh, t
   const handleSave = async () => {
     setSaving(true);
     try {
-      if (token) {
-        const res = await fetch('/api/doctors/me/profile', {
-          method: 'PUT',
-          headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
-          body: JSON.stringify(form),
-        });
-        if (res.ok) {
-          const updated = await res.json();
-          setDoctor(prev => ({ ...prev, ...updated }));
-        }
+      console.log('Saving profile with data:', form);
+      const res = await fetch('/api/doctors/me/profile', {
+        method: 'PUT',
+        headers: { 
+          Authorization: `Bearer ${authToken}`, 
+          'Content-Type': 'application/json' 
+        },
+        body: JSON.stringify(form),
+      });
+      
+      const data = await res.json();
+      
+      if (res.ok) {
+        console.log('Profile saved successfully:', data);
+        // Update doctor state with the returned doctor object
+        setDoctor(prev => ({ ...prev, ...data.doctor }));
+        setSaveSuccess(true);
+        setEditing(false);
+        setTimeout(() => setSaveSuccess(false), 3500);
+        if (onRefresh) onRefresh();
       } else {
-        await new Promise(r => setTimeout(r, 700));
-        setDoctor(prev => ({ ...prev, ...form }));
+        console.error('Failed to save profile:', data);
+        alert(data.error || 'Failed to save profile. Please try again.');
       }
-      setSaveSuccess(true);
-      setEditing(false);
-      setTimeout(() => setSaveSuccess(false), 3500);
-      if (onRefresh) onRefresh();
     } catch (err) {
-      console.error(err);
+      console.error('Error saving profile:', err);
+      alert('An error occurred while saving. Please try again.');
     } finally {
       setSaving(false);
     }
@@ -349,6 +436,49 @@ export default function KaveeshaDoctorProfile({ doctor: propDoctor, onRefresh, t
     : null;
 
   return (
+    <div style={{ display: 'flex', minHeight: '100vh' }}>
+      <aside style={{ width: sidebarOpen ? 260 : 78, minHeight: '100vh', background: COLORS.navy, display: 'flex', flexDirection: 'column', transition: 'width 0.3s cubic-bezier(.4,0,.2,1)', overflow: 'hidden', flexShrink: 0, boxShadow: '4px 0 24px rgba(24,78,119,0.15)' }}>
+        <div style={{ padding: sidebarOpen ? '28px 22px 22px' : '28px 16px 22px', borderBottom: '1px solid rgba(255,255,255,0.1)', display: 'flex', alignItems: 'center', gap: 12 }}>
+          <div style={{ width: 42, height: 42, borderRadius: 12, background: COLORS.teal, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none"><path d="M12 5v14M5 12h14" stroke="white" strokeWidth="2.5" strokeLinecap="round"/></svg>
+          </div>
+          {sidebarOpen && <span style={{ fontSize: 22, fontWeight: 800, color: 'white', whiteSpace: 'nowrap', letterSpacing: '-0.5px' }}>Medi<span style={{ color: COLORS.mint }}>Core</span></span>}
+        </div>
+        {sidebarOpen && doctor && (
+          <div style={{ padding: '18px 22px', borderBottom: '1px solid rgba(255,255,255,0.1)' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+              <div style={{ width: 46, height: 46, borderRadius: '50%', background: `linear-gradient(135deg, ${COLORS.teal}, ${COLORS.mint})`, display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'white', fontSize: 16, fontWeight: 700, flexShrink: 0, border: '2px solid rgba(255,255,255,0.3)' }}>{`${doctor.first_name?.[0] || ''}${doctor.last_name?.[0] || ''}`.toUpperCase()}</div>
+              <div style={{ overflow: 'hidden' }}>
+                <p style={{ margin: 0, fontSize: 15, fontWeight: 700, color: 'white', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>Dr. {doctor.first_name} {doctor.last_name}</p>
+                <p style={{ margin: 0, fontSize: 12, color: COLORS.mintLight }}>{doctor.specialty}</p>
+              </div>
+            </div>
+            <div style={{ marginTop: 12, display: 'flex', alignItems: 'center', gap: 7, background: 'rgba(255,255,255,0.1)', borderRadius: 20, padding: '5px 12px', width: 'fit-content' }}>
+              <div style={{ width: 7, height: 7, borderRadius: '50%', background: doctor.verification_status === 'approved' ? COLORS.mint : '#F59E0B', flexShrink: 0 }} />
+              <span style={{ fontSize: 11, color: doctor.verification_status === 'approved' ? COLORS.mintLight : '#FCD34D', fontWeight: 500 }}>{doctor.verification_status === 'approved' ? 'Verified Doctor' : 'Pending Verification'}</span>
+            </div>
+          </div>
+        )}
+        <nav style={{ flex: 1, padding: '16px 12px' }}>
+          {NAV_ITEMS.map(({ id, label, route, icon }) => {
+            const active = id === 'profile';
+            return (
+              <button key={id} onClick={() => navigate(route)} style={{ display: 'flex', alignItems: 'center', gap: 14, width: '100%', padding: '12px 14px', borderRadius: 12, border: 'none', cursor: 'pointer', background: active ? COLORS.teal : 'transparent', color: active ? 'white' : 'rgba(255,255,255,0.6)', marginBottom: 4, fontWeight: active ? 700 : 400, fontSize: 15, textAlign: 'left', transition: 'all 0.18s' }}>
+                <span style={{ flexShrink: 0, opacity: active ? 1 : 0.8 }}>{icon}</span>
+                {sidebarOpen && <span style={{ whiteSpace: 'nowrap' }}>{label}</span>}
+                {active && sidebarOpen && <div style={{ marginLeft: 'auto', width: 7, height: 7, borderRadius: '50%', background: COLORS.mint }} />}
+              </button>
+            );
+          })}
+        </nav>
+        <div style={{ padding: '14px 12px', borderTop: '1px solid rgba(255,255,255,0.1)' }}>
+          <button onClick={() => { localStorage.clear(); navigate('/login'); }} style={{ display: 'flex', alignItems: 'center', gap: 14, width: '100%', padding: '12px 14px', borderRadius: 12, border: 'none', cursor: 'pointer', background: 'transparent', color: COLORS.blush, fontSize: 15, fontWeight: 500 }}>
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none"><path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4M16 17l5-5-5-5M21 12H9" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/></svg>
+            {sidebarOpen && 'Logout'}
+          </button>
+        </div>
+      </aside>
+      <div style={{ flex: 1 }}>
     <>
       <style>{STYLES}</style>
       <div className="dp-root">
@@ -763,5 +893,7 @@ export default function KaveeshaDoctorProfile({ doctor: propDoctor, onRefresh, t
         </div>
       </div>
     </>
+    </div>
+  </div>
   );
 }

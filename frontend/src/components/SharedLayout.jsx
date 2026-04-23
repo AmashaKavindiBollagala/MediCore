@@ -5,8 +5,9 @@ import { useNavigate } from "react-router-dom";
 const NAV_LINKS = [
   { label: "Home",               href: "/",                  icon: "🏠", protected: false },
   { label: "Appointments",       href: "/appointments",      icon: "📅", protected: true  },
+  { label: "My Consultations",   href: "/telemedicine",      icon: "🎥", protected: true  },
   { label: "AI Symptom Checker", href: "/symptom-checker",   icon: "🤖", protected: true  },
-  { label: "Consultation",       href: "/appointments/book", icon: "🎥", protected: true  },
+  { label: "Consultation",       href: "/appointments/book", icon: "💊", protected: true  },
   { label: "Profile",            href: "/patient-dashboard",   icon: "👤", protected: true  },
 ];
 
