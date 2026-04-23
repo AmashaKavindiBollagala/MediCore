@@ -21,7 +21,7 @@ const {
 
 const {
   issuePrescription, getMyPrescriptions, getPrescriptionById,
-  getPrescriptionsByAppointment, updatePrescription,
+  getPrescriptionsByAppointment, updatePrescription, getPatientPrescriptions,
 } = require('../controllers/kaveesha-prescriptionController');
 
 const {
@@ -81,6 +81,9 @@ router.patch('/me/appointments/:id/complete', authenticate, requireDoctor, compl
 // ── Doctor: manage prescriptions ──────────────────────────────────────────────
 router.post('/me/prescriptions', authenticate, requireDoctor, issuePrescription);
 router.get('/me/prescriptions', authenticate, requireDoctor, getMyPrescriptions);
+
+// ── Patient: get their prescriptions ──────────────────────────────────────────
+router.get('/patients/:patientId/prescriptions', getPatientPrescriptions);
 
 // ── Doctor: manage reports ────────────────────────────────────────────────────
 router.get('/me/reports', authenticate, requireDoctor, getMyPatientReports);

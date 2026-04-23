@@ -36,7 +36,7 @@ const uploadPatientReport = async (req, res) => {
   try {
     // Verify the appointment belongs to this doctor
     const appointmentCheck = await pool.query(
-      'SELECT id FROM appointments.bookings WHERE id = $1 AND doctor_id = $2',
+      'SELECT id FROM bookings WHERE id = $1 AND doctor_id = $2',
       [appointment_id, doctorId]
     );
 
@@ -75,14 +75,10 @@ const getMyPatientReports = async (req, res) => {
   try {
     let query = `
       SELECT r.*, 
-        a.scheduled_at as appointment_date,
-        a.status as appointment_status,
-        p.full_name as patient_name,
-        p.email as patient_email
+             p.first_name || ' ' || p.last_name as patient_name
       FROM patient_reports r
-      LEFT JOIN appointments.bookings a ON a.id = r.appointment_id
-      LEFT JOIN patients.profiles p ON p.id::text = r.patient_id::text
-      WHERE r.doctor_id = $1 OR r.uploaded_by = 'patient'
+      LEFT JOIN profiles p ON r.patient_id = p.id
+      WHERE (r.doctor_id = $1 OR r.uploaded_by = 'patient')
     `;
     const params = [doctorId];
 
@@ -114,12 +110,8 @@ const getReportById = async (req, res) => {
 
   try {
     const result = await pool.query(
-      `SELECT r.*, 
-        a.scheduled_at as appointment_date,
-        a.status as appointment_status
-       FROM patient_reports r
-       LEFT JOIN appointments.bookings a ON a.id = r.appointment_id
-       WHERE r.id = $1 AND r.doctor_id = $2`,
+      `SELECT * FROM patient_reports
+       WHERE r.id = $1 AND (r.doctor_id = $2 OR r.uploaded_by = 'patient')`,
       [req.params.id, doctorId]
     );
 
@@ -141,11 +133,24 @@ const getReportsByAppointment = async (req, res) => {
     return res.status(404).json({ error: 'Doctor profile not found' });
 
   try {
-    const result = await pool.query(
-      `SELECT * FROM patient_reports
-       WHERE appointment_id = $1 AND doctor_id = $2
-       ORDER BY uploaded_at DESC`,
+    // First verify the appointment belongs to this doctor
+    const appointmentCheck = await pool.query(
+      'SELECT id FROM bookings WHERE id = $1 AND doctor_id = $2',
       [req.params.appointmentId, doctorId]
+    );
+
+    if (appointmentCheck.rows.length === 0) {
+      return res.status(404).json({ error: 'Appointment not found or not authorized' });
+    }
+
+    const result = await pool.query(
+      `SELECT r.*, 
+              p.first_name || ' ' || p.last_name as patient_name
+       FROM patient_reports r
+       LEFT JOIN profiles p ON r.patient_id = p.id
+       WHERE r.appointment_id = $1
+       ORDER BY r.uploaded_at DESC`,
+      [req.params.appointmentId]
     );
 
     res.json(result.rows);

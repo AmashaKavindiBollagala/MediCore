@@ -10,17 +10,71 @@ const getPatientProfileId = async (userId) => {
   return result.rows[0]?.id || null;
 };
 
+// Helper: create patient profile from users table
+const createPatientProfile = async (userId) => {
+  // Connect to auth database to get user info
+  const authDbUrl = process.env.AUTH_DATABASE_URL;
+  if (!authDbUrl) {
+    console.error('AUTH_DATABASE_URL not configured');
+    return null;
+  }
+
+  const { Pool } = require('pg');
+  const authPool = new Pool({
+    connectionString: authDbUrl,
+    ssl: { rejectUnauthorized: false }
+  });
+
+  try {
+    // Get user from auth database
+    const userResult = await authPool.query(
+      'SELECT id, name, email FROM users WHERE id = $1',
+      [userId]
+    );
+
+    if (userResult.rows.length === 0) {
+      console.error(`User ${userId} not found in users table`);
+      return null;
+    }
+
+    const user = userResult.rows[0];
+    console.log(`Creating patient profile for user: ${user.name} (${user.email})`);
+
+    // Create patient profile
+    const insertResult = await pool.query(
+      'INSERT INTO patients (user_id, name, email) VALUES ($1, $2, $3) RETURNING id',
+      [user.id, user.name, user.email]
+    );
+
+    console.log(`Created patient profile with id: ${insertResult.rows[0].id}`);
+    return insertResult.rows[0].id;
+  } catch (err) {
+    console.error('Error creating patient profile:', err.message);
+    return null;
+  } finally {
+    await authPool.end();
+  }
+};
+
 // ─── POST /patients/reports — Upload patient report ─────────────────────
 const uploadPatientReport = async (req, res) => {
   try {
-    const userId = req.user.userId;
-    const patientId = await getPatientProfileId(userId);
+    const userId = req.user.id; // Changed from req.user.userId to req.user.id
+    console.log('Upload request from user:', userId);
     
+    let patientId = await getPatientProfileId(userId);
+    
+    // If patient profile doesn't exist, create it automatically from users table
     if (!patientId) {
-      return res.status(404).json({ error: 'Patient profile not found. Please register first.' });
+      console.log(`Patient profile not found for user ${userId}, creating...`);
+      patientId = await createPatientProfile(userId);
+      
+      if (!patientId) {
+        return res.status(500).json({ error: 'Failed to create patient profile' });
+      }
     }
 
-    const { report_type, description, doctor_id } = req.body;
+    const { appointment_id, report_type, description, doctor_id } = req.body;
     const file = req.file;
 
     if (!file) {
@@ -51,15 +105,28 @@ const uploadPatientReport = async (req, res) => {
       ssl: { rejectUnauthorized: false }
     });
 
+    // If appointment_id is provided but doctor_id is not, fetch doctor_id from the appointment
+    let finalDoctorId = doctor_id;
+    if (appointment_id && !finalDoctorId) {
+      const appointmentCheck = await doctorPool.query(
+        'SELECT doctor_id FROM appointments.bookings WHERE id = $1',
+        [appointment_id]
+      );
+      if (appointmentCheck.rows.length > 0) {
+        finalDoctorId = appointmentCheck.rows[0].doctor_id;
+        console.log(`Auto-assigning doctor_id ${finalDoctorId} from appointment ${appointment_id}`);
+      }
+    }
+
     const result = await doctorPool.query(
       `INSERT INTO patient_reports 
         (appointment_id, patient_id, doctor_id, report_url, report_type, description, uploaded_by)
        VALUES ($1, $2, $3, $4, $5, $6, 'patient')
        RETURNING *`,
       [
-        null, // appointment_id - not required for patient uploads
-        patientId,
-        doctor_id || null,
+        appointment_id || null, // appointment_id - links to completed consultation (UUID)
+        `00000000-0000-0000-0000-${String(patientId).padStart(12, '0')}`, // patient_id - convert integer to UUID format
+        finalDoctorId || null, // doctor_id - auto-fetched from appointment if not provided
         cloudinaryResult.url,
         report_type,
         description || ''
@@ -81,7 +148,7 @@ const uploadPatientReport = async (req, res) => {
 // ─── GET /patients/reports — Get all reports for this patient ────────────
 const getPatientReports = async (req, res) => {
   try {
-    const userId = req.user.userId;
+    const userId = req.user.id;
     const patientId = await getPatientProfileId(userId);
     
     if (!patientId) {
@@ -101,9 +168,9 @@ const getPatientReports = async (req, res) => {
         d.first_name || ' ' || d.last_name as doctor_name
        FROM patient_reports r
        LEFT JOIN profiles d ON r.doctor_id = d.id
-       WHERE r.patient_id = $1
+       WHERE r.patient_id = $1::uuid
        ORDER BY r.uploaded_at DESC`,
-      [patientId]
+      [`00000000-0000-0000-0000-${String(patientId).padStart(12, '0')}`]
     );
 
     await doctorPool.end();
@@ -118,7 +185,7 @@ const getPatientReports = async (req, res) => {
 // ─── DELETE /patients/reports/:id — Delete a report ──────────────────────
 const deletePatientReport = async (req, res) => {
   try {
-    const userId = req.user.userId;
+    const userId = req.user.id;
     const patientId = await getPatientProfileId(userId);
     
     if (!patientId) {

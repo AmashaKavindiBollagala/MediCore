@@ -34,7 +34,7 @@ const issuePrescription = async (req, res) => {
   try {
     // Verify the appointment belongs to this doctor
     const appointmentCheck = await pool.query(
-      'SELECT id FROM appointments.bookings WHERE id = $1 AND doctor_id = $2',
+      'SELECT id FROM bookings WHERE id = $1 AND doctor_id = $2',
       [appointment_id, doctorId]
     );
 
@@ -43,7 +43,7 @@ const issuePrescription = async (req, res) => {
     }
 
     const result = await pool.query(
-      `INSERT INTO doctors.prescriptions 
+      `INSERT INTO prescriptions 
         (appointment_id, doctor_id, patient_id, prescription_data, notes)
        VALUES ($1, $2, $3, $4, $5)
        RETURNING *`,
@@ -68,11 +68,10 @@ const getMyPrescriptions = async (req, res) => {
 
   try {
     const result = await pool.query(
-      `SELECT p.*, 
-        a.scheduled_at as appointment_date,
-        a.status as appointment_status
-       FROM doctors.prescriptions p
-       LEFT JOIN appointments.bookings a ON a.id = p.appointment_id
+      `SELECT p.*,
+              pr.first_name || ' ' || pr.last_name as patient_name
+       FROM prescriptions p
+       LEFT JOIN profiles pr ON p.patient_id = pr.id
        WHERE p.doctor_id = $1
        ORDER BY p.issued_at DESC`,
       [doctorId]
@@ -93,11 +92,8 @@ const getPrescriptionById = async (req, res) => {
 
   try {
     const result = await pool.query(
-      `SELECT p.*, 
-        a.scheduled_at as appointment_date,
-        a.status as appointment_status
-       FROM doctors.prescriptions p
-       LEFT JOIN appointments.bookings a ON a.id = p.appointment_id
+      `SELECT p.*
+       FROM prescriptions p
        WHERE p.id = $1 AND p.doctor_id = $2`,
       [req.params.id, doctorId]
     );
@@ -121,9 +117,12 @@ const getPrescriptionsByAppointment = async (req, res) => {
 
   try {
     const result = await pool.query(
-      `SELECT * FROM doctors.prescriptions
-       WHERE appointment_id = $1 AND doctor_id = $2
-       ORDER BY issued_at DESC`,
+      `SELECT p.*,
+              pr.first_name || ' ' || pr.last_name as patient_name
+       FROM prescriptions p
+       LEFT JOIN profiles pr ON p.patient_id = pr.id
+       WHERE p.appointment_id = $1 AND p.doctor_id = $2
+       ORDER BY p.issued_at DESC`,
       [req.params.appointmentId, doctorId]
     );
 
@@ -144,7 +143,7 @@ const updatePrescription = async (req, res) => {
 
   try {
     const result = await pool.query(
-      `UPDATE doctors.prescriptions 
+      `UPDATE prescriptions 
        SET prescription_data = COALESCE($1, prescription_data),
            notes = COALESCE($2, notes)
        WHERE id = $3 AND doctor_id = $4
@@ -163,10 +162,33 @@ const updatePrescription = async (req, res) => {
   }
 };
 
+// ─── GET /patients/:patientId/prescriptions — Get patient's prescriptions ─────
+const getPatientPrescriptions = async (req, res) => {
+  const { patientId } = req.params;
+
+  try {
+    const result = await pool.query(
+      `SELECT p.*, 
+              pr.first_name || ' ' || pr.last_name as doctor_name
+       FROM prescriptions p
+       LEFT JOIN profiles pr ON p.doctor_id = pr.id
+       WHERE p.patient_id = $1
+       ORDER BY p.issued_at DESC`,
+      [patientId]
+    );
+
+    res.json(result.rows);
+  } catch (err) {
+    console.error('[getPatientPrescriptions]', err);
+    res.status(500).json({ error: err.message });
+  }
+};
+
 module.exports = {
   issuePrescription,
   getMyPrescriptions,
   getPrescriptionById,
   getPrescriptionsByAppointment,
   updatePrescription,
+  getPatientPrescriptions,
 };

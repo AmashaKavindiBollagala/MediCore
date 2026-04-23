@@ -672,6 +672,62 @@ class AppointmentService {
 
     return { success: true, data: result.rows[0] };
   }
+
+
+  async checkTelemedicineEligibility(appointmentId, userId, userRole) {
+    try {
+      // Get appointment details
+      const appointment = await this.getAppointmentById(appointmentId);
+      
+      if (!appointment) {
+        return { error: 'Appointment not found', status: 404 };
+      }
+
+      // Verify user is part of this appointment
+      if (userRole === 'patient') {
+        const userIdStr = userId.toString();
+        const userIdUuid = userIdStr.includes('-')
+          ? userIdStr 
+          : `00000000-0000-0000-0000-${userIdStr.padStart(12, '0')}`;
+        
+        if (appointment.patient_id !== userIdUuid) {
+          return { error: 'Not authorized for this appointment', status: 403 };
+        }
+      } else if (userRole === 'doctor') {
+        if (appointment.doctor_id !== userId) {
+          return { error: 'Not authorized for this appointment', status: 403 };
+        }
+      }
+
+      // Check eligibility criteria:
+      // 1. Status must be CONFIRMED
+      // 2. Consultation type must be video/online
+      const isConfirmed = appointment.status === 'CONFIRMED';
+      const isVideoConsultation = appointment.consultation_type === 'video' || 
+                                   appointment.consultation_type === 'online';
+
+      const eligible = isConfirmed && isVideoConsultation;
+
+      return {
+        success: true,
+        data: {
+          appointment_id: appointment.id,
+          eligible: eligible,
+          status: appointment.status,
+          consultation_type: appointment.consultation_type,
+          scheduled_at: appointment.scheduled_at,
+          doctor_id: appointment.doctor_id,
+          patient_id: appointment.patient_id,
+          reason: !eligible 
+            ? (isConfirmed ? 'This is not a video consultation' : 'Appointment is not confirmed yet') 
+            : null
+        }
+      };
+    } catch (error) {
+      console.error('Check telemedicine eligibility error:', error);
+      return { error: 'Failed to check eligibility', status: 500 };
+    }
+  }
 }
 
 module.exports = new AppointmentService();

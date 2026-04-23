@@ -67,6 +67,7 @@ CREATE TABLE IF NOT EXISTS patient_reports (
   report_url VARCHAR(500) NOT NULL,
   report_type VARCHAR(100),
   description TEXT,
+  uploaded_by VARCHAR(20) DEFAULT 'doctor',
   uploaded_at TIMESTAMP DEFAULT NOW()
 );
 
