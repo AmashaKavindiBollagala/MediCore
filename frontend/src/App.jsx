@@ -26,7 +26,9 @@ import DilsharaAdminRoute               from './components/dilshara-AdminRoute';
 import DilsharaAdminDashboard           from './pages/dilshara-AdminDashboard';
 import DilsharaDoctorVerificationList   from './pages/dilshara-DoctorVerificationList';
 import DilsharaDoctorVerificationDetail from './pages/dilshara-DoctorVerificationDetail';
+import DilsharaDoctorAvailability       from './pages/dilshara-DoctorAvailability';
 import DilsharaAdminUsers               from './pages/dilshara-AdminUsers';
+import DilsharaPaymentOverview          from './pages/dilshara-PaymentOverview';
 import Home from './pages/Home';
 import {
   DilsharaAdminPayments,
@@ -63,7 +65,8 @@ function App() {
           <Route path="/admin/doctors"      element={<DilsharaAdminRoute><DilsharaDoctorVerificationList /></DilsharaAdminRoute>} />
           <Route path="/admin/doctors/:id"  element={<DilsharaAdminRoute><DilsharaDoctorVerificationDetail /></DilsharaAdminRoute>} />
           <Route path="/admin/users"        element={<DilsharaAdminRoute><DilsharaAdminUsers /></DilsharaAdminRoute>} />
-          <Route path="/admin/payments"     element={<DilsharaAdminRoute><DilsharaAdminPayments /></DilsharaAdminRoute>} />
+          <Route path="/admin/payments"     element={<DilsharaAdminRoute><DilsharaPaymentOverview /></DilsharaAdminRoute>} />
+          <Route path="/admin/doctor-availability" element={<DilsharaAdminRoute><DilsharaDoctorAvailability /></DilsharaAdminRoute>} />
           <Route path="/admin/availability" element={<DilsharaAdminRoute><DilsharaAdminAvailability /></DilsharaAdminRoute>} />
 
           {/* ── Appointment & Payment pages — WITH shared layout ──────── */}

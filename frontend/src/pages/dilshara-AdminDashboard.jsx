@@ -188,9 +188,9 @@ export default function DilsharaAdminDashboard() {
           <NavCard
             icon="📅"
             title="Doctor Availability"
-            desc="View doctor schedule summaries and slot utilisation across the platform. Managed by the doctor-service team."
+            desc="View doctor schedules, manage availability, suspend or reactivate doctor accounts."
             accent="#34A0A4"
-            onClick={() => navigate('/admin/availability')}
+            onClick={() => navigate('/admin/doctor-availability')}
           />
           <NavCard
             icon="👤"
@@ -210,9 +210,7 @@ export default function DilsharaAdminDashboard() {
           <span style={{ fontSize: 20 }}>🤖</span>
           <div>
             <div style={{ fontSize: 13, fontWeight: 600, color: '#67C090' }}>AI-Assisted Verification Active</div>
-            <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.4)', marginTop: 2 }}>
-              When you open a doctor's application, the AI will automatically read and extract details from their uploaded medical license so you can verify faster.
-            </div>
+            
           </div>
         </div>
       </div>
