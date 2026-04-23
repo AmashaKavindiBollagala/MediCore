@@ -18,15 +18,17 @@
 
 require('dotenv').config();
 const express  = require('express');
-const { Pool } = require('pg');
 const jwt      = require('jsonwebtoken');
 const multer   = require('multer');
 const Anthropic = require('@anthropic-ai/sdk');
 const fs       = require('fs');
 const path     = require('path');
 
-// Import modular route files
+// Import modular route files and database pools
 const doctorsRoutes = require('./routes/dilshara-doctorsRoutes');
+const paymentsRoutes = require('./routes/dilshara-paymentsRoutes');
+const usersRoutes = require('./routes/dilshara-usersRoutes');
+const { doctorPool, mainPool } = require('./config/dilshara-db');
 
 // ─── App + DB setup ───────────────────────────────────────────────────────────
 
@@ -42,14 +44,8 @@ app.use((req, res, next) => {
   next();
 });
 
-const pool = new Pool({
-  user:     process.env.DB_USER,
-  host:     process.env.DB_HOST,
-  database: process.env.DB_NAME,
-  password: process.env.DB_PASSWORD,
-  port:     process.env.DB_PORT || 5432,
-  ssl:      process.env.DB_SSL === 'true' ? { rejectUnauthorized: false } : false,
-});
+// Pool is imported from config/dilshara-db.js which uses DOCTOR_DB_URL
+// const pool = require('./config/dilshara-db'); // Already imported at top
 
 // Anthropic client for AI doctor verification
 const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
@@ -105,6 +101,12 @@ function requireAdmin(req, res, next) {
 // Doctor verification routes (modular)
 app.use('/admin/doctors', requireAdmin, doctorsRoutes);
 
+// Payment overview routes (modular)
+app.use('/admin/payments', requireAdmin, paymentsRoutes);
+
+// User management routes (modular)
+app.use('/admin/users', requireAdmin, usersRoutes);
+
 // ─── Health ───────────────────────────────────────────────────────────────────
 
 app.get('/health', (req, res) => res.json({ status: 'ok', service: 'admin-service' }));
@@ -115,7 +117,7 @@ app.get('/health', (req, res) => res.json({ status: 'ok', service: 'admin-servic
 app.get('/admin/stats', requireAdmin, async (req, res) => {
   try {
     // Doctors by verification status (this is in medicore_doctor database)
-    const doctorsResult = await pool.query(`
+    const doctorsResult = await doctorPool.query(`
       SELECT 
         COUNT(*) FILTER (WHERE verification_status = 'pending') AS pending,
         COUNT(*) FILTER (WHERE verification_status = 'approved') AS approved,
@@ -130,7 +132,7 @@ app.get('/admin/stats', requireAdmin, async (req, res) => {
     let paymentStats = { total_revenue: 0, total_refunds: 0, pending_payments: 0, completed_payments: 0 };
 
     try {
-      const usersResult = await pool.query(`
+      const usersResult = await mainPool.query(`
         SELECT role, COUNT(*) AS count,
                COUNT(*) FILTER (WHERE status = 'suspended') AS suspended
         FROM auth.users
@@ -147,7 +149,7 @@ app.get('/admin/stats', requireAdmin, async (req, res) => {
     }
 
     try {
-      const appointmentsResult = await pool.query(`
+      const appointmentsResult = await mainPool.query(`
         SELECT status, COUNT(*) AS count FROM appointments.bookings GROUP BY status
       `);
       appointmentStats = appointmentsResult.rows.reduce((acc, r) => {
@@ -159,7 +161,7 @@ app.get('/admin/stats', requireAdmin, async (req, res) => {
     }
 
     try {
-      const paymentsResult = await pool.query(`
+      const paymentsResult = await mainPool.query(`
         SELECT
           COALESCE(SUM(amount) FILTER (WHERE status='completed' AND transaction_type='payment'), 0) AS total_revenue,
           COALESCE(SUM(amount) FILTER (WHERE status='completed' AND transaction_type='refund'),  0) AS total_refunds,
@@ -267,7 +269,7 @@ If you cannot read a field clearly, set it to null.`;
     }
 
     // Persist the AI analysis in the doctors table
-    await pool.query(
+    await mainPool.query(
       `UPDATE profiles SET ai_analysis = $1, updated_at = NOW() WHERE id = $2`,
       [JSON.stringify(analysis), req.params.id]
     );
@@ -281,92 +283,7 @@ If you cannot read a field clearly, set it to null.`;
   }
 });
 
-// ─── Users ────────────────────────────────────────────────────────────────────
 
-// GET /admin/users?role=patient&page=1&limit=20&search=email
-app.get('/admin/users', requireAdmin, async (req, res) => {
-  const { role, page = 1, limit = 20, search } = req.query;
-  const offset = (parseInt(page) - 1) * parseInt(limit);
-
-  let conditions = [];
-  let params = [];
-
-  if (role && ['patient', 'doctor', 'admin'].includes(role)) {
-    params.push(role);
-    conditions.push(`u.role = $${params.length}`);
-  }
-  if (search) {
-    params.push(`%${search}%`);
-    conditions.push(`u.email ILIKE $${params.length}`);
-  }
-
-  const where = conditions.length ? 'WHERE ' + conditions.join(' AND ') : '';
-
-  try {
-    const countResult = await pool.query(
-      `SELECT COUNT(*) FROM auth.users u ${where}`,
-      params
-    );
-
-    params.push(parseInt(limit), offset);
-    const dataResult = await pool.query(
-      `SELECT u.id, u.email, u.role, u.status, u.created_at,
-              COALESCE(p.full_name, d.full_name) AS full_name
-       FROM auth.users u
-       LEFT JOIN patients.profiles p ON p.user_id = u.id
-       LEFT JOIN doctors.profiles  d ON d.user_id = u.id
-       ${where}
-       ORDER BY u.created_at DESC
-       LIMIT $${params.length - 1} OFFSET $${params.length}`,
-      params
-    );
-
-    res.json({
-      total: parseInt(countResult.rows[0].count),
-      page:  parseInt(page),
-      limit: parseInt(limit),
-      users: dataResult.rows,
-    });
-  } catch (err) {
-    res.status(500).json({ error: err.message });
-  }
-});
-
-// PUT /admin/users/:id/suspend
-app.put('/admin/users/:id/suspend', requireAdmin, async (req, res) => {
-  const { reason } = req.body;
-  try {
-    const result = await pool.query(
-      `UPDATE auth.users
-       SET status = 'suspended', suspension_reason = $2, updated_at = NOW()
-       WHERE id = $1 AND role != 'admin'
-       RETURNING id, email, role, status`,
-      [req.params.id, reason || null]
-    );
-    if (!result.rows.length)
-      return res.status(404).json({ error: 'User not found or cannot suspend admin' });
-    res.json({ message: 'User suspended', user: result.rows[0] });
-  } catch (err) {
-    res.status(500).json({ error: err.message });
-  }
-});
-
-// PUT /admin/users/:id/reactivate
-app.put('/admin/users/:id/reactivate', requireAdmin, async (req, res) => {
-  try {
-    const result = await pool.query(
-      `UPDATE auth.users
-       SET status = 'active', suspension_reason = NULL, updated_at = NOW()
-       WHERE id = $1
-       RETURNING id, email, role, status`,
-      [req.params.id]
-    );
-    if (!result.rows.length) return res.status(404).json({ error: 'User not found' });
-    res.json({ message: 'User reactivated', user: result.rows[0] });
-  } catch (err) {
-    res.status(500).json({ error: err.message });
-  }
-});
 
 // ─── Appointments ─────────────────────────────────────────────────────────────
 

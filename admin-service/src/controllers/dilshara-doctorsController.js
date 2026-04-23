@@ -3,7 +3,7 @@
 // After approve/reject → writes to admin.verification_events so the
 // notification-service (another team) can pick it up and email the doctor
 
-const pool = require('../config/dilshara-db');
+const { doctorPool: pool } = require('../config/dilshara-db');
 
 // GET /admin/doctors?status=pending|approved|rejected|all
 exports.getDoctors = async (req, res) => {
@@ -33,7 +33,7 @@ exports.getDoctors = async (req, res) => {
 
     res.json(result.rows);
   } catch (err) {
-    console.error('getDoctors error:', err.message);
+    console.error('getDoctors error:', err);
     res.status(500).json({ error: err.message });
   }
 };
@@ -62,7 +62,7 @@ exports.getDoctorById = async (req, res) => {
 
     res.json(result.rows[0]);
   } catch (err) {
-    console.error('getDoctorById error:', err.message);
+    console.error('getDoctors error:', err);
     res.status(500).json({ error: err.message });
   }
 };
@@ -145,9 +145,163 @@ exports.verifyDoctor = async (req, res) => {
     });
   } catch (err) {
     await client.query('ROLLBACK');
-    console.error('verifyDoctor error:', err.message);
+    console.error('getDoctors error:', err);
     res.status(500).json({ error: err.message });
   } finally {
     client.release();
+  }
+};
+
+// GET /admin/doctors/:id/availability
+// Returns doctor's availability schedule
+exports.getDoctorAvailability = async (req, res) => {
+  const { id } = req.params;
+  try {
+    // Get doctor basic info
+    const doctorResult = await pool.query(
+      `SELECT id, full_name, specialty, verification_status FROM profiles WHERE id = $1`,
+      [id]
+    );
+    
+    if (doctorResult.rows.length === 0) {
+      return res.status(404).json({ error: 'Doctor not found' });
+    }
+
+    // Get availability schedule
+    const availabilityResult = await pool.query(
+      `SELECT 
+        id, day_of_week, start_time, end_time, 
+        slot_duration_minutes, consultation_type, is_active,
+        created_at
+       FROM availability 
+       WHERE doctor_id = $1 
+       ORDER BY day_of_week, start_time`,
+      [id]
+    );
+
+    // Get exception dates
+    const exceptionsResult = await pool.query(
+      `SELECT id, exception_date, reason, created_at
+       FROM availability_exceptions
+       WHERE doctor_id = $1
+       ORDER BY exception_date DESC`,
+      [id]
+    );
+
+    res.json({
+      doctor: doctorResult.rows[0],
+      availability: availabilityResult.rows,
+      exceptions: exceptionsResult.rows
+    });
+  } catch (err) {
+    console.error('getDoctorAvailability error:', err);
+    res.status(500).json({ error: err.message });
+  }
+};
+
+// PUT /admin/doctors/:id/suspend
+// Suspend/deactivate a doctor account
+exports.suspendDoctor = async (req, res) => {
+  const { id } = req.params;
+  const { reason } = req.body;
+
+  try {
+    const result = await pool.query(
+      `UPDATE profiles 
+       SET verification_status = 'suspended',
+           updated_at = NOW()
+       WHERE id = $1
+       RETURNING id, full_name, email, verification_status`,
+      [id]
+    );
+
+    if (result.rows.length === 0) {
+      return res.status(404).json({ error: 'Doctor not found' });
+    }
+
+    res.json({
+      message: 'Doctor account suspended successfully',
+      doctor: result.rows[0]
+    });
+  } catch (err) {
+    console.error('suspendDoctor error:', err);
+    res.status(500).json({ error: err.message });
+  }
+};
+
+// PUT /admin/doctors/:id/reactivate
+// Reactivate a suspended doctor account
+exports.reactivateDoctor = async (req, res) => {
+  const { id } = req.params;
+
+  try {
+    const result = await pool.query(
+      `UPDATE profiles 
+       SET verification_status = 'approved',
+           updated_at = NOW()
+       WHERE id = $1
+       RETURNING id, full_name, email, verification_status`,
+      [id]
+    );
+
+    if (result.rows.length === 0) {
+      return res.status(404).json({ error: 'Doctor not found' });
+    }
+
+    res.json({
+      message: 'Doctor account reactivated successfully',
+      doctor: result.rows[0]
+    });
+  } catch (err) {
+    console.error('reactivateDoctor error:', err);
+    res.status(500).json({ error: err.message });
+  }
+};
+
+// GET /admin/doctors/active-status
+// Get all approved doctors with their availability status
+exports.getDoctorsActiveStatus = async (req, res) => {
+  try {
+    // Get all approved doctors with their info
+    const doctorsResult = await pool.query(
+      `SELECT 
+        p.id, 
+        p.full_name, 
+        p.email, 
+        p.phone,
+        p.specialty, 
+        p.sub_specialty,
+        p.hospital,
+        p.profile_photo_url,
+        p.verification_status,
+        p.created_at,
+        COUNT(DISTINCT a.id) as total_slots,
+        COUNT(DISTINCT CASE WHEN a.is_active = true THEN a.id END) as active_slots,
+        COUNT(DISTINCT CASE WHEN a.is_active = true AND a.day_of_week = EXTRACT(DOW FROM CURRENT_DATE) THEN a.id END) as today_slots
+       FROM profiles p
+       LEFT JOIN availability a ON p.id = a.doctor_id
+       WHERE p.verification_status IN ('approved', 'suspended')
+       GROUP BY p.id
+       ORDER BY p.full_name`,
+      []
+    );
+
+    // Format doctors with active status
+    const doctors = doctorsResult.rows.map(doctor => {
+      const isActive = doctor.total_slots > 0 && doctor.active_slots > 0 && doctor.verification_status === 'approved';
+      const hasTodaySlots = doctor.today_slots > 0;
+      
+      return {
+        ...doctor,
+        is_online: isActive,
+        is_available_today: hasTodaySlots,
+        status: doctor.verification_status === 'suspended' ? 'suspended' : (isActive ? 'active' : 'inactive')
+      };
+    });
+
+    res.json(doctors);
+  } catch (err) {
+    console.error('getDoctorsActiveStatus error:', err);
+    res.status(500).json({ error: err.message });
   }
 };

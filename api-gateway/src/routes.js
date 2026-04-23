@@ -485,12 +485,29 @@ router.get('/admin/doctors', (req, res) => {
   proxyRequest(req, res, SERVICES.admin, `/admin/doctors?${query}`);
 });
 
+// Doctor availability and account management - MUST be before /:id route
+router.get('/admin/doctors/active-status', (req, res) => {
+  proxyRequest(req, res, SERVICES.admin, '/admin/doctors/active-status');
+});
+
 router.get('/admin/doctors/:id', (req, res) => {
   proxyRequest(req, res, SERVICES.admin, `/admin/doctors/${req.params.id}`);
 });
 
 router.patch('/admin/doctors/:id/verify', (req, res) => {
   proxyRequest(req, res, SERVICES.admin, `/admin/doctors/${req.params.id}/verify`);
+});
+
+router.get('/admin/doctors/:id/availability', (req, res) => {
+  proxyRequest(req, res, SERVICES.admin, `/admin/doctors/${req.params.id}/availability`);
+});
+
+router.put('/admin/doctors/:id/suspend', (req, res) => {
+  proxyRequest(req, res, SERVICES.admin, `/admin/doctors/${req.params.id}/suspend`);
+});
+
+router.put('/admin/doctors/:id/reactivate', (req, res) => {
+  proxyRequest(req, res, SERVICES.admin, `/admin/doctors/${req.params.id}/reactivate`);
 });
 
 // AI upload (stream-safe)
@@ -517,22 +534,53 @@ router.post('/admin/doctors/:id/ai-analyze', async (req, res) => {
   }
 });
 
+// User management routes - MUST be before generic /admin/users route
+router.get('/admin/users/stats', (req, res) => {
+  proxyRequest(req, res, SERVICES.admin, '/admin/users/stats');
+});
+
 router.get('/admin/users', (req, res) => {
   const query = new URLSearchParams(req.query).toString();
   proxyRequest(req, res, SERVICES.admin, `/admin/users?${query}`);
+});
+
+router.get('/admin/users/:id', (req, res) => {
+  proxyRequest(req, res, SERVICES.admin, `/admin/users/${req.params.id}`);
 });
 
 router.put('/admin/users/:id/suspend', (req, res) => {
   proxyRequest(req, res, SERVICES.admin, `/admin/users/${req.params.id}/suspend`);
 });
 
-router.put('/admin/users/:id/reactivate', (req, res) => {
-  proxyRequest(req, res, SERVICES.admin, `/admin/users/${req.params.id}/reactivate`);
+router.put('/admin/users/:id/activate', (req, res) => {
+  proxyRequest(req, res, SERVICES.admin, `/admin/users/${req.params.id}/activate`);
+});
+
+router.put('/admin/users/:id/ban', (req, res) => {
+  proxyRequest(req, res, SERVICES.admin, `/admin/users/${req.params.id}/ban`);
 });
 
 router.get('/admin/appointments', (req, res) => {
   const query = new URLSearchParams(req.query).toString();
   proxyRequest(req, res, SERVICES.admin, `/admin/appointments?${query}`);
+});
+
+// Payment overview routes
+router.get('/admin/payments/stats', (req, res) => {
+  proxyRequest(req, res, SERVICES.admin, '/admin/payments/stats');
+});
+
+router.get('/admin/payments/transactions', (req, res) => {
+  const query = new URLSearchParams(req.query).toString();
+  proxyRequest(req, res, SERVICES.admin, `/admin/payments/transactions?${query}`);
+});
+
+router.get('/admin/payments/analytics', (req, res) => {
+  proxyRequest(req, res, SERVICES.admin, '/admin/payments/analytics');
+});
+
+router.get('/admin/payments/:id', (req, res) => {
+  proxyRequest(req, res, SERVICES.admin, `/admin/payments/${req.params.id}`);
 });
 
 router.get('/admin/payments', (req, res) => {
