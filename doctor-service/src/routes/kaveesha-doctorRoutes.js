@@ -1,5 +1,6 @@
 const express = require('express');
 const router = express.Router();
+const pool = require('../config/kaveesha-doctorPool');
 
 const {
   registerDoctor, getMyProfile, updateMyProfile,
@@ -81,6 +82,21 @@ router.patch('/me/appointments/:id/complete', authenticate, requireDoctor, compl
 // ── Doctor: manage prescriptions ──────────────────────────────────────────────
 router.post('/me/prescriptions', authenticate, requireDoctor, issuePrescription);
 router.get('/me/prescriptions', authenticate, requireDoctor, getMyPrescriptions);
+router.get('/me/prescriptions/:id', authenticate, requireDoctor, getPrescriptionById);
+router.get('/me/prescriptions/appointment/:appointmentId', authenticate, requireDoctor, getPrescriptionsByAppointment);
+router.put('/me/prescriptions/:id', authenticate, requireDoctor, updatePrescription);
+router.delete('/me/prescriptions/:id', authenticate, requireDoctor, async (req, res) => {
+  try {
+    const result = await pool.query('DELETE FROM prescriptions WHERE id = $1 RETURNING *', [req.params.id]);
+    if (result.rows.length === 0) {
+      return res.status(404).json({ error: 'Prescription not found' });
+    }
+    res.json({ message: 'Prescription deleted successfully' });
+  } catch (err) {
+    console.error('[deletePrescription]', err);
+    res.status(500).json({ error: err.message });
+  }
+});
 
 // ── Patient: get their prescriptions ──────────────────────────────────────────
 router.get('/patients/:patientId/prescriptions', getPatientPrescriptions);
@@ -92,9 +108,6 @@ router.get('/me/reports', authenticate, requireDoctor, getMyPatientReports);
 router.get('/:id', getDoctorById);                     // GET  /doctors/:id
 router.get('/:id/availability', getDoctorAvailability);// GET  /doctors/:id/availability
 router.delete('/:id/availability/delete-by-slot', deleteAvailabilityBySlot); // DELETE /doctors/:id/availability/delete-by-slot
-router.get('/me/prescriptions/:id', authenticate, requireDoctor, getPrescriptionById);
-router.get('/me/prescriptions/appointment/:appointmentId', authenticate, requireDoctor, getPrescriptionsByAppointment);
-router.put('/me/prescriptions/:id', authenticate, requireDoctor, updatePrescription);
 
 // ── Doctor: manage patient reports ────────────────────────────────────────────
 router.post('/me/reports/upload', authenticate, requireDoctor, reportUpload.single('report_file'), uploadPatientReport);

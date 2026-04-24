@@ -324,9 +324,17 @@ router.get('/api/doctors/me/prescriptions', (req, res) => {
   proxyRequest(req, res, SERVICES.doctor, `/doctors/me/prescriptions?${query}`);
 });
 
+router.post('/api/doctors/me/prescriptions', (req, res) => {
+  proxyRequest(req, res, SERVICES.doctor, '/doctors/me/prescriptions');
+});
+
 router.get('/doctors/me/prescriptions', (req, res) => {
   const query = new URLSearchParams(req.query).toString();
   proxyRequest(req, res, SERVICES.doctor, `/doctors/me/prescriptions?${query}`);
+});
+
+router.post('/doctors/me/prescriptions', (req, res) => {
+  proxyRequest(req, res, SERVICES.doctor, '/doctors/me/prescriptions');
 });
 
 // Doctor prescriptions by appointment
@@ -336,6 +344,15 @@ router.get('/api/doctors/me/prescriptions/appointment/:appointmentId', (req, res
 
 router.get('/doctors/me/prescriptions/appointment/:appointmentId', (req, res) => {
   proxyRequest(req, res, SERVICES.doctor, `/doctors/me/prescriptions/appointment/${req.params.appointmentId}`);
+});
+
+// Doctor prescription update and delete
+router.put('/api/doctors/me/prescriptions/:id', (req, res) => {
+  proxyRequest(req, res, SERVICES.doctor, `/doctors/me/prescriptions/${req.params.id}`);
+});
+
+router.delete('/api/doctors/me/prescriptions/:id', (req, res) => {
+  proxyRequest(req, res, SERVICES.doctor, `/doctors/me/prescriptions/${req.params.id}`);
 });
 
 // Doctor reports

@@ -29,7 +29,6 @@ const NAV_ITEMS = [
   { id: 'telemedicine', label: 'My Consultations', icon: <svg width="20" height="20" viewBox="0 0 24 24" fill="none"><path d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" stroke="currentColor" strokeWidth="1.8"/></svg> },
   { id: 'availability', label: 'Availability', icon: <svg width="20" height="20" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="9" stroke="currentColor" strokeWidth="1.8"/><path d="M12 6v6l4 2" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round"/></svg> },
   { id: 'prescriptions', label: 'Prescriptions', icon: <svg width="20" height="20" viewBox="0 0 24 24" fill="none"><path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" stroke="currentColor" strokeWidth="1.8"/></svg> },
-  { id: 'reports', label: 'Patient Reports', icon: <svg width="20" height="20" viewBox="0 0 24 24" fill="none"><path d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" stroke="currentColor" strokeWidth="1.8"/></svg> },
   { id: 'profile', label: 'My Profile', icon: <svg width="20" height="20" viewBox="0 0 24 24" fill="none"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round"/><circle cx="12" cy="7" r="4" stroke="currentColor" strokeWidth="1.8"/></svg> },
 ];
 
@@ -926,32 +925,67 @@ const DushaniDoctorTelemedicinePage = () => {
       <style>{styles}</style>
       <div className="tele-root">
         {/* ── Sidebar ── */}
-        <aside className="sidebar" style={{ width: sidebarOpen ? 260 : 76 }}>
+        <aside style={{
+          width: sidebarOpen ? 260 : 76,
+          minHeight: '100vh',
+          background: COLORS.navy,
+          display: 'flex',
+          flexDirection: 'column',
+          transition: 'width 0.32s cubic-bezier(.4,0,.2,1)',
+          overflow: 'hidden',
+          flexShrink: 0,
+          position: 'relative',
+          boxShadow: '4px 0 40px rgba(24,78,119,0.25)',
+        }}>
           {/* Logo */}
-          <div className="sidebar-logo">
-            <div className="logo-icon">
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
-                <path d="M12 5v14M5 12h14" stroke="white" strokeWidth="2.5" strokeLinecap="round"/>
-              </svg>
-            </div>
+          <div style={{
+            display: 'flex', alignItems: 'center', gap: 12,
+            padding: sidebarOpen ? '22px 22px' : '22px 0',
+            justifyContent: sidebarOpen ? 'flex-start' : 'center',
+            borderBottom: '1px solid rgba(255,255,255,0.1)',
+          }}>
+            <button onClick={() => setSidebarOpen(!sidebarOpen)} style={{
+              background: 'rgba(255,255,255,0.1)',
+              border: 'none', borderRadius: 10,
+              width: 36, height: 36, display: 'flex', alignItems: 'center', justifyContent: 'center',
+              cursor: 'pointer', color: 'white', fontSize: 18,
+              transition: 'all 0.2s',
+            }}
+            onMouseEnter={(e) => e.currentTarget.style.background = 'rgba(255,255,255,0.2)'}
+            onMouseLeave={(e) => e.currentTarget.style.background = 'rgba(255,255,255,0.1)'}
+            >
+              {sidebarOpen ? '◀' : '▶'}
+            </button>
             {sidebarOpen && (
-              <span className="logo-text">Medi<span>Core</span></span>
+              <span style={{ fontSize: 22, fontWeight: 800, color: 'white', whiteSpace: 'nowrap', letterSpacing: '-0.5px' }}>
+                Medi<span style={{ color: COLORS.mint }}>Core</span>
+              </span>
             )}
           </div>
 
           {/* Doctor info */}
           {sidebarOpen && doctor && (
-            <div className="doctor-card">
+            <div style={{ padding: '18px 22px', borderBottom: '1px solid rgba(255,255,255,0.1)' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-                <div className="doctor-avatar">{initials}</div>
+                <div style={{
+                  width: 46, height: 46, borderRadius: '50%',
+                  background: `linear-gradient(135deg, ${COLORS.teal}, ${COLORS.mint})`,
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  color: 'white', fontSize: 16, fontWeight: 700, flexShrink: 0,
+                  border: '2px solid rgba(255,255,255,0.3)',
+                }}>
+                  {initials}
+                </div>
                 <div style={{ overflow: 'hidden' }}>
-                  <div className="doctor-name">Dr. {doctor.first_name} {doctor.last_name}</div>
-                  <div className="doctor-spec">{doctor.specialty}</div>
+                  <p style={{ margin: 0, fontSize: 15, fontWeight: 700, color: 'white', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                    Dr. {doctor.first_name} {doctor.last_name}
+                  </p>
+                  <p style={{ margin: 0, fontSize: 12, color: COLORS.mintLight }}>{doctor.specialty}</p>
                 </div>
               </div>
-              <div className="verified-badge">
-                <div className="verified-dot" style={{ background: doctor.verification_status === 'approved' ? '#2ECC8B' : '#F59E0B', boxShadow: doctor.verification_status === 'approved' ? '0 0 6px #2ECC8B' : '0 0 6px #F59E0B' }} />
-                <span style={{ color: doctor.verification_status === 'approved' ? 'rgba(46,204,139,0.9)' : '#FCD34D' }}>
+              <div style={{ marginTop: 12, display: 'flex', alignItems: 'center', gap: 7, background: 'rgba(255,255,255,0.1)', borderRadius: 20, padding: '5px 12px', width: 'fit-content' }}>
+                <div style={{ width: 7, height: 7, borderRadius: '50%', background: doctor.verification_status === 'approved' ? COLORS.mint : '#F59E0B', flexShrink: 0 }} />
+                <span style={{ fontSize: 11, color: doctor.verification_status === 'approved' ? COLORS.mintLight : '#FCD34D', fontWeight: 500 }}>
                   {doctor.verification_status === 'approved' ? 'Verified Doctor' : 'Pending Verification'}
                 </span>
               </div>
@@ -959,7 +993,7 @@ const DushaniDoctorTelemedicinePage = () => {
           )}
 
           {/* Nav */}
-          <nav className="sidebar-nav">
+          <nav style={{ flex: 1, padding: '16px 12px' }}>
             {NAV_ITEMS.map(({ id, label, icon }) => {
               const active = id === 'telemedicine';
               const handleClick = id === 'overview'
@@ -978,19 +1012,43 @@ const DushaniDoctorTelemedicinePage = () => {
                 ? () => navigate('/doctor-profile')
                 : () => {};
               return (
-                <button key={id} onClick={handleClick} className={`nav-btn${active ? ' active' : ''}`}>
-                  <span style={{ flexShrink: 0 }}>{icon}</span>
+                <button key={id} onClick={handleClick} style={{
+                  display: 'flex', alignItems: 'center', gap: 14, width: '100%',
+                  padding: '12px 14px', borderRadius: 12, border: 'none', cursor: 'pointer',
+                  background: active ? COLORS.teal : 'transparent',
+                  color: active ? 'white' : 'rgba(255,255,255,0.6)',
+                  marginBottom: 4, fontWeight: active ? 700 : 400,
+                  fontSize: 15, textAlign: 'left', transition: 'all 0.18s',
+                }}
+                onMouseEnter={(e) => {
+                  if (!active) e.currentTarget.style.background = 'rgba(255,255,255,0.05)';
+                }}
+                onMouseLeave={(e) => {
+                  if (!active) e.currentTarget.style.background = 'transparent';
+                }}
+                >
+                  <span style={{ flexShrink: 0, opacity: active ? 1 : 0.8 }}>{icon}</span>
                   {sidebarOpen && <span style={{ whiteSpace: 'nowrap' }}>{label}</span>}
-                  {active && sidebarOpen && <div className="nav-dot" />}
+                  {active && sidebarOpen && (
+                    <div style={{ marginLeft: 'auto', width: 7, height: 7, borderRadius: '50%', background: COLORS.mint }} />
+                  )}
                 </button>
               );
             })}
           </nav>
 
           {/* Logout */}
-          <div style={{ padding: '12px 10px', borderTop: '1px solid rgba(255,255,255,0.06)', position: 'relative', zIndex: 1 }}>
-            <button onClick={logout} className="logout-btn">
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
+          <div style={{ padding: '14px 12px', borderTop: '1px solid rgba(255,255,255,0.1)' }}>
+            <button onClick={logout} style={{
+              display: 'flex', alignItems: 'center', gap: 14, width: '100%',
+              padding: '12px 14px', borderRadius: 12, border: 'none', cursor: 'pointer',
+              background: 'transparent', color: COLORS.blush, fontSize: 15, fontWeight: 500,
+              transition: 'all 0.2s',
+            }}
+            onMouseEnter={(e) => e.currentTarget.style.background = 'rgba(255,255,255,0.05)'}
+            onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}
+            >
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
                 <path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4M16 17l5-5-5-5M21 12H9" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/>
               </svg>
               {sidebarOpen && 'Logout'}

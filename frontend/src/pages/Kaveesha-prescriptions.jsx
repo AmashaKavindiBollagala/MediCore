@@ -24,8 +24,6 @@ const NAV_ITEMS = [
     icon: <svg width="20" height="20" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="9" stroke="currentColor" strokeWidth="1.8"/><path d="M12 6v6l4 2" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round"/></svg> },
   { id: 'prescriptions', label: 'Prescriptions', route: '/doctor-prescriptions',
     icon: <svg width="20" height="20" viewBox="0 0 24 24" fill="none"><path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" stroke="currentColor" strokeWidth="1.8"/></svg> },
-  { id: 'reports', label: 'Patient Reports', route: '/doctor-reports',
-    icon: <svg width="20" height="20" viewBox="0 0 24 24" fill="none"><path d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" stroke="currentColor" strokeWidth="1.8"/></svg> },
   { id: 'profile', label: 'My Profile', route: '/doctor-profile',
     icon: <svg width="20" height="20" viewBox="0 0 24 24" fill="none"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round"/><circle cx="12" cy="7" r="4" stroke="currentColor" strokeWidth="1.8"/></svg> },
 ];
@@ -63,31 +61,31 @@ function MedRow({ med, idx, onChange, onRemove }) {
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginBottom: 12 }}>
         <div>
           <label style={{ display: 'block', fontSize: 11, fontWeight: 700, color: C.slate, marginBottom: 5, textTransform: 'uppercase', letterSpacing: 0.5 }}>Medication Name *</label>
-          <input value={med.name} onChange={e => onChange(idx, 'name', e.target.value)} placeholder="e.g. Amoxicillin 500mg" style={{ width: '100%', padding: '10px 12px', borderRadius: 10, border: '1.5px solid #E2E8F0', fontSize: 14, color: C.navy, outline: 'none', boxSizing: 'border-box' }} />
+          <input value={med.name} onChange={e => onChange(idx, 'name', e.target.value)} placeholder="e.g. Amoxicillin 500mg" style={{ width: '100%', padding: '10px 12px', borderRadius: 10, border: '1.5px solid #E2E8F0', fontSize: 14, color: '#000000', outline: 'none', boxSizing: 'border-box' }} />
         </div>
         <div>
           <label style={{ display: 'block', fontSize: 11, fontWeight: 700, color: C.slate, marginBottom: 5, textTransform: 'uppercase', letterSpacing: 0.5 }}>Dosage *</label>
-          <input value={med.dosage} onChange={e => onChange(idx, 'dosage', e.target.value)} placeholder="e.g. 500mg, 1 tablet" style={{ width: '100%', padding: '10px 12px', borderRadius: 10, border: '1.5px solid #E2E8F0', fontSize: 14, color: C.navy, outline: 'none', boxSizing: 'border-box' }} />
+          <input value={med.dosage} onChange={e => onChange(idx, 'dosage', e.target.value)} placeholder="e.g. 500mg, 1 tablet" style={{ width: '100%', padding: '10px 12px', borderRadius: 10, border: '1.5px solid #E2E8F0', fontSize: 14, color: '#000000', outline: 'none', boxSizing: 'border-box' }} />
         </div>
       </div>
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 12 }}>
         <div>
           <label style={{ display: 'block', fontSize: 11, fontWeight: 700, color: C.slate, marginBottom: 5, textTransform: 'uppercase', letterSpacing: 0.5 }}>Frequency</label>
-          <select value={med.frequency} onChange={e => onChange(idx, 'frequency', e.target.value)} style={{ width: '100%', padding: '10px 12px', borderRadius: 10, border: '1.5px solid #E2E8F0', fontSize: 14, color: C.navy, outline: 'none', background: 'white', boxSizing: 'border-box' }}>
-            <option value="">Select...</option>
-            {FREQ_OPTIONS.map(f => <option key={f}>{f}</option>)}
+          <select value={med.frequency} onChange={e => onChange(idx, 'frequency', e.target.value)} style={{ width: '100%', padding: '10px 12px', borderRadius: 10, border: '1.5px solid #E2E8F0', fontSize: 14, color: '#000000', outline: 'none', background: 'white', boxSizing: 'border-box' }}>
+            <option value="" style={{ color: '#000000' }}>Select...</option>
+            {FREQ_OPTIONS.map(f => <option key={f} style={{ color: '#000000' }}>{f}</option>)}
           </select>
         </div>
         <div>
           <label style={{ display: 'block', fontSize: 11, fontWeight: 700, color: C.slate, marginBottom: 5, textTransform: 'uppercase', letterSpacing: 0.5 }}>Duration</label>
-          <select value={med.duration} onChange={e => onChange(idx, 'duration', e.target.value)} style={{ width: '100%', padding: '10px 12px', borderRadius: 10, border: '1.5px solid #E2E8F0', fontSize: 14, color: C.navy, outline: 'none', background: 'white', boxSizing: 'border-box' }}>
-            <option value="">Select...</option>
-            {DURATION_OPTIONS.map(d => <option key={d}>{d}</option>)}
+          <select value={med.duration} onChange={e => onChange(idx, 'duration', e.target.value)} style={{ width: '100%', padding: '10px 12px', borderRadius: 10, border: '1.5px solid #E2E8F0', fontSize: 14, color: '#000000', outline: 'none', background: 'white', boxSizing: 'border-box' }}>
+            <option value="" style={{ color: '#000000' }}>Select...</option>
+            {DURATION_OPTIONS.map(d => <option key={d} style={{ color: '#000000' }}>{d}</option>)}
           </select>
         </div>
         <div>
           <label style={{ display: 'block', fontSize: 11, fontWeight: 700, color: C.slate, marginBottom: 5, textTransform: 'uppercase', letterSpacing: 0.5 }}>Instructions</label>
-          <input value={med.instructions} onChange={e => onChange(idx, 'instructions', e.target.value)} placeholder="e.g. Take with water" style={{ width: '100%', padding: '10px 12px', borderRadius: 10, border: '1.5px solid #E2E8F0', fontSize: 14, color: C.navy, outline: 'none', boxSizing: 'border-box' }} />
+          <input value={med.instructions} onChange={e => onChange(idx, 'instructions', e.target.value)} placeholder="e.g. Take with water" style={{ width: '100%', padding: '10px 12px', borderRadius: 10, border: '1.5px solid #E2E8F0', fontSize: 14, color: '#000000', outline: 'none', boxSizing: 'border-box' }} />
         </div>
       </div>
     </div>
@@ -203,6 +201,31 @@ export default function KaveeshaPrescriptions() {
   const [showReportsModal, setShowReportsModal] = useState(false);
   const [appointmentReports, setAppointmentReports] = useState([]);
   const [loadingReports, setLoadingReports] = useState(false);
+  const [appointmentPrescriptions, setAppointmentPrescriptions] = useState([]);
+  const [loadingPrescriptions, setLoadingPrescriptions] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [appointmentsWithPrescriptions, setAppointmentsWithPrescriptions] = useState(() => {
+    // Load from localStorage on initial render
+    try {
+      const stored = localStorage.getItem('appointmentsWithPrescriptions');
+      return stored ? new Set(JSON.parse(stored)) : new Set();
+    } catch {
+      return new Set();
+    }
+  });
+  const [finishedConsultations, setFinishedConsultations] = useState(() => {
+    // Load from localStorage on initial render
+    try {
+      const stored = localStorage.getItem('finishedConsultations');
+      return stored ? new Set(JSON.parse(stored)) : new Set();
+    } catch {
+      return new Set();
+    }
+  });
+  const [showSuccessNotification, setShowSuccessNotification] = useState(false);
+  const [successMessage, setSuccessMessage] = useState('');
+  const [editingPrescription, setEditingPrescription] = useState(null);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(null);
 
   useEffect(() => {
     const storedUser = localStorage.getItem('user');
@@ -254,33 +277,139 @@ export default function KaveeshaPrescriptions() {
           (appt.consultation_type === 'video' || appt.consultation_type === 'online')
         );
         setCompletedAppointments(completed);
+        
+        // Load prescriptions for ALL completed appointments in PARALLEL
+        const prescriptionsSet = new Set();
+        const prescriptionChecks = completed.map(async (appt) => {
+          try {
+            const rxResponse = await fetch(`/api/doctors/me/prescriptions/appointment/${appt.id}`, {
+              headers: { Authorization: `Bearer ${token}` }
+            });
+            if (rxResponse.ok) {
+              const rxData = await rxResponse.json();
+              if (rxData.length > 0) {
+                return appt.id;
+              }
+            }
+          } catch (err) {
+            console.error(`Error loading prescriptions for appointment ${appt.id}:`, err);
+          }
+          return null;
+        });
+        
+        // Wait for all checks to complete in parallel
+        const results = await Promise.all(prescriptionChecks);
+        results.forEach(id => {
+          if (id) prescriptionsSet.add(id);
+        });
+        
+        // Save to localStorage for persistence
+        localStorage.setItem('appointmentsWithPrescriptions', JSON.stringify([...prescriptionsSet]));
+        setAppointmentsWithPrescriptions(prescriptionsSet);
       }
     } catch (err) {
       console.error('Error fetching completed appointments:', err);
     }
   };
 
-  const handleSelectForPrescription = (appt) => {
+  const handleSelectForPrescription = async (appt) => {
     setSelectedAppointment(appt);
-    setForm(f => ({
-      ...f,
+    setShowPrescriptionForm(true);
+    
+    // Load existing prescriptions for this appointment
+    setLoadingPrescriptions(true);
+    try {
+      const response = await fetch(`/api/doctors/me/prescriptions/appointment/${appt.id}?t=${Date.now()}`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      
+      if (response.ok) {
+        const data = await response.json();
+        setAppointmentPrescriptions(data);
+      } else {
+        setAppointmentPrescriptions([]);
+      }
+    } catch (error) {
+      console.error('Error loading prescriptions:', error);
+      setAppointmentPrescriptions([]);
+    } finally {
+      setLoadingPrescriptions(false);
+    }
+    
+    // Reset form
+    setForm({
       patient_id: appt.patient_id,
       diagnosis: appt.symptoms || '',
-    }));
-    setTab('new');
+      notes: '',
+      medications: [{ name: '', dosage: '', frequency: '', duration: '', instructions: '' }]
+    });
+  };
+
+  const handleMarkFinished = async (appt) => {
+    // Add to finished consultations set and save to localStorage
+    setFinishedConsultations(prev => {
+      const newSet = new Set(prev);
+      newSet.add(appt.id);
+      // Persist to localStorage
+      localStorage.setItem('finishedConsultations', JSON.stringify([...newSet]));
+      return newSet;
+    });
+    
+    // Show success notification
+    setSuccessMessage('✅ Consultation marked as finished successfully!');
+    setShowSuccessNotification(true);
+    setTimeout(() => setShowSuccessNotification(false), 3000);
+  };
+
+  const handleViewPrescription = async (appt) => {
+    setSelectedAppointment(appt);
     setShowPrescriptionForm(true);
+    
+    // Load existing prescriptions for this appointment
+    setLoadingPrescriptions(true);
+    try {
+      const response = await fetch(`/api/doctors/me/prescriptions/appointment/${appt.id}?t=${Date.now()}`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      
+      if (response.ok) {
+        const data = await response.json();
+        setAppointmentPrescriptions(data);
+        
+        // If there's at least one prescription, load the first one for editing
+        if (data.length > 0) {
+          const firstRx = data[0];
+          setEditingPrescription(firstRx);
+          const meds = firstRx.prescription_data?.medications || [];
+          setForm({
+            patient_id: firstRx.patient_id,
+            diagnosis: firstRx.diagnosis || '',
+            notes: firstRx.notes || '',
+            medications: meds.length > 0 ? meds : [{ name: '', dosage: '', frequency: '', duration: '', instructions: '' }]
+          });
+        }
+      } else {
+        setAppointmentPrescriptions([]);
+      }
+    } catch (error) {
+      console.error('Error loading prescriptions:', error);
+      setAppointmentPrescriptions([]);
+    } finally {
+      setLoadingPrescriptions(false);
+    }
   };
 
   const handleViewReports = async (appt) => {
     console.log('🔍 View Reports clicked for appointment:', appt.id);
-    console.log('🔍 Fetching URL:', `/api/doctors/me/reports/appointment/${appt.id}`);
+    const apiUrl = `/api/doctors/me/reports/appointment/${appt.id}?t=${Date.now()}`;
+    console.log('🔍 Fetching URL:', apiUrl);
     
     setSelectedAppointment(appt);
     setLoadingReports(true);
     setShowReportsModal(true);
     
     try {
-      const response = await fetch(`/api/doctors/me/reports/appointment/${appt.id}`, {
+      const response = await fetch(apiUrl, {
         headers: { Authorization: `Bearer ${token}` }
       });
       
@@ -289,10 +418,11 @@ export default function KaveeshaPrescriptions() {
       
       if (response.ok) {
         const data = await response.json();
-        console.log('✅ Reports loaded:', data.length, 'reports');
+        console.log('✅ Reports loaded:', data.length, 'reports', data);
         setAppointmentReports(data);
       } else {
-        console.error('❌ Failed to load reports:', response.status);
+        const errorText = await response.text();
+        console.error('❌ Failed to load reports:', response.status, errorText);
         setAppointmentReports([]);
       }
     } catch (error) {
@@ -300,6 +430,39 @@ export default function KaveeshaPrescriptions() {
       setAppointmentReports([]);
     } finally {
       setLoadingReports(false);
+    }
+  };
+
+  const handleDownloadReport = async (reportUrl, reportType) => {
+    try {
+      console.log('📥 Downloading report:', reportUrl);
+      
+      // Fetch the file as a blob
+      const response = await fetch(reportUrl);
+      if (!response.ok) throw new Error('Failed to download');
+      
+      const blob = await response.blob();
+      
+      // Extract file extension from URL
+      const ext = reportUrl.split('.').pop()?.split('?')[0] || 'pdf';
+      
+      // Create download link
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `${reportType || 'report'}_${new Date().getTime()}.${ext}`;
+      document.body.appendChild(link);
+      link.click();
+      
+      // Cleanup
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(url);
+      
+      console.log('✅ Download started');
+    } catch (error) {
+      console.error('❌ Download failed:', error);
+      // Fallback: open in new tab
+      window.open(reportUrl, '_blank');
     }
   };
 
@@ -315,6 +478,7 @@ export default function KaveeshaPrescriptions() {
         method: 'POST',
         headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
         body: JSON.stringify({
+          appointment_id: selectedAppointment?.id,
           patient_id: form.patient_id,
           diagnosis: form.diagnosis,
           notes: form.notes,
@@ -331,6 +495,208 @@ export default function KaveeshaPrescriptions() {
     finally { setSubmitting(false); }
   };
 
+  const handleModalSubmit = async () => {
+    if (!selectedAppointment || !form.patient_id || form.medications.some(m => !m.name)) {
+      alert('Please fill in all required fields');
+      return;
+    }
+    
+    console.log('🔵 Submitting prescription...');
+    console.log('🔵 URL:', '/api/doctors/me/prescriptions');
+    console.log('🔵 Token:', token ? token.substring(0, 20) + '...' : 'NONE');
+    console.log('🔵 Body:', JSON.stringify({
+      appointment_id: selectedAppointment.id,
+      patient_id: form.patient_id,
+      diagnosis: form.diagnosis,
+      notes: form.notes,
+      prescription_data: { medications: form.medications },
+    }, null, 2));
+    
+    setIsSubmitting(true);
+    try {
+      const res = await fetch('/api/doctors/me/prescriptions', {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          appointment_id: selectedAppointment.id,
+          patient_id: form.patient_id,
+          diagnosis: form.diagnosis,
+          notes: form.notes,
+          prescription_data: { medications: form.medications },
+        }),
+      });
+      
+      console.log('🔵 Response status:', res.status);
+      const responseText = await res.text();
+      console.log('🔵 Response body:', responseText);
+      
+      if (res.ok) {
+        const responseData = JSON.parse(responseText);
+        // Track that this appointment now has a prescription and save to localStorage
+        setAppointmentsWithPrescriptions(prev => {
+          const newSet = new Set([...prev, selectedAppointment.id]);
+          localStorage.setItem('appointmentsWithPrescriptions', JSON.stringify([...newSet]));
+          return newSet;
+        });
+        
+        // Reload prescriptions for this appointment
+        const response = await fetch(`/api/doctors/me/prescriptions/appointment/${selectedAppointment.id}?t=${Date.now()}`, {
+          headers: { Authorization: `Bearer ${token}` }
+        });
+        
+        if (response.ok) {
+          const data = await response.json();
+          setAppointmentPrescriptions(data);
+        }
+        
+        // Reset form
+        setForm({
+          patient_id: selectedAppointment.patient_id,
+          diagnosis: selectedAppointment.symptoms || '',
+          notes: '',
+          medications: [{ name: '', dosage: '', frequency: '', duration: '', instructions: '' }]
+        });
+        
+        // Show success message
+        setSuccessMessage('✅ Prescription issued successfully!');
+        setShowSuccessNotification(true);
+        setTimeout(() => setShowSuccessNotification(false), 3000);
+      } else {
+        alert('❌ Failed to issue prescription: ' + responseText);
+      }
+    } catch (error) {
+      console.error('Error submitting prescription:', error);
+      alert('❌ Failed to issue prescription. Please try again.');
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const handleEditPrescription = (rx) => {
+    setEditingPrescription(rx);
+    const meds = rx.prescription_data?.medications || [];
+    setForm({
+      patient_id: rx.patient_id,
+      diagnosis: rx.diagnosis || '',
+      notes: rx.notes || '',
+      medications: meds.length > 0 ? meds : [{ name: '', dosage: '', frequency: '', duration: '', instructions: '' }]
+    });
+  };
+
+  const handleDeletePrescription = async (rxId) => {
+    if (!confirm('Are you sure you want to delete this prescription?')) return;
+    
+    try {
+      const res = await fetch(`/api/doctors/me/prescriptions/${rxId}`, {
+        method: 'DELETE',
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      
+      if (res.ok) {
+        // Reload prescriptions
+        const response = await fetch(`/api/doctors/me/prescriptions/appointment/${selectedAppointment.id}?t=${Date.now()}`, {
+          headers: { Authorization: `Bearer ${token}` }
+        });
+        
+        if (response.ok) {
+          const data = await response.json();
+          setAppointmentPrescriptions(data);
+          
+          // If no prescriptions left, reset form to allow creating new one
+          if (data.length === 0) {
+            console.log('✅ All prescriptions deleted, resetting to create mode');
+            // Force state updates immediately
+            setEditingPrescription(null);
+            setForm({
+              patient_id: selectedAppointment.patient_id,
+              diagnosis: selectedAppointment.symptoms || '',
+              notes: '',
+              medications: [{ name: '', dosage: '', frequency: '', duration: '', instructions: '' }]
+            });
+            
+            // Remove from appointmentsWithPrescriptions set so card turns green and save to localStorage
+            setAppointmentsWithPrescriptions(prev => {
+              const newSet = new Set(prev);
+              newSet.delete(selectedAppointment.id);
+              localStorage.setItem('appointmentsWithPrescriptions', JSON.stringify([...newSet]));
+              console.log('✅ Removed appointment from prescriptions set:', selectedAppointment.id);
+              return newSet;
+            });
+          } else if (editingPrescription?.id === rxId) {
+            // If we deleted the prescription being edited, switch to first available
+            console.log('✅ Switching to first available prescription');
+            const firstRx = data[0];
+            setEditingPrescription(firstRx);
+            const meds = firstRx.prescription_data?.medications || [];
+            setForm({
+              patient_id: firstRx.patient_id,
+              diagnosis: firstRx.diagnosis || '',
+              notes: firstRx.notes || '',
+              medications: meds.length > 0 ? meds : [{ name: '', dosage: '', frequency: '', duration: '', instructions: '' }]
+            });
+          }
+        }
+        
+        setSuccessMessage('🗑️ Prescription deleted successfully!');
+        setShowSuccessNotification(true);
+        setTimeout(() => setShowSuccessNotification(false), 3000);
+      }
+    } catch (error) {
+      console.error('Error deleting prescription:', error);
+      alert('❌ Failed to delete prescription');
+    }
+  };
+
+  const handleUpdatePrescription = async () => {
+    if (!editingPrescription || !form.patient_id || form.medications.some(m => !m.name)) {
+      alert('Please fill in all required fields');
+      return;
+    }
+    
+    setIsSubmitting(true);
+    try {
+      const res = await fetch(`/api/doctors/me/prescriptions/${editingPrescription.id}`, {
+        method: 'PUT',
+        headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          prescription_data: { medications: form.medications },
+          notes: form.notes,
+          diagnosis: form.diagnosis
+        }),
+      });
+      
+      if (res.ok) {
+        // Reload prescriptions
+        const response = await fetch(`/api/doctors/me/prescriptions/appointment/${selectedAppointment.id}?t=${Date.now()}`, {
+          headers: { Authorization: `Bearer ${token}` }
+        });
+        
+        if (response.ok) {
+          const data = await response.json();
+          setAppointmentPrescriptions(data);
+        }
+        
+        setEditingPrescription(null);
+        setSuccessMessage('✏️ Prescription updated successfully!');
+        setShowSuccessNotification(true);
+        setTimeout(() => setShowSuccessNotification(false), 3000);
+        
+        // Reset form
+        setForm({
+          patient_id: selectedAppointment.patient_id,
+          diagnosis: selectedAppointment.symptoms || '',
+          notes: '',
+          medications: [{ name: '', dosage: '', frequency: '', duration: '', instructions: '' }]
+        });
+      }
+    } catch (error) {
+      console.error('Error updating prescription:', error);
+      alert('❌ Failed to update prescription');
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
   const filtered = prescriptions.filter(rx => {
     const q = search.toLowerCase();
     return !q || (rx.patient_name || '').toLowerCase().includes(q);
@@ -338,6 +704,59 @@ export default function KaveeshaPrescriptions() {
 
   return (
     <div style={{ display: 'flex', minHeight: '100vh' }}>
+      {/* Success Notification */}
+      {showSuccessNotification && (
+        <div style={{
+          position: 'fixed',
+          top: 24,
+          right: 24,
+          zIndex: 9999,
+          background: 'linear-gradient(135deg, #10B981 0%, #059669 100%)',
+          borderRadius: 16,
+          padding: '20px 28px',
+          boxShadow: '0 12px 40px rgba(16,185,129,0.4), 0 0 0 1px rgba(255,255,255,0.1) inset',
+          display: 'flex',
+          alignItems: 'center',
+          gap: 14,
+          animation: 'slideUp 0.4s cubic-bezier(0.4, 0, 0.2, 1)',
+          maxWidth: 420,
+          backdropFilter: 'blur(10px)'
+        }}>
+          <div style={{
+            width: 48,
+            height: 48,
+            borderRadius: '50%',
+            background: 'rgba(255,255,255,0.2)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            fontSize: 24,
+            flexShrink: 0,
+            animation: 'pulse 2s infinite'
+          }}>
+            ✓
+          </div>
+          <div>
+            <p style={{ 
+              margin: 0, 
+              fontSize: 16, 
+              fontWeight: 700, 
+              color: 'white',
+              lineHeight: 1.4
+            }}>
+              {successMessage}
+            </p>
+            <p style={{ 
+              margin: '4px 0 0 0', 
+              fontSize: 13, 
+              color: 'rgba(255,255,255,0.9)',
+              fontWeight: 500
+            }}>
+              Prescription saved to database
+            </p>
+          </div>
+        </div>
+      )}
       <aside style={{ width: sidebarOpen ? 260 : 78, minHeight: '100vh', background: COLORS.navy, display: 'flex', flexDirection: 'column', transition: 'width 0.3s cubic-bezier(.4,0,.2,1)', overflow: 'hidden', flexShrink: 0, boxShadow: '4px 0 24px rgba(24,78,119,0.15)' }}>
         <div style={{ padding: sidebarOpen ? '28px 22px 22px' : '28px 16px 22px', borderBottom: '1px solid rgba(255,255,255,0.1)', display: 'flex', alignItems: 'center', gap: 12 }}>
           <div style={{ width: 42, height: 42, borderRadius: 12, background: COLORS.teal, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
@@ -391,11 +810,8 @@ export default function KaveeshaPrescriptions() {
               <span style={{ fontSize: 13, color: C.accent, fontWeight: 600 }}>Prescriptions</span>
             </div>
             <h1 style={{ margin: 0, fontSize: 28, fontWeight: 800, color: C.navy, letterSpacing: '-0.5px' }}>Prescription Management</h1>
-            <p style={{ margin: '6px 0 0', color: C.slate, fontSize: 14 }}>Issue digital prescriptions — patients can view them instantly</p>
+            <p style={{ margin: '6px 0 0', color: C.slate, fontSize: 14 }}>Manage prescriptions for completed video consultations</p>
           </div>
-          <button onClick={() => setTab(tab === 'new' ? 'list' : 'new')} style={{ background: tab === 'new' ? '#F1F5F9' : C.navy, border: 'none', borderRadius: 12, padding: '11px 22px', color: tab === 'new' ? C.slate : 'white', fontSize: 14, fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 8 }}>
-            {tab === 'new' ? '← Back to List' : '+ New Prescription'}
-          </button>
         </div>
       </div>
 
@@ -418,28 +834,48 @@ export default function KaveeshaPrescriptions() {
             </span>
           </div>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(340px, 1fr))', gap: 18 }}>
-            {completedAppointments.map(appt => (
+            {completedAppointments.map(appt => {
+              const isFinished = finishedConsultations.has(appt.id);
+              const hasPrescription = appointmentsWithPrescriptions.has(appt.id);
+              
+              return (
               <div key={appt.id} style={{
-                background: 'linear-gradient(135deg, #FFFFFF 0%, #F8FAFC 100%)',
+                background: isFinished
+                  ? 'linear-gradient(135deg, #EFF6FF 0%, #DBEAFE 100%)'
+                  : hasPrescription 
+                    ? 'linear-gradient(135deg, #FFF7ED 0%, #FFEDD5 100%)'
+                    : 'linear-gradient(135deg, #FFFFFF 0%, #F8FAFC 100%)',
                 borderRadius: 18,
                 padding: 22,
-                border: `1.5px solid ${C.border}`,
+                border: `1.5px solid ${isFinished ? '#93C5FD' : hasPrescription ? '#FDBA74' : C.border}`,
                 cursor: 'pointer',
                 transition: 'all 0.25s cubic-bezier(0.4, 0, 0.2, 1)',
-                boxShadow: '0 2px 8px rgba(0,0,0,0.04)',
+                boxShadow: isFinished
+                  ? '0 2px 8px rgba(59,130,246,0.15)'
+                  : hasPrescription 
+                    ? '0 2px 8px rgba(251,146,60,0.15)'
+                    : '0 2px 8px rgba(0,0,0,0.04)',
                 position: 'relative',
                 overflow: 'hidden'
               }}
               onClick={() => setSelectedAppointment(appt)}
               onMouseEnter={(e) => {
-                e.currentTarget.style.boxShadow = '0 8px 24px rgba(15,52,96,0.12)';
+                e.currentTarget.style.boxShadow = isFinished
+                  ? '0 8px 24px rgba(59,130,246,0.25)'
+                  : hasPrescription
+                    ? '0 8px 24px rgba(251,146,60,0.25)'
+                    : '0 8px 24px rgba(15,52,96,0.12)';
                 e.currentTarget.style.transform = 'translateY(-4px)';
-                e.currentTarget.style.borderColor = C.accent;
+                e.currentTarget.style.borderColor = isFinished ? '#60A5FA' : hasPrescription ? '#F97316' : C.accent;
               }}
               onMouseLeave={(e) => {
-                e.currentTarget.style.boxShadow = '0 2px 8px rgba(0,0,0,0.04)';
+                e.currentTarget.style.boxShadow = isFinished
+                  ? '0 2px 8px rgba(59,130,246,0.15)'
+                  : hasPrescription
+                    ? '0 2px 8px rgba(251,146,60,0.15)'
+                    : '0 2px 8px rgba(0,0,0,0.04)';
                 e.currentTarget.style.transform = 'translateY(0)';
-                e.currentTarget.style.borderColor = C.border;
+                e.currentTarget.style.borderColor = isFinished ? '#93C5FD' : hasPrescription ? '#FDBA74' : C.border;
               }}
               >
                 {/* Accent bar at top */}
@@ -449,7 +885,11 @@ export default function KaveeshaPrescriptions() {
                   left: 0,
                   right: 0,
                   height: 4,
-                  background: 'linear-gradient(90deg, #0F9B8E, #10B981)'
+                  background: isFinished
+                    ? 'linear-gradient(90deg, #3B82F6, #60A5FA)'
+                    : hasPrescription
+                      ? 'linear-gradient(90deg, #F97316, #FB923C)'
+                      : 'linear-gradient(90deg, #0F9B8E, #10B981)'
                 }} />
                 
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'start', marginBottom: 14 }}>
@@ -459,7 +899,11 @@ export default function KaveeshaPrescriptions() {
                         width: 40,
                         height: 40,
                         borderRadius: '50%',
-                        background: 'linear-gradient(135deg, #0F9B8E, #10B981)',
+                        background: isFinished
+                          ? 'linear-gradient(135deg, #3B82F6, #60A5FA)'
+                          : hasPrescription
+                            ? 'linear-gradient(135deg, #F97316, #FB923C)'
+                            : 'linear-gradient(135deg, #0F9B8E, #10B981)',
                         display: 'flex',
                         alignItems: 'center',
                         justifyContent: 'center',
@@ -479,27 +923,31 @@ export default function KaveeshaPrescriptions() {
                       </div>
                     </div>
                   </div>
-                  <span style={{
-                    background: 'linear-gradient(135deg, #ECFDF5, #D1FAE5)',
-                    color: '#059669',
-                    padding: '5px 12px',
-                    borderRadius: 20,
-                    fontSize: 11,
-                    fontWeight: 700,
-                    border: '1px solid #A7F3D0',
-                    whiteSpace: 'nowrap'
-                  }}>
-                    ✓ Completed
-                  </span>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 6, alignItems: 'flex-end' }}>
+                    <span style={{
+                      background: hasPrescription 
+                        ? 'linear-gradient(135deg, #FFF7ED, #FFEDD5)'
+                        : 'linear-gradient(135deg, #ECFDF5, #D1FAE5)',
+                      color: hasPrescription ? '#EA580C' : '#059669',
+                      padding: '5px 12px',
+                      borderRadius: 20,
+                      fontSize: 11,
+                      fontWeight: 700,
+                      border: `1px solid ${hasPrescription ? '#FED7AA' : '#A7F3D0'}`,
+                      whiteSpace: 'nowrap'
+                    }}>
+                      {hasPrescription ? '💊 Prescription Issued' : '✓ Completed'}
+                    </span>
+                  </div>
                 </div>
                 
                 {appt.symptoms && (
                   <div style={{
-                    background: '#F1F5F9',
+                    background: hasPrescription ? '#FEF3C7' : '#F1F5F9',
                     padding: '10px 12px',
                     borderRadius: 10,
                     marginBottom: 16,
-                    border: '1px solid #E2E8F0'
+                    border: `1px solid ${hasPrescription ? '#FDE68A' : '#E2E8F0'}`
                   }}>
                     <p style={{ fontSize: 10, fontWeight: 700, color: C.slate, marginBottom: 4, textTransform: 'uppercase', letterSpacing: 0.5, margin: '0 0 4px 0' }}>
                       🩺 Symptoms
@@ -511,35 +959,128 @@ export default function KaveeshaPrescriptions() {
                 )}
                 
                 <div style={{ display: 'flex', gap: 10 }}>
-                  <button
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      handleSelectForPrescription(appt);
-                    }}
-                    style={{
-                      flex: 1,
-                      background: 'linear-gradient(135deg, #0F9B8E, #0D8A7D)',
-                      color: C.white,
-                      border: 'none',
-                      padding: '10px 14px',
-                      borderRadius: 10,
-                      fontSize: 12,
-                      fontWeight: 700,
-                      cursor: 'pointer',
-                      transition: 'all 0.2s',
-                      boxShadow: '0 2px 8px rgba(15,155,142,0.25)'
-                    }}
-                    onMouseEnter={(e) => {
-                      e.currentTarget.style.transform = 'translateY(-1px)';
-                      e.currentTarget.style.boxShadow = '0 4px 12px rgba(15,155,142,0.35)';
-                    }}
-                    onMouseLeave={(e) => {
-                      e.currentTarget.style.transform = 'translateY(0)';
-                      e.currentTarget.style.boxShadow = '0 2px 8px rgba(15,155,142,0.25)';
-                    }}
-                  >
-                    💊 Add Prescription
-                  </button>
+                  {hasPrescription && !isFinished ? (
+                    <>
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleViewPrescription(appt);
+                        }}
+                        style={{
+                          flex: 1,
+                          background: 'linear-gradient(135deg, #F97316, #EA580C)',
+                          color: C.white,
+                          border: 'none',
+                          padding: '10px 14px',
+                          borderRadius: 10,
+                          fontSize: 12,
+                          fontWeight: 700,
+                          cursor: 'pointer',
+                          transition: 'all 0.2s',
+                          boxShadow: '0 2px 8px rgba(249,115,22,0.3)'
+                        }}
+                        onMouseEnter={(e) => {
+                          e.currentTarget.style.transform = 'translateY(-1px)';
+                          e.currentTarget.style.boxShadow = '0 4px 12px rgba(249,115,22,0.4)';
+                        }}
+                        onMouseLeave={(e) => {
+                          e.currentTarget.style.transform = 'translateY(0)';
+                          e.currentTarget.style.boxShadow = '0 2px 8px rgba(249,115,22,0.3)';
+                        }}
+                      >
+                        👁️ View Prescription
+                      </button>
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleMarkFinished(appt);
+                        }}
+                        style={{
+                          flex: 1,
+                          background: 'linear-gradient(135deg, #3B82F6, #2563EB)',
+                          color: C.white,
+                          border: 'none',
+                          padding: '10px 14px',
+                          borderRadius: 10,
+                          fontSize: 12,
+                          fontWeight: 700,
+                          cursor: 'pointer',
+                          transition: 'all 0.2s',
+                          boxShadow: '0 2px 8px rgba(59,130,246,0.3)'
+                        }}
+                        onMouseEnter={(e) => {
+                          e.currentTarget.style.transform = 'translateY(-1px)';
+                          e.currentTarget.style.boxShadow = '0 4px 12px rgba(59,130,246,0.4)';
+                        }}
+                        onMouseLeave={(e) => {
+                          e.currentTarget.style.transform = 'translateY(0)';
+                          e.currentTarget.style.boxShadow = '0 2px 8px rgba(59,130,246,0.3)';
+                        }}
+                      >
+                        ✅ Mark as Finished
+                      </button>
+                    </>
+                  ) : isFinished ? (
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleViewPrescription(appt);
+                      }}
+                      style={{
+                        flex: 1,
+                        background: 'linear-gradient(135deg, #3B82F6, #2563EB)',
+                        color: C.white,
+                        border: 'none',
+                        padding: '10px 14px',
+                        borderRadius: 10,
+                        fontSize: 12,
+                        fontWeight: 700,
+                        cursor: 'pointer',
+                        transition: 'all 0.2s',
+                        boxShadow: '0 2px 8px rgba(59,130,246,0.3)'
+                      }}
+                      onMouseEnter={(e) => {
+                        e.currentTarget.style.transform = 'translateY(-1px)';
+                        e.currentTarget.style.boxShadow = '0 4px 12px rgba(59,130,246,0.4)';
+                      }}
+                      onMouseLeave={(e) => {
+                        e.currentTarget.style.transform = 'translateY(0)';
+                        e.currentTarget.style.boxShadow = '0 2px 8px rgba(59,130,246,0.3)';
+                      }}
+                    >
+                      👁️ View Prescription (Finished)
+                    </button>
+                  ) : (
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleSelectForPrescription(appt);
+                      }}
+                      style={{
+                        flex: 1,
+                        background: 'linear-gradient(135deg, #0F9B8E, #0D8A7D)',
+                        color: C.white,
+                        border: 'none',
+                        padding: '10px 14px',
+                        borderRadius: 10,
+                        fontSize: 12,
+                        fontWeight: 700,
+                        cursor: 'pointer',
+                        transition: 'all 0.2s',
+                        boxShadow: '0 2px 8px rgba(15,155,142,0.25)'
+                      }}
+                      onMouseEnter={(e) => {
+                        e.currentTarget.style.transform = 'translateY(-1px)';
+                        e.currentTarget.style.boxShadow = '0 4px 12px rgba(15,155,142,0.35)';
+                      }}
+                      onMouseLeave={(e) => {
+                        e.currentTarget.style.transform = 'translateY(0)';
+                        e.currentTarget.style.boxShadow = '0 2px 8px rgba(15,155,142,0.25)';
+                      }}
+                    >
+                      💊 Add Prescription
+                    </button>
+                  )}
                   <button
                     onClick={(e) => {
                       e.stopPropagation();
@@ -547,9 +1088,11 @@ export default function KaveeshaPrescriptions() {
                     }}
                     style={{
                       flex: 1,
-                      background: 'linear-gradient(135deg, #E8FAF8, #D5F5F0)',
-                      color: C.accent,
-                      border: '1.5px solid #B2EDE7',
+                      background: hasPrescription 
+                        ? 'linear-gradient(135deg, #FEF3C7, #FDE68A)'
+                        : 'linear-gradient(135deg, #E8FAF8, #D5F5F0)',
+                      color: hasPrescription ? '#D97706' : C.accent,
+                      border: `1.5px solid ${hasPrescription ? '#FCD34D' : '#B2EDE7'}`,
                       padding: '10px 14px',
                       borderRadius: 10,
                       fontSize: 12,
@@ -558,11 +1101,13 @@ export default function KaveeshaPrescriptions() {
                       transition: 'all 0.2s'
                     }}
                     onMouseEnter={(e) => {
-                      e.currentTarget.style.background = '#D5F5F0';
+                      e.currentTarget.style.background = hasPrescription ? '#FDE68A' : '#D5F5F0';
                       e.currentTarget.style.transform = 'translateY(-1px)';
                     }}
                     onMouseLeave={(e) => {
-                      e.currentTarget.style.background = 'linear-gradient(135deg, #E8FAF8, #D5F5F0)';
+                      e.currentTarget.style.background = hasPrescription 
+                        ? 'linear-gradient(135deg, #FEF3C7, #FDE68A)'
+                        : 'linear-gradient(135deg, #E8FAF8, #D5F5F0)';
                       e.currentTarget.style.transform = 'translateY(0)';
                     }}
                   >
@@ -570,275 +1115,1103 @@ export default function KaveeshaPrescriptions() {
                   </button>
                 </div>
               </div>
-            ))}
+            );
+            })}
           </div>
         </section>
-      )}
-
-      {/* Stats bar */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 16, marginBottom: 28 }}>
-        {[
-          { label: 'Total Issued', value: prescriptions.length, icon: '📋', bg: C.accentLight, color: C.accent },
-          { label: 'This Month', value: prescriptions.filter(rx => { const d = new Date(rx.issued_at); const now = new Date(); return d.getMonth() === now.getMonth() && d.getFullYear() === now.getFullYear(); }).length, icon: '📅', bg: C.purpleLight, color: C.purple },
-          { label: 'Unique Patients', value: new Set(prescriptions.map(rx => rx.patient_id)).size, icon: '👥', bg: C.goldLight, color: C.gold },
-        ].map((s, i) => (
-          <div key={i} style={{ background: C.white, borderRadius: 16, padding: '18px 22px', border: `1px solid ${C.border}`, display: 'flex', alignItems: 'center', gap: 16 }}>
-            <div style={{ width: 44, height: 44, borderRadius: 12, background: s.bg, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 20 }}>{s.icon}</div>
-            <div>
-              <div style={{ fontSize: 26, fontWeight: 800, color: C.navy, lineHeight: 1 }}>{s.value}</div>
-              <div style={{ fontSize: 13, color: C.slate, marginTop: 3 }}>{s.label}</div>
-            </div>
-          </div>
-        ))}
-      </div>
-
-      {/* Tabs */}
-      <div style={{ display: 'flex', gap: 4, marginBottom: 24, background: '#F1F5F9', borderRadius: 12, padding: 4, width: 'fit-content' }}>
-        {[['list', '📋 All Prescriptions'], ['new', '✏️ New Prescription']].map(([id, label]) => (
-          <button key={id} onClick={() => setTab(id)} style={{ padding: '9px 20px', borderRadius: 10, border: 'none', cursor: 'pointer', fontSize: 14, fontWeight: tab === id ? 700 : 500, background: tab === id ? C.white : 'transparent', color: tab === id ? C.navy : C.slate, boxShadow: tab === id ? '0 1px 4px rgba(0,0,0,0.08)' : 'none', transition: 'all 0.15s' }}>
-            {label}
-          </button>
-        ))}
-      </div>
-
-      {/* List view */}
-      {tab === 'list' && (
-        <div>
-          <div style={{ position: 'relative', marginBottom: 20 }}>
-            <span style={{ position: 'absolute', left: 14, top: '50%', transform: 'translateY(-50%)', color: C.slate }}>🔍</span>
-            <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Search prescriptions by patient name..." style={{ width: '100%', padding: '12px 16px 12px 42px', borderRadius: 12, border: `1.5px solid ${C.border}`, fontSize: 14, color: C.navy, background: C.white, outline: 'none', boxSizing: 'border-box' }} />
-          </div>
-          {loading ? (
-            <div style={{ textAlign: 'center', padding: '80px', background: C.white, borderRadius: 20, border: `1px solid ${C.border}` }}>
-              <div style={{ fontSize: 40, marginBottom: 12 }}>⏳</div>
-              <p style={{ color: C.slate }}>Loading prescriptions...</p>
-            </div>
-          ) : filtered.length === 0 ? (
-            <div style={{ textAlign: 'center', padding: '80px 40px', background: C.white, borderRadius: 20, border: `1px solid ${C.border}` }}>
-              <div style={{ width: 80, height: 80, borderRadius: '50%', background: C.accentLight, display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 20px', fontSize: 36 }}>💊</div>
-              <h3 style={{ margin: '0 0 8px', color: C.navy }}>No prescriptions yet</h3>
-              <p style={{ color: C.slate, margin: '0 0 20px' }}>Issue your first prescription using the button above.</p>
-              <button onClick={() => setTab('new')} style={{ background: C.navy, color: 'white', border: 'none', borderRadius: 12, padding: '11px 24px', fontSize: 14, fontWeight: 700, cursor: 'pointer' }}>+ New Prescription</button>
-            </div>
-          ) : (
-            <div style={{ display: 'grid', gap: 16 }}>
-              {filtered.map(rx => <PrescriptionCard key={rx.id} rx={rx} onView={setViewRx} />)}
-            </div>
-          )}
-        </div>
-      )}
-
-      {/* New prescription form */}
-      {tab === 'new' && (
-        <div style={{ background: C.white, borderRadius: 20, border: `1px solid ${C.border}`, padding: '32px', boxShadow: '0 2px 12px rgba(0,0,0,0.04)' }}>
-          {success ? (
-            <div style={{ textAlign: 'center', padding: '60px 40px' }}>
-              <div style={{ width: 80, height: 80, borderRadius: '50%', background: C.successLight, display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 20px', fontSize: 36 }}>✅</div>
-              <h3 style={{ color: C.navy, margin: '0 0 8px', fontSize: 22, fontWeight: 800 }}>Prescription Issued!</h3>
-              <p style={{ color: C.slate, margin: 0 }}>The patient can now view this prescription in their portal.</p>
-            </div>
-          ) : (
-            <>
-              <h2 style={{ margin: '0 0 28px', fontSize: 20, fontWeight: 800, color: C.navy, display: 'flex', alignItems: 'center', gap: 10 }}>
-                <span style={{ fontSize: 24 }}>✏️</span> Issue New Prescription
-              </h2>
-
-              {/* Patient & Diagnosis */}
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16, marginBottom: 24 }}>
-                <div>
-                  <label style={{ display: 'block', fontSize: 12, fontWeight: 700, color: C.slate, marginBottom: 6, textTransform: 'uppercase', letterSpacing: 0.5 }}>Select Patient *</label>
-                  <select value={form.patient_id} onChange={e => setForm(f => ({ ...f, patient_id: e.target.value }))} style={{ width: '100%', padding: '12px 14px', borderRadius: 12, border: `1.5px solid ${C.border}`, fontSize: 14, color: C.navy, outline: 'none', background: 'white', boxSizing: 'border-box' }}>
-                    <option value="">-- Choose a patient --</option>
-                    {patients.map(p => <option key={p.id} value={p.id}>{p.name} (#{p.id})</option>)}
-                  </select>
-                </div>
-                <div>
-                  <label style={{ display: 'block', fontSize: 12, fontWeight: 700, color: C.slate, marginBottom: 6, textTransform: 'uppercase', letterSpacing: 0.5 }}>Diagnosis</label>
-                  <input value={form.diagnosis} onChange={e => setForm(f => ({ ...f, diagnosis: e.target.value }))} placeholder="e.g. Upper respiratory tract infection" style={{ width: '100%', padding: '12px 14px', borderRadius: 12, border: `1.5px solid ${C.border}`, fontSize: 14, color: C.navy, outline: 'none', boxSizing: 'border-box' }} />
-                </div>
-              </div>
-
-              {/* Medications */}
-              <div style={{ marginBottom: 24 }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14 }}>
-                  <div>
-                    <p style={{ margin: 0, fontSize: 15, fontWeight: 700, color: C.navy }}>Medications</p>
-                    <p style={{ margin: '2px 0 0', fontSize: 12, color: C.slate }}>Add all medications for this prescription</p>
-                  </div>
-                  <button onClick={addMed} style={{ background: C.accentLight, color: C.accent, border: 'none', borderRadius: 10, padding: '8px 16px', fontSize: 13, fontWeight: 700, cursor: 'pointer' }}>+ Add Medication</button>
-                </div>
-                {form.medications.map((med, i) => (
-                  <MedRow key={i} med={med} idx={i} onChange={updateMed} onRemove={removeMed} />
-                ))}
-              </div>
-
-              {/* Notes */}
-              <div style={{ marginBottom: 28 }}>
-                <label style={{ display: 'block', fontSize: 12, fontWeight: 700, color: C.slate, marginBottom: 6, textTransform: 'uppercase', letterSpacing: 0.5 }}>Doctor's Notes</label>
-                <textarea value={form.notes} onChange={e => setForm(f => ({ ...f, notes: e.target.value }))} placeholder="Additional instructions, warnings, follow-up notes..." rows={3} style={{ width: '100%', padding: '12px 14px', borderRadius: 12, border: `1.5px solid ${C.border}`, fontSize: 14, color: C.navy, outline: 'none', resize: 'vertical', boxSizing: 'border-box', fontFamily: 'inherit' }} />
-              </div>
-
-              {/* Submit */}
-              <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 12 }}>
-                <button onClick={() => setTab('list')} style={{ background: '#F1F5F9', color: C.slate, border: 'none', borderRadius: 12, padding: '12px 24px', fontSize: 14, fontWeight: 700, cursor: 'pointer' }}>Cancel</button>
-                <button onClick={handleSubmit} disabled={submitting || !form.patient_id || form.medications.some(m => !m.name)} style={{ background: submitting || !form.patient_id ? '#CBD5E1' : C.navy, color: 'white', border: 'none', borderRadius: 12, padding: '12px 28px', fontSize: 14, fontWeight: 700, cursor: submitting ? 'not-allowed' : 'pointer', display: 'flex', alignItems: 'center', gap: 8 }}>
-                  {submitting ? '⏳ Issuing...' : '✅ Issue Prescription'}
-                </button>
-              </div>
-            </>
-          )}
-        </div>
       )}
 
       {viewRx && <PrescriptionModal rx={viewRx} onClose={() => setViewRx(null)} />}
 
       {/* Reports Modal */}
       {showReportsModal && selectedAppointment && (
-        <div style={{ position: 'fixed', inset: 0, background: 'rgba(15,52,96,0.6)', zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 24 }} onClick={() => setShowReportsModal(false)}>
-          <div style={{ background: C.white, borderRadius: 24, width: '100%', maxWidth: 900, maxHeight: '90vh', overflow: 'auto', padding: 0 }} onClick={e => e.stopPropagation()}>
+        <div style={{ 
+          position: 'fixed', 
+          inset: 0, 
+          background: 'rgba(15,52,96,0.7)', 
+          backdropFilter: 'blur(8px)',
+          zIndex: 1000, 
+          display: 'flex', 
+          alignItems: 'center', 
+          justifyContent: 'center', 
+          padding: 24,
+          animation: 'fadeIn 0.2s ease-out'
+        }} onClick={() => setShowReportsModal(false)}>
+          <div style={{ 
+            background: C.white, 
+            borderRadius: 28, 
+            width: '100%', 
+            maxWidth: 950, 
+            maxHeight: '90vh', 
+            overflow: 'hidden',
+            boxShadow: '0 25px 60px rgba(15,52,96,0.3)',
+            animation: 'slideUp 0.3s ease-out',
+            display: 'flex',
+            flexDirection: 'column'
+          }} onClick={e => e.stopPropagation()}>
             {/* Header */}
-            <div style={{ background: `linear-gradient(135deg, ${C.navy} 0%, #1a5a8a 100%)`, padding: '28px 32px', borderRadius: '24px 24px 0 0' }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
-                  <div style={{ width: 56, height: 56, borderRadius: 16, background: 'rgba(255,255,255,0.15)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 28 }}>📄</div>
+            <div style={{ 
+              background: `linear-gradient(135deg, ${C.navy} 0%, #1a5a8a 50%, ${C.teal} 100%)`, 
+              padding: '32px 36px',
+              position: 'relative',
+              overflow: 'hidden'
+            }}>
+              {/* Decorative circles */}
+              <div style={{ position: 'absolute', top: -50, right: -50, width: 200, height: 200, borderRadius: '50%', background: 'rgba(255,255,255,0.05)' }} />
+              <div style={{ position: 'absolute', bottom: -80, left: -40, width: 250, height: 250, borderRadius: '50%', background: 'rgba(255,255,255,0.03)' }} />
+              
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', position: 'relative', zIndex: 1 }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 18 }}>
+                  <div style={{ 
+                    width: 64, 
+                    height: 64, 
+                    borderRadius: 18, 
+                    background: 'rgba(255,255,255,0.15)', 
+                    backdropFilter: 'blur(10px)',
+                    display: 'flex', 
+                    alignItems: 'center', 
+                    justifyContent: 'center', 
+                    fontSize: 32,
+                    border: '2px solid rgba(255,255,255,0.2)',
+                    boxShadow: '0 8px 24px rgba(0,0,0,0.2)'
+                  }}>📄</div>
                   <div>
-                    <h2 style={{ margin: 0, fontSize: 22, fontWeight: 800, color: 'white' }}>Patient Reports</h2>
-                    <p style={{ margin: '4px 0 0', fontSize: 14, color: 'rgba(255,255,255,0.85)' }}>
-                      {selectedAppointment.patient_name} · {new Date(selectedAppointment.scheduled_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+                    <h2 style={{ margin: 0, fontSize: 24, fontWeight: 800, color: 'white', letterSpacing: '-0.5px' }}>Patient Reports</h2>
+                    <p style={{ margin: '6px 0 0', fontSize: 14, color: 'rgba(255,255,255,0.9)', fontWeight: 500 }}>
+                      {selectedAppointment.patient_name} · {new Date(selectedAppointment.scheduled_at).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}
                     </p>
+                    {appointmentReports.length > 0 && (
+                      <div style={{ marginTop: 8, display: 'inline-flex', alignItems: 'center', gap: 6, background: 'rgba(255,255,255,0.15)', borderRadius: 20, padding: '4px 12px' }}>
+                        <div style={{ width: 8, height: 8, borderRadius: '50%', background: '#10B981' }} />
+                        <span style={{ fontSize: 12, color: 'white', fontWeight: 600 }}>{appointmentReports.length} report{appointmentReports.length !== 1 ? 's' : ''} available</span>
+                      </div>
+                    )}
                   </div>
                 </div>
-                <button onClick={() => setShowReportsModal(false)} style={{ background: 'rgba(255,255,255,0.15)', border: 'none', color: 'white', borderRadius: 12, width: 40, height: 40, cursor: 'pointer', fontSize: 20, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>×</button>
+                <button 
+                  onClick={() => setShowReportsModal(false)} 
+                  style={{ 
+                    background: 'rgba(255,255,255,0.2)', 
+                    backdropFilter: 'blur(10px)',
+                    border: '2px solid rgba(255,255,255,0.3)', 
+                    color: 'white', 
+                    borderRadius: 14, 
+                    width: 44, 
+                    height: 44, 
+                    cursor: 'pointer', 
+                    fontSize: 24, 
+                    display: 'flex', 
+                    alignItems: 'center', 
+                    justifyContent: 'center',
+                    transition: 'all 0.2s',
+                    fontWeight: 300
+                  }}
+                  onMouseEnter={(e) => {
+                    e.target.style.background = 'rgba(255,255,255,0.3)';
+                    e.target.style.transform = 'scale(1.05)';
+                  }}
+                  onMouseLeave={(e) => {
+                    e.target.style.background = 'rgba(255,255,255,0.2)';
+                    e.target.style.transform = 'scale(1)';
+                  }}
+                >×</button>
               </div>
             </div>
 
             {/* Content */}
-            <div style={{ padding: '32px' }}>
+            <div style={{ 
+              padding: '32px 36px',
+              overflow: 'auto',
+              flex: 1
+            }}>
               {loadingReports ? (
-                <div style={{ textAlign: 'center', padding: '60px 20px' }}>
-                  <div style={{ fontSize: 48, marginBottom: 16 }}>⏳</div>
-                  <p style={{ color: C.slate, fontSize: 15 }}>Loading reports...</p>
+                <div style={{ textAlign: 'center', padding: '80px 20px' }}>
+                  <div style={{ 
+                    width: 80, 
+                    height: 80, 
+                    borderRadius: '50%', 
+                    background: `linear-gradient(135deg, ${C.accentLight}, ${C.accentMid})`,
+                    display: 'flex', 
+                    alignItems: 'center', 
+                    justifyContent: 'center', 
+                    margin: '0 auto 24px',
+                    fontSize: 36,
+                    animation: 'pulse 2s infinite'
+                  }}>⏳</div>
+                  <p style={{ color: C.slate, fontSize: 16, fontWeight: 600, margin: 0 }}>Loading reports...</p>
                 </div>
               ) : appointmentReports.length === 0 ? (
-                <div style={{ textAlign: 'center', padding: '60px 20px' }}>
-                  <div style={{ width: 80, height: 80, borderRadius: '50%', background: C.accentLight, display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 20px', fontSize: 36 }}>📋</div>
-                  <h3 style={{ margin: '0 0 8px', color: C.navy, fontSize: 18 }}>No Reports Uploaded</h3>
-                  <p style={{ color: C.slate, margin: 0, fontSize: 14 }}>The patient hasn't uploaded any reports for this consultation yet.</p>
+                <div style={{ textAlign: 'center', padding: '80px 20px' }}>
+                  <div style={{ 
+                    width: 100, 
+                    height: 100, 
+                    borderRadius: '50%', 
+                    background: `linear-gradient(135deg, #F1F5F9, #E2E8F0)`,
+                    display: 'flex', 
+                    alignItems: 'center', 
+                    justifyContent: 'center', 
+                    margin: '0 auto 24px', 
+                    fontSize: 48,
+                    boxShadow: '0 8px 24px rgba(0,0,0,0.08)'
+                  }}>📋</div>
+                  <h3 style={{ margin: '0 0 10px', color: C.navy, fontSize: 20, fontWeight: 700 }}>No Reports Uploaded</h3>
+                  <p style={{ color: C.slate, margin: 0, fontSize: 15, lineHeight: 1.6 }}>The patient hasn't uploaded any reports for this consultation yet.</p>
                 </div>
               ) : (
-                <div style={{ display: 'grid', gap: 16 }}>
-                  {appointmentReports.map(report => {
+                <div style={{ display: 'grid', gap: 18 }}>
+                  {appointmentReports.map((report, index) => {
                     const reportTypes = {
-                      blood_test: { label: 'Blood Test', icon: '🩸', bg: '#FEF2F2', color: '#EF4444' },
-                      xray: { label: 'X-Ray', icon: '🦴', bg: '#EEF2FF', color: '#6366F1' },
-                      mri: { label: 'MRI Scan', icon: '🧲', bg: '#F5F3FF', color: '#7C3AED' },
-                      ultrasound: { label: 'Ultrasound', icon: '📡', bg: '#ECFDF5', color: '#10B981' },
-                      urine_test: { label: 'Urine Test', icon: '🧪', bg: '#FFF7ED', color: '#F59E0B' },
-                      ct_scan: { label: 'CT Scan', icon: '🖥', bg: '#F0F9FF', color: '#0EA5E9' },
-                      ecg: { label: 'ECG', icon: '💓', bg: '#FFF1F2', color: '#F43F5E' },
-                      other: { label: 'Other Report', icon: '📄', bg: '#F8FAFC', color: '#64748B' },
+                      blood_test: { label: 'Blood Test', icon: '🩸', gradient: 'linear-gradient(135deg, #FEF2F2, #FEE2E2)', color: '#EF4444' },
+                      xray: { label: 'X-Ray', icon: '🦴', gradient: 'linear-gradient(135deg, #EEF2FF, #E0E7FF)', color: '#6366F1' },
+                      mri: { label: 'MRI Scan', icon: '🧲', gradient: 'linear-gradient(135deg, #F5F3FF, #EDE9FE)', color: '#7C3AED' },
+                      ultrasound: { label: 'Ultrasound', icon: '📡', gradient: 'linear-gradient(135deg, #ECFDF5, #D1FAE5)', color: '#10B981' },
+                      urine_test: { label: 'Urine Test', icon: '🧪', gradient: 'linear-gradient(135deg, #FFF7ED, #FFEDD5)', color: '#F59E0B' },
+                      ct_scan: { label: 'CT Scan', icon: '🖥', gradient: 'linear-gradient(135deg, #F0F9FF, #E0F2FE)', color: '#0EA5E9' },
+                      ecg: { label: 'ECG', icon: '💓', gradient: 'linear-gradient(135deg, #FFF1F2, #FFE4E6)', color: '#F43F5E' },
+                      other: { label: 'Other Report', icon: '📄', gradient: 'linear-gradient(135deg, #F8FAFC, #F1F5F9)', color: '#64748B' },
                     };
                     const meta = reportTypes[report.report_type] || reportTypes.other;
-                    const ext = (report.report_url || '').split('.').pop()?.toLowerCase();
-                    const extColors = { pdf: { bg: '#FEF2F2', color: '#EF4444' }, jpg: { bg: '#DBEAFE', color: '#3B82F6' }, jpeg: { bg: '#DBEAFE', color: '#3B82F6' }, png: { bg: '#ECFDF5', color: '#10B981' } };
-                    const ec = extColors[ext] || { bg: '#F1F5F9', color: '#475569' };
+                    const ext = (report.report_url || '').split('.').pop()?.split('?')[0]?.toLowerCase();
+                    const extColors = { 
+                      pdf: { bg: 'linear-gradient(135deg, #FEF2F2, #FEE2E2)', color: '#DC2626', icon: '📕' }, 
+                      jpg: { bg: 'linear-gradient(135deg, #DBEAFE, #BFDBFE)', color: '#2563EB', icon: '🖼️' }, 
+                      jpeg: { bg: 'linear-gradient(135deg, #DBEAFE, #BFDBFE)', color: '#2563EB', icon: '🖼️' }, 
+                      png: { bg: 'linear-gradient(135deg, #ECFDF5, #D1FAE5)', color: '#059669', icon: '🖼️' }
+                    };
+                    const ec = extColors[ext] || { bg: 'linear-gradient(135deg, #F1F5F9, #E2E8F0)', color: '#475569', icon: '📄' };
 
                     return (
                       <div key={report.id} style={{ 
-                        background: '#F8FAFC', 
-                        borderRadius: 16, 
-                        border: `1.5px solid ${C.border}`, 
-                        padding: '20px 24px',
-                        transition: 'all 0.2s'
+                        background: '#FFFFFF', 
+                        borderRadius: 20, 
+                        border: '2px solid #E2E8F0', 
+                        padding: '24px',
+                        transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+                        boxShadow: '0 2px 8px rgba(0,0,0,0.04)',
+                        animation: `slideIn 0.3s ease-out ${index * 0.05}s both`
                       }}
                       onMouseEnter={(e) => {
                         e.currentTarget.style.borderColor = C.accent;
-                        e.currentTarget.style.boxShadow = '0 4px 12px rgba(15,52,96,0.08)';
+                        e.currentTarget.style.boxShadow = '0 8px 24px rgba(15,52,96,0.12)';
+                        e.currentTarget.style.transform = 'translateY(-2px)';
                       }}
                       onMouseLeave={(e) => {
-                        e.currentTarget.style.borderColor = C.border;
-                        e.currentTarget.style.boxShadow = 'none';
+                        e.currentTarget.style.borderColor = '#E2E8F0';
+                        e.currentTarget.style.boxShadow = '0 2px 8px rgba(0,0,0,0.04)';
+                        e.currentTarget.style.transform = 'translateY(0)';
                       }}>
-                        <div style={{ display: 'flex', alignItems: 'flex-start', gap: 16 }}>
-                          {/* Icon */}
+                        <div style={{ display: 'flex', alignItems: 'flex-start', gap: 18 }}>
+                          {/* Left: Report Type Icon */}
                           <div style={{ 
-                            width: 56, 
-                            height: 56, 
-                            borderRadius: 14, 
-                            background: meta.bg, 
+                            width: 68, 
+                            height: 68, 
+                            borderRadius: 16, 
+                            background: meta.gradient, 
                             display: 'flex', 
                             alignItems: 'center', 
                             justifyContent: 'center', 
-                            fontSize: 26,
-                            flexShrink: 0
+                            fontSize: 32,
+                            flexShrink: 0,
+                            boxShadow: '0 4px 12px rgba(0,0,0,0.08)',
+                            border: '2px solid rgba(255,255,255,0.5)'
                           }}>{meta.icon}</div>
                           
-                          {/* Details */}
+                          {/* Middle: Details */}
                           <div style={{ flex: 1 }}>
-                            <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 8, flexWrap: 'wrap' }}>
-                              <span style={{ fontSize: 16, fontWeight: 700, color: C.navy }}>{meta.label}</span>
-                              <span style={{ background: meta.bg, color: meta.color, fontSize: 11, fontWeight: 700, padding: '3px 10px', borderRadius: 20 }}>{meta.icon} {meta.label}</span>
-                              {ext && <span style={{ background: ec.bg, color: ec.color, fontSize: 10, fontWeight: 800, padding: '2px 8px', borderRadius: 6 }}>{ext.toUpperCase()}</span>}
-                              <span style={{ background: report.uploaded_by === 'patient' ? '#ECFDF5' : '#DBEAFE', color: report.uploaded_by === 'patient' ? '#10B981' : '#3B82F6', fontSize: 10, fontWeight: 700, padding: '2px 8px', borderRadius: 6 }}>
-                                {report.uploaded_by === 'patient' ? '👤 Patient Uploaded' : '👨‍⚕️ Doctor Added'}
+                            <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 10, flexWrap: 'wrap' }}>
+                              <span style={{ fontSize: 17, fontWeight: 700, color: C.navy }}>{meta.label}</span>
+                              {ext && (
+                                <span style={{ 
+                                  background: ec.bg, 
+                                  color: ec.color, 
+                                  fontSize: 10, 
+                                  fontWeight: 800, 
+                                  padding: '4px 10px', 
+                                  borderRadius: 8,
+                                  display: 'flex',
+                                  alignItems: 'center',
+                                  gap: 4
+                                }}>{ec.icon} {ext.toUpperCase()}</span>
+                              )}
+                              <span style={{ 
+                                background: report.uploaded_by === 'patient' ? 'linear-gradient(135deg, #ECFDF5, #D1FAE5)' : 'linear-gradient(135deg, #DBEAFE, #BFDBFE)', 
+                                color: report.uploaded_by === 'patient' ? '#059669' : '#2563EB', 
+                                fontSize: 10, 
+                                fontWeight: 700, 
+                                padding: '4px 10px', 
+                                borderRadius: 8,
+                                display: 'flex',
+                                alignItems: 'center',
+                                gap: 4
+                              }}>
+                                {report.uploaded_by === 'patient' ? '👤 Patient' : '👨‍⚕️ Doctor'}
                               </span>
                             </div>
                             
                             {report.description && (
-                              <p style={{ margin: '0 0 10px', fontSize: 13, color: C.slate, lineHeight: 1.5 }}>
+                              <p style={{ 
+                                margin: '0 0 12px', 
+                                fontSize: 14, 
+                                color: '#475569', 
+                                lineHeight: 1.6,
+                                padding: '10px 14px',
+                                background: '#F8FAFC',
+                                borderRadius: 12,
+                                border: '1px solid #E2E8F0'
+                              }}>
                                 {report.description}
                               </p>
                             )}
                             
-                            <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
-                              <span style={{ fontSize: 12, color: C.slate }}>
-                                🕐 {new Date(report.uploaded_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric', hour: '2-digit', minute: '2-digit' })}
+                            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                              <span style={{ fontSize: 13, color: '#64748B', fontWeight: 500 }}>
+                                🕐 {new Date(report.uploaded_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+                              </span>
+                              <span style={{ color: '#CBD5E1' }}>•</span>
+                              <span style={{ fontSize: 13, color: '#64748B', fontWeight: 500 }}>
+                                {new Date(report.uploaded_at).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })}
                               </span>
                             </div>
                           </div>
                           
-                          {/* Actions */}
-                          <div style={{ display: 'flex', gap: 10, flexShrink: 0 }}>
-                            <a href={report.report_url} target="_blank" rel="noopener noreferrer" 
-                               style={{ 
-                                 background: C.navy, 
-                                 color: 'white', 
-                                 textDecoration: 'none', 
-                                 borderRadius: 10, 
-                                 padding: '9px 18px', 
-                                 fontSize: 12, 
-                                 fontWeight: 700,
-                                 transition: 'all 0.15s',
-                                 display: 'flex',
-                                 alignItems: 'center',
-                                 gap: 6
-                               }}
-                               onMouseEnter={(e) => e.target.style.background = '#1a5a8a'}
-                               onMouseLeave={(e) => e.target.style.background = C.navy}>
-                              View ↗
-                            </a>
-                            <a href={report.report_url} download 
-                               style={{ 
-                                 background: C.accentLight, 
-                                 color: C.accent, 
-                                 textDecoration: 'none', 
-                                 borderRadius: 10, 
-                                 padding: '9px 14px', 
-                                 fontSize: 12, 
-                                 fontWeight: 700,
-                                 transition: 'all 0.15s',
-                                 display: 'flex',
-                                 alignItems: 'center'
-                               }}
-                               onMouseEnter={(e) => e.target.style.background = C.accentMid}
-                               onMouseLeave={(e) => e.target.style.background = C.accentLight}>
-                              ⬇ Download
-                            </a>
+                          {/* Right: Actions */}
+                          <div style={{ display: 'flex', gap: 10, flexShrink: 0, flexDirection: 'column' }}>
+                            <button 
+                              onClick={() => window.open(report.report_url, '_blank')}
+                              style={{ 
+                                background: `linear-gradient(135deg, ${C.navy}, #1a5a8a)`, 
+                                color: 'white', 
+                                border: 'none',
+                                borderRadius: 12, 
+                                padding: '10px 18px', 
+                                fontSize: 12, 
+                                fontWeight: 700,
+                                cursor: 'pointer',
+                                transition: 'all 0.2s',
+                                display: 'flex',
+                                alignItems: 'center',
+                                gap: 6,
+                                boxShadow: '0 4px 12px rgba(15,52,96,0.2)'
+                              }}
+                              onMouseEnter={(e) => {
+                                e.target.style.transform = 'scale(1.05)';
+                                e.target.style.boxShadow = '0 6px 16px rgba(15,52,96,0.3)';
+                              }}
+                              onMouseLeave={(e) => {
+                                e.target.style.transform = 'scale(1)';
+                                e.target.style.boxShadow = '0 4px 12px rgba(15,52,96,0.2)';
+                              }}>
+                              👁️ View
+                            </button>
+                            <button
+                              onClick={() => handleDownloadReport(report.report_url, meta.label)}
+                              style={{ 
+                                background: 'linear-gradient(135deg, #F1F5F9, #E2E8F0)', 
+                                color: C.navy, 
+                                border: '2px solid #CBD5E1',
+                                borderRadius: 12, 
+                                padding: '10px 18px', 
+                                fontSize: 12, 
+                                fontWeight: 700,
+                                cursor: 'pointer',
+                                transition: 'all 0.2s',
+                                display: 'flex',
+                                alignItems: 'center',
+                                gap: 6
+                              }}
+                              onMouseEnter={(e) => {
+                                e.target.style.background = 'linear-gradient(135deg, #E2E8F0, #CBD5E1)';
+                                e.target.style.borderColor = C.navy;
+                                e.target.style.transform = 'scale(1.05)';
+                              }}
+                              onMouseLeave={(e) => {
+                                e.target.style.background = 'linear-gradient(135deg, #F1F5F9, #E2E8F0)';
+                                e.target.style.borderColor = '#CBD5E1';
+                                e.target.style.transform = 'scale(1)';
+                              }}>
+                              ⬇️ Download
+                            </button>
                           </div>
                         </div>
                       </div>
                     );
                   })}
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Prescription Modal */}
+      {showPrescriptionForm && selectedAppointment && (
+        <div key={`prescription-modal-${editingPrescription?.id || 'new'}`} style={{ 
+          position: 'fixed', 
+          inset: 0, 
+          background: 'rgba(15,52,96,0.7)', 
+          backdropFilter: 'blur(8px)',
+          zIndex: 1000, 
+          display: 'flex', 
+          alignItems: 'flex-start', 
+          justifyContent: 'center', 
+          padding: '40px 24px',
+          overflow: 'auto',
+          animation: 'fadeIn 0.2s ease-out'
+        }} onClick={() => setShowPrescriptionForm(false)}>
+          <div style={{ 
+            background: C.white, 
+            borderRadius: 28, 
+            width: '100%', 
+            maxWidth: 1100,
+            boxShadow: '0 25px 60px rgba(15,52,96,0.3)',
+            animation: 'slideUp 0.3s ease-out',
+            display: 'flex',
+            flexDirection: 'column',
+            maxHeight: 'calc(100vh - 80px)'
+          }} onClick={e => e.stopPropagation()}>
+            {/* Header */}
+            <div style={{ 
+              background: `linear-gradient(135deg, ${C.navy} 0%, #1a5a8a 50%, ${C.teal} 100%)`, 
+              padding: '28px 36px',
+              position: 'relative',
+              overflow: 'hidden',
+              flexShrink: 0
+            }}>
+              <div style={{ position: 'absolute', top: -50, right: -50, width: 200, height: 200, borderRadius: '50%', background: 'rgba(255,255,255,0.05)' }} />
+              <div style={{ position: 'absolute', bottom: -80, left: -40, width: 250, height: 250, borderRadius: '50%', background: 'rgba(255,255,255,0.03)' }} />
+              
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', position: 'relative', zIndex: 1 }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 18 }}>
+                  <div style={{ 
+                    width: 60, 
+                    height: 60, 
+                    borderRadius: 16, 
+                    background: 'rgba(255,255,255,0.15)', 
+                    backdropFilter: 'blur(10px)',
+                    display: 'flex', 
+                    alignItems: 'center', 
+                    justifyContent: 'center', 
+                    fontSize: 30,
+                    border: '2px solid rgba(255,255,255,0.2)',
+                    boxShadow: '0 8px 24px rgba(0,0,0,0.2)'
+                  }}>💊</div>
+                  <div>
+                    <h2 style={{ margin: 0, fontSize: 22, fontWeight: 800, color: 'white', letterSpacing: '-0.5px' }}>Issue Prescription</h2>
+                    <p style={{ margin: '4px 0 0', fontSize: 14, color: 'rgba(255,255,255,0.9)', fontWeight: 500 }}>
+                      {selectedAppointment.patient_name} · {new Date(selectedAppointment.scheduled_at).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}
+                    </p>
+                  </div>
+                </div>
+                <button 
+                  onClick={() => setShowPrescriptionForm(false)} 
+                  style={{ 
+                    background: 'rgba(255,255,255,0.2)', 
+                    backdropFilter: 'blur(10px)',
+                    border: '2px solid rgba(255,255,255,0.3)', 
+                    color: 'white', 
+                    borderRadius: 14, 
+                    width: 44, 
+                    height: 44, 
+                    cursor: 'pointer', 
+                    fontSize: 24, 
+                    display: 'flex', 
+                    alignItems: 'center', 
+                    justifyContent: 'center',
+                    transition: 'all 0.2s',
+                    fontWeight: 300
+                  }}
+                  onMouseEnter={(e) => {
+                    e.target.style.background = 'rgba(255,255,255,0.3)';
+                    e.target.style.transform = 'scale(1.05)';
+                  }}
+                  onMouseLeave={(e) => {
+                    e.target.style.background = 'rgba(255,255,255,0.2)';
+                    e.target.style.transform = 'scale(1)';
+                  }}
+                >×</button>
+              </div>
+            </div>
+
+            {/* Content */}
+            <div style={{ 
+              display: 'grid',
+              gridTemplateColumns: appointmentPrescriptions.length > 0 ? '1fr 380px' : '1fr',
+              overflow: 'hidden',
+              flex: 1
+            }}>
+              {/* Left: Prescription Form */}
+              <div style={{ 
+                padding: '32px 36px',
+                overflow: 'auto',
+                borderRight: appointmentPrescriptions.length > 0 ? '2px solid #E2E8F0' : 'none'
+              }}>
+                {editingPrescription ? (
+                  <div style={{ 
+                    background: 'linear-gradient(135deg, #FEF3C7, #FDE68A)',
+                    padding: '14px 18px',
+                    borderRadius: 12,
+                    marginBottom: 24,
+                    border: '2px solid #FCD34D',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'space-between',
+                    gap: 10
+                  }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                      <span style={{ fontSize: 20 }}>✏️</span>
+                      <div>
+                        <p style={{ margin: 0, fontSize: 13, fontWeight: 700, color: '#92400E' }}>
+                          Editing Prescription
+                        </p>
+                        <p style={{ margin: '2px 0 0 0', fontSize: 11, color: '#A16207' }}>
+                          Created on {new Date(editingPrescription.issued_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric', hour: '2-digit', minute: '2-digit' })}
+                        </p>
+                      </div>
+                    </div>
+                    {appointmentPrescriptions.length > 0 && (
+                      <button
+                        onClick={() => {
+                          setEditingPrescription(null);
+                          setForm({
+                            patient_id: selectedAppointment.patient_id,
+                            diagnosis: selectedAppointment.symptoms || '',
+                            notes: '',
+                            medications: [{ name: '', dosage: '', frequency: '', duration: '', instructions: '' }]
+                          });
+                        }}
+                        style={{
+                          background: 'linear-gradient(135deg, #10B981, #059669)',
+                          color: 'white',
+                          border: 'none',
+                          padding: '8px 14px',
+                          borderRadius: 8,
+                          fontSize: 11,
+                          fontWeight: 700,
+                          cursor: 'pointer',
+                          whiteSpace: 'nowrap',
+                          transition: 'all 0.2s'
+                        }}
+                        onMouseEnter={(e) => e.currentTarget.style.transform = 'scale(1.05)'}
+                        onMouseLeave={(e) => e.currentTarget.style.transform = 'scale(1)'}
+                      >
+                        ➕ Add Another
+                      </button>
+                    )}
+                  </div>
+                ) : (
+                  <div style={{ 
+                    background: 'linear-gradient(135deg, #DCFCE7, #BBF7D0)',
+                    padding: '14px 18px',
+                    borderRadius: 12,
+                    marginBottom: 24,
+                    border: '2px solid #86EFAC',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 10
+                  }}>
+                    <span style={{ fontSize: 20 }}>💊</span>
+                    <div>
+                      <p style={{ margin: 0, fontSize: 13, fontWeight: 700, color: '#166534' }}>
+                        Create New Prescription
+                      </p>
+                      <p style={{ margin: '2px 0 0 0', fontSize: 11, color: '#15803D' }}>
+                        Fill in the medication details below
+                      </p>
+                    </div>
+                  </div>
+                )}
+                {/* Patient Info */}
+                <div style={{ 
+                  background: 'linear-gradient(135deg, #F0F9FF, #E0F2FE)',
+                  padding: '18px 22px',
+                  borderRadius: 16,
+                  marginBottom: 28,
+                  border: '2px solid #BAE6FD'
+                }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 10 }}>
+                    <span style={{ fontSize: 20 }}>👤</span>
+                    <span style={{ fontSize: 15, fontWeight: 700, color: C.navy }}>Patient Information</span>
+                  </div>
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+                    <div>
+                      <p style={{ margin: '0 0 4px', fontSize: 11, fontWeight: 700, color: '#64748B', textTransform: 'uppercase' }}>Name</p>
+                      <p style={{ margin: 0, fontSize: 14, fontWeight: 600, color: C.navy }}>{selectedAppointment.patient_name}</p>
+                    </div>
+                    <div>
+                      <p style={{ margin: '0 0 4px', fontSize: 11, fontWeight: 700, color: '#64748B', textTransform: 'uppercase' }}>Date</p>
+                      <p style={{ margin: 0, fontSize: 14, fontWeight: 600, color: C.navy }}>
+                        {new Date(selectedAppointment.scheduled_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Diagnosis */}
+                <div style={{ marginBottom: 24 }}>
+                  <label style={{ display: 'block', fontSize: 13, fontWeight: 700, color: C.navy, marginBottom: 8 }}>
+                    🩺 Diagnosis / Symptoms <span style={{ color: '#EF4444' }}>*</span>
+                  </label>
+                  <textarea 
+                    value={form.diagnosis}
+                    onChange={(e) => setForm({...form, diagnosis: e.target.value})}
+                    placeholder="Enter diagnosis or symptoms..."
+                    rows={3}
+                    style={{ 
+                      width: '100%',
+                      padding: '14px 16px',
+                      borderRadius: 12,
+                      border: '2px solid #E2E8F0',
+                      fontSize: 14,
+                      color: C.navy,
+                      background: '#F8FAFC',
+                      outline: 'none',
+                      resize: 'vertical',
+                      fontFamily: 'inherit',
+                      transition: 'all 0.2s',
+                      boxSizing: 'border-box'
+                    }}
+                    onFocus={(e) => e.target.style.borderColor = C.accent}
+                    onBlur={(e) => e.target.style.borderColor = '#E2E8F0'}
+                  />
+                </div>
+
+                {/* Medications */}
+                <div style={{ marginBottom: 24 }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
+                    <label style={{ fontSize: 13, fontWeight: 700, color: C.navy }}>
+                      💊 Medications <span style={{ color: '#EF4444' }}>*</span>
+                    </label>
+                    <button
+                      onClick={addMed}
+                      style={{
+                        background: 'linear-gradient(135deg, #10B981, #059669)',
+                        color: 'white',
+                        border: 'none',
+                        padding: '8px 16px',
+                        borderRadius: 10,
+                        fontSize: 12,
+                        fontWeight: 700,
+                        cursor: 'pointer',
+                        transition: 'all 0.2s',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: 6
+                      }}
+                      onMouseEnter={(e) => e.target.style.transform = 'scale(1.05)'}
+                      onMouseLeave={(e) => e.target.style.transform = 'scale(1)'}
+                    >
+                      + Add Medication
+                    </button>
+                  </div>
+
+                  <div style={{ display: 'grid', gap: 16 }}>
+                    {form.medications.map((med, idx) => (
+                      <div key={idx} style={{ 
+                        background: '#F8FAFC',
+                        borderRadius: 16,
+                        padding: 20,
+                        border: '2px solid #E2E8F0',
+                        position: 'relative',
+                        animation: 'slideIn 0.3s ease-out'
+                      }}>
+                        {form.medications.length > 1 && (
+                          <button
+                            onClick={() => removeMed(idx)}
+                            style={{
+                              position: 'absolute',
+                              top: 12,
+                              right: 12,
+                              background: '#FEE2E2',
+                              color: '#EF4444',
+                              border: 'none',
+                              width: 28,
+                              height: 28,
+                              borderRadius: 8,
+                              fontSize: 16,
+                              cursor: 'pointer',
+                              display: 'flex',
+                              alignItems: 'center',
+                              justifyContent: 'center',
+                              transition: 'all 0.2s'
+                            }}
+                            onMouseEnter={(e) => e.target.style.background = '#FECACA'}
+                            onMouseLeave={(e) => e.target.style.background = '#FEE2E2'}
+                          >×</button>
+                        )}
+
+                        <div style={{ display: 'grid', gap: 14 }}>
+                          {/* Medication Name */}
+                          <div>
+                            <label style={{ display: 'block', fontSize: 12, fontWeight: 700, color: '#64748B', marginBottom: 6, textTransform: 'uppercase', letterSpacing: 0.5 }}>
+                              💊 Medication Name <span style={{ color: '#EF4444' }}>*</span>
+                            </label>
+                            <input 
+                              value={med.name}
+                              onChange={(e) => updateMed(idx, 'name', e.target.value)}
+                              placeholder="e.g., Amoxicillin 500mg"
+                              style={{ 
+                                width: '100%',
+                                padding: '12px 14px',
+                                borderRadius: 10,
+                                border: '2px solid #E2E8F0',
+                                fontSize: 14,
+                                color: C.navy,
+                                background: 'white',
+                                outline: 'none',
+                                fontWeight: 600,
+                                transition: 'all 0.2s',
+                                boxSizing: 'border-box'
+                              }}
+                              onFocus={(e) => e.target.style.borderColor = C.accent}
+                              onBlur={(e) => e.target.style.borderColor = '#E2E8F0'}
+                            />
+                          </div>
+                          
+                          {/* Dosage and Frequency */}
+                          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+                            <div>
+                              <label style={{ display: 'block', fontSize: 12, fontWeight: 700, color: '#64748B', marginBottom: 6, textTransform: 'uppercase', letterSpacing: 0.5 }}>
+                                💉 Dosage <span style={{ color: '#EF4444' }}>*</span>
+                              </label>
+                              <select 
+                                value={med.dosage}
+                                onChange={(e) => updateMed(idx, 'dosage', e.target.value)}
+                                style={{ 
+                                  width: '100%',
+                                  padding: '12px 14px',
+                                  borderRadius: 10,
+                                  border: '2px solid #E2E8F0',
+                                  fontSize: 13,
+                                  color: med.dosage ? C.navy : '#94A3B8',
+                                  background: 'white',
+                                  outline: 'none',
+                                  transition: 'all 0.2s',
+                                  boxSizing: 'border-box',
+                                  cursor: 'pointer'
+                                }}
+                                onFocus={(e) => e.target.style.borderColor = C.accent}
+                                onBlur={(e) => e.target.style.borderColor = '#E2E8F0'}
+                              >
+                                <option value="">Select dosage...</option>
+                                <optgroup label="Tablets/Capsules">
+                                  <option value="250mg">250mg</option>
+                                  <option value="500mg">500mg</option>
+                                  <option value="750mg">750mg</option>
+                                  <option value="1000mg">1000mg (1g)</option>
+                                  <option value="1 tablet">1 tablet</option>
+                                  <option value="2 tablets">2 tablets</option>
+                                  <option value="1 capsule">1 capsule</option>
+                                  <option value="2 capsules">2 capsules</option>
+                                </optgroup>
+                                <optgroup label="Liquid/Syrup">
+                                  <option value="5ml">5ml</option>
+                                  <option value="10ml">10ml</option>
+                                  <option value="15ml">15ml</option>
+                                  <option value="20ml">20ml</option>
+                                  <option value="1 teaspoon">1 teaspoon (5ml)</option>
+                                  <option value="2 teaspoons">2 teaspoons (10ml)</option>
+                                  <option value="1 tablespoon">1 tablespoon (15ml)</option>
+                                </optgroup>
+                                <optgroup label="Injections">
+                                  <option value="1ml">1ml</option>
+                                  <option value="2ml">2ml</option>
+                                  <option value="5ml">5ml</option>
+                                </optgroup>
+                                <optgroup label="Topical">
+                                  <option value="Apply thin layer">Apply thin layer</option>
+                                  <option value="Apply sparingly">Apply sparingly</option>
+                                  <option value="1 drop">1 drop</option>
+                                  <option value="2 drops">2 drops</option>
+                                </optgroup>
+                              </select>
+                            </div>
+                            <div>
+                              <label style={{ display: 'block', fontSize: 12, fontWeight: 700, color: '#64748B', marginBottom: 6, textTransform: 'uppercase', letterSpacing: 0.5 }}>
+                                🕐 Frequency
+                              </label>
+                              <select 
+                                value={med.frequency}
+                                onChange={(e) => updateMed(idx, 'frequency', e.target.value)}
+                                style={{ 
+                                  width: '100%',
+                                  padding: '12px 14px',
+                                  borderRadius: 10,
+                                  border: '2px solid #E2E8F0',
+                                  fontSize: 13,
+                                  color: med.frequency ? C.navy : '#94A3B8',
+                                  background: 'white',
+                                  outline: 'none',
+                                  transition: 'all 0.2s',
+                                  boxSizing: 'border-box',
+                                  cursor: 'pointer'
+                                }}
+                                onFocus={(e) => e.target.style.borderColor = C.accent}
+                                onBlur={(e) => e.target.style.borderColor = '#E2E8F0'}
+                              >
+                                <option value="">Select frequency...</option>
+                                <optgroup label="Daily">
+                                  <option value="Once daily">Once daily (OD)</option>
+                                  <option value="Twice daily">Twice daily (BD)</option>
+                                  <option value="Three times daily">Three times daily (TDS)</option>
+                                  <option value="Four times daily">Four times daily (QDS)</option>
+                                </optgroup>
+                                <optgroup label="Time-based">
+                                  <option value="Every 4 hours">Every 4 hours</option>
+                                  <option value="Every 6 hours">Every 6 hours</option>
+                                  <option value="Every 8 hours">Every 8 hours</option>
+                                  <option value="Every 12 hours">Every 12 hours</option>
+                                  <option value="Every 24 hours">Every 24 hours</option>
+                                </optgroup>
+                                <optgroup label="Meal-related">
+                                  <option value="Before meals">Before meals (AC)</option>
+                                  <option value="After meals">After meals (PC)</option>
+                                  <option value="With meals">With meals</option>
+                                  <option value="On empty stomach">On empty stomach</option>
+                                </optgroup>
+                                <optgroup label="Special">
+                                  <option value="As needed">As needed (PRN)</option>
+                                  <option value="At bedtime">At bedtime (HS)</option>
+                                  <option value="Once weekly">Once weekly</option>
+                                  <option value="Stat dose">Stat dose (immediately)</option>
+                                </optgroup>
+                              </select>
+                            </div>
+                          </div>
+                          
+                          {/* Duration and Instructions */}
+                          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+                            <div>
+                              <label style={{ display: 'block', fontSize: 12, fontWeight: 700, color: '#64748B', marginBottom: 6, textTransform: 'uppercase', letterSpacing: 0.5 }}>
+                                📅 Duration
+                              </label>
+                              <select 
+                                value={med.duration}
+                                onChange={(e) => updateMed(idx, 'duration', e.target.value)}
+                                style={{ 
+                                  width: '100%',
+                                  padding: '12px 14px',
+                                  borderRadius: 10,
+                                  border: '2px solid #E2E8F0',
+                                  fontSize: 13,
+                                  color: med.duration ? C.navy : '#94A3B8',
+                                  background: 'white',
+                                  outline: 'none',
+                                  transition: 'all 0.2s',
+                                  boxSizing: 'border-box',
+                                  cursor: 'pointer'
+                                }}
+                                onFocus={(e) => e.target.style.borderColor = C.accent}
+                                onBlur={(e) => e.target.style.borderColor = '#E2E8F0'}
+                              >
+                                <option value="">Select duration...</option>
+                                <optgroup label="Days">
+                                  <option value="1 day">1 day</option>
+                                  <option value="3 days">3 days</option>
+                                  <option value="5 days">5 days</option>
+                                  <option value="7 days">7 days</option>
+                                  <option value="10 days">10 days</option>
+                                  <option value="14 days">14 days (2 weeks)</option>
+                                </optgroup>
+                                <optgroup label="Weeks">
+                                  <option value="1 week">1 week</option>
+                                  <option value="2 weeks">2 weeks</option>
+                                  <option value="3 weeks">3 weeks</option>
+                                  <option value="4 weeks">4 weeks (1 month)</option>
+                                  <option value="6 weeks">6 weeks</option>
+                                  <option value="8 weeks">8 weeks (2 months)</option>
+                                </optgroup>
+                                <optgroup label="Months">
+                                  <option value="1 month">1 month</option>
+                                  <option value="2 months">2 months</option>
+                                  <option value="3 months">3 months</option>
+                                  <option value="6 months">6 months</option>
+                                  <option value="9 months">9 months</option>
+                                  <option value="12 months">12 months (1 year)</option>
+                                </optgroup>
+                                <optgroup label="Special">
+                                  <option value="Single dose">Single dose</option>
+                                  <option value="Continue until reviewed">Continue until reviewed</option>
+                                  <option value="Ongoing">Ongoing</option>
+                                </optgroup>
+                              </select>
+                            </div>
+                            <div>
+                              <label style={{ display: 'block', fontSize: 12, fontWeight: 700, color: '#64748B', marginBottom: 6, textTransform: 'uppercase', letterSpacing: 0.5 }}>
+                                📝 Instructions
+                              </label>
+                              <input 
+                                value={med.instructions}
+                                onChange={(e) => updateMed(idx, 'instructions', e.target.value)}
+                                placeholder="e.g., Take with food"
+                                style={{ 
+                                  width: '100%',
+                                  padding: '12px 14px',
+                                  borderRadius: 10,
+                                  border: '2px solid #E2E8F0',
+                                  fontSize: 13,
+                                  color: C.navy,
+                                  background: 'white',
+                                  outline: 'none',
+                                  transition: 'all 0.2s',
+                                  boxSizing: 'border-box'
+                                }}
+                                onFocus={(e) => e.target.style.borderColor = C.accent}
+                                onBlur={(e) => e.target.style.borderColor = '#E2E8F0'}
+                              />
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Notes */}
+                <div style={{ marginBottom: 28 }}>
+                  <label style={{ display: 'block', fontSize: 13, fontWeight: 700, color: C.navy, marginBottom: 8 }}>
+                    📝 Additional Notes
+                  </label>
+                  <textarea 
+                    value={form.notes}
+                    onChange={(e) => setForm({...form, notes: e.target.value})}
+                    placeholder="Any additional notes or instructions..."
+                    rows={2}
+                    style={{ 
+                      width: '100%',
+                      padding: '14px 16px',
+                      borderRadius: 12,
+                      border: '2px solid #E2E8F0',
+                      fontSize: 14,
+                      color: C.navy,
+                      background: '#F8FAFC',
+                      outline: 'none',
+                      resize: 'vertical',
+                      fontFamily: 'inherit',
+                      transition: 'all 0.2s',
+                      boxSizing: 'border-box'
+                    }}
+                    onFocus={(e) => e.target.style.borderColor = C.accent}
+                    onBlur={(e) => e.target.style.borderColor = '#E2E8F0'}
+                  />
+                </div>
+
+                {/* Submit Button */}
+                <button
+                  onClick={editingPrescription ? handleUpdatePrescription : handleModalSubmit}
+                  disabled={isSubmitting || form.medications.some(m => !m.name)}
+                  style={{
+                    width: '100%',
+                    background: isSubmitting || form.medications.some(m => !m.name) 
+                      ? '#CBD5E1' 
+                      : editingPrescription
+                        ? 'linear-gradient(135deg, #F59E0B, #D97706)'
+                        : 'linear-gradient(135deg, #0F9B8E, #0D8A7D)',
+                    color: 'white',
+                    border: 'none',
+                    padding: '16px 24px',
+                    borderRadius: 14,
+                    fontSize: 15,
+                    fontWeight: 700,
+                    cursor: isSubmitting || form.medications.some(m => !m.name) ? 'not-allowed' : 'pointer',
+                    transition: 'all 0.3s',
+                    boxShadow: isSubmitting || form.medications.some(m => !m.name) ? 'none' : '0 8px 24px rgba(15,155,142,0.3)',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    gap: 10
+                  }}
+                  onMouseEnter={(e) => {
+                    if (!isSubmitting && !form.medications.some(m => !m.name)) {
+                      e.target.style.transform = 'translateY(-2px)';
+                      e.target.style.boxShadow = '0 12px 32px rgba(15,155,142,0.4)';
+                    }
+                  }}
+                  onMouseLeave={(e) => {
+                    e.target.style.transform = 'translateY(0)';
+                    e.target.style.boxShadow = isSubmitting || form.medications.some(m => !m.name) ? 'none' : '0 8px 24px rgba(15,155,142,0.3)';
+                  }}
+                >
+                  {isSubmitting ? (
+                    <>
+                      <div style={{ 
+                        width: 20, 
+                        height: 20, 
+                        border: '3px solid rgba(255,255,255,0.3)', 
+                        borderTop: '3px solid white', 
+                        borderRadius: '50%', 
+                        animation: 'spin 1s linear infinite' 
+                      }} />
+                      {editingPrescription ? 'Updating...' : 'Issuing...'}
+                    </>
+                  ) : (
+                    <>{editingPrescription ? '✏️ Update Prescription' : '💊 Issue Prescription'}</>
+                  )}
+                </button>
+              </div>
+
+              {/* Right: Existing Prescriptions */}
+              {appointmentPrescriptions.length > 0 && (
+                <div style={{ 
+                  padding: '32px 28px',
+                  overflow: 'auto',
+                  background: '#F8FAFC'
+                }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 20 }}>
+                    <span style={{ fontSize: 20 }}>📋</span>
+                    <h3 style={{ margin: 0, fontSize: 16, fontWeight: 700, color: C.navy }}>Prescriptions</h3>
+                    <span style={{
+                      background: 'linear-gradient(135deg, #10B981, #059669)',
+                      color: 'white',
+                      padding: '3px 10px',
+                      borderRadius: 20,
+                      fontSize: 11,
+                      fontWeight: 700
+                    }}>
+                      {appointmentPrescriptions.length}
+                    </span>
+                  </div>
+
+                  <div style={{ display: 'grid', gap: 16 }}>
+                    {loadingPrescriptions ? (
+                      <div style={{ textAlign: 'center', padding: 40 }}>
+                        <div style={{ 
+                          width: 40, 
+                          height: 40, 
+                          border: '4px solid #E2E8F0', 
+                          borderTop: '4px solid #10B981', 
+                          borderRadius: '50%', 
+                          animation: 'spin 1s linear infinite',
+                          margin: '0 auto 12px'
+                        }} />
+                        <p style={{ color: C.slate, fontSize: 13, margin: 0 }}>Loading...</p>
+                      </div>
+                    ) : (
+                      appointmentPrescriptions.map((rx, idx) => {
+                        const meds = rx.prescription_data?.medications || [];
+                        const isEditing = editingPrescription?.id === rx.id;
+                        return (
+                          <div key={rx.id} style={{ 
+                            background: isEditing ? '#FEF3C7' : 'white',
+                            borderRadius: 16,
+                            padding: 20,
+                            border: isEditing ? '2px solid #FCD34D' : '2px solid #E2E8F0',
+                            animation: `slideIn 0.3s ease-out ${idx * 0.1}s both`
+                          }}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 14 }}>
+                              <div style={{ 
+                                width: 32, 
+                                height: 32, 
+                                borderRadius: 10, 
+                                background: isEditing ? 'linear-gradient(135deg, #F59E0B, #D97706)' : 'linear-gradient(135deg, #10B981, #059669)',
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                                color: 'white',
+                                fontSize: 14
+                              }}>{isEditing ? '✏️' : '✓'}</div>
+                              <div style={{ flex: 1 }}>
+                                <p style={{ margin: 0, fontSize: 13, fontWeight: 700, color: C.navy }}>Prescription #{idx + 1}</p>
+                                <p style={{ margin: 0, fontSize: 11, color: C.slate }}>
+                                  {new Date(rx.issued_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}
+                                </p>
+                              </div>
+                              {isEditing && (
+                                <span style={{
+                                  background: '#F59E0B',
+                                  color: 'white',
+                                  padding: '3px 8px',
+                                  borderRadius: 6,
+                                  fontSize: 9,
+                                  fontWeight: 700
+                                }}>EDITING</span>
+                              )}
+                              <div style={{ display: 'flex', gap: 8 }}>
+                                <button
+                                  onClick={() => handleEditPrescription(rx)}
+                                  style={{
+                                    background: 'linear-gradient(135deg, #F59E0B, #D97706)',
+                                    color: 'white',
+                                    border: 'none',
+                                    padding: '6px 12px',
+                                    borderRadius: 8,
+                                    fontSize: 11,
+                                    fontWeight: 700,
+                                    cursor: 'pointer',
+                                    transition: 'all 0.2s',
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    gap: 4
+                                  }}
+                                  onMouseEnter={(e) => e.currentTarget.style.transform = 'scale(1.05)'}
+                                  onMouseLeave={(e) => e.currentTarget.style.transform = 'scale(1)'}
+                                >
+                                  ✏️ Edit
+                                </button>
+                                <button
+                                  onClick={() => handleDeletePrescription(rx.id)}
+                                  style={{
+                                    background: 'linear-gradient(135deg, #EF4444, #DC2626)',
+                                    color: 'white',
+                                    border: 'none',
+                                    padding: '6px 12px',
+                                    borderRadius: 8,
+                                    fontSize: 11,
+                                    fontWeight: 700,
+                                    cursor: 'pointer',
+                                    transition: 'all 0.2s',
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    gap: 4
+                                  }}
+                                  onMouseEnter={(e) => e.currentTarget.style.transform = 'scale(1.05)'}
+                                  onMouseLeave={(e) => e.currentTarget.style.transform = 'scale(1)'}
+                                >
+                                  🗑️ Delete
+                                </button>
+                              </div>
+                            </div>
+
+                            <div style={{ display: 'grid', gap: 10 }}>
+                              {meds.map((med, medIdx) => (
+                                <div key={medIdx} style={{ 
+                                  background: '#F0FDF4',
+                                  padding: '12px 14px',
+                                  borderRadius: 10,
+                                  border: '1px solid #BBF7D0'
+                                }}>
+                                  <p style={{ margin: '0 0 6px', fontSize: 13, fontWeight: 700, color: '#059669' }}>{med.name}</p>
+                                  <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap' }}>
+                                    {med.dosage && <span style={{ fontSize: 11, color: '#475569' }}>💊 {med.dosage}</span>}
+                                    {med.frequency && <span style={{ fontSize: 11, color: '#475569' }}>🕐 {med.frequency}</span>}
+                                    {med.duration && <span style={{ fontSize: 11, color: '#475569' }}>📅 {med.duration}</span>}
+                                  </div>
+                                  {med.instructions && (
+                                    <p style={{ margin: '6px 0 0', fontSize: 11, color: '#64748B', fontStyle: 'italic' }}>
+                                      📝 {med.instructions}
+                                    </p>
+                                  )}
+                                </div>
+                              ))}
+                            </div>
+
+                            {rx.notes && (
+                              <div style={{ 
+                                marginTop: 12,
+                                padding: '10px 12px',
+                                background: '#FEF3C7',
+                                borderRadius: 8,
+                                border: '1px solid #FDE68A'
+                              }}>
+                                <p style={{ margin: 0, fontSize: 11, color: '#92400E', lineHeight: 1.5 }}>
+                                  📝 {rx.notes}
+                                </p>
+                              </div>
+                            )}
+                          </div>
+                        );
+                      })
+                    )}
+                  </div>
                 </div>
               )}
             </div>

@@ -20,8 +20,11 @@ const addAvailabilitySlot = async (req, res) => {
 
   const { day_of_week, start_time, end_time, slot_duration_minutes, consultation_type, slot_date } = req.body;
 
+  // Convert day_of_week to number if it's a string
+  const dayOfWeekNum = typeof day_of_week === 'string' ? parseInt(day_of_week) : day_of_week;
+
   // Validations
-  if (!day_of_week || day_of_week < 0 || day_of_week > 6)
+  if (dayOfWeekNum === null || dayOfWeekNum === undefined || isNaN(dayOfWeekNum) || dayOfWeekNum < 0 || dayOfWeekNum > 6)
     return res.status(400).json({ error: 'Invalid day of week (0-6)' });
   if (!start_time || !end_time)
     return res.status(400).json({ error: 'Start time and end time are required' });
@@ -30,7 +33,11 @@ const addAvailabilitySlot = async (req, res) => {
   
   // If slot_date is provided, validate it's within the current week (tomorrow + 6 days)
   if (slot_date) {
-    const selectedDate = new Date(slot_date + 'T00:00:00'); // Local timezone
+    // Parse date components directly to avoid timezone issues
+    const [year, month, day] = slot_date.split('-').map(Number);
+    const selectedDate = new Date(year, month - 1, day); // month is 0-indexed
+    selectedDate.setHours(0, 0, 0, 0);
+    
     const tomorrow = new Date();
     tomorrow.setDate(tomorrow.getDate() + 1);
     tomorrow.setHours(0, 0, 0, 0);
@@ -39,11 +46,13 @@ const addAvailabilitySlot = async (req, res) => {
     endOfWeek.setDate(tomorrow.getDate() + 6);
     endOfWeek.setHours(23, 59, 59, 999);
     
+    console.log(`[Availability Validation] Selected: ${selectedDate.toDateString()}, Tomorrow: ${tomorrow.toDateString()}, End: ${endOfWeek.toDateString()}`);
+    
     if (selectedDate < tomorrow)
       return res.status(400).json({ error: 'Cannot add slots for past dates' });
     
     if (selectedDate > endOfWeek)
-      return res.status(400).json({ error: 'Can only add slots for the current week (next 7 days from tomorrow)' });
+      return res.status(400).json({ error: `Can only add slots for the current week (${tomorrow.toDateString()} to ${endOfWeek.toDateString()})` });
   }
 
   try {
@@ -53,7 +62,7 @@ const addAvailabilitySlot = async (req, res) => {
       WHERE doctor_id = $1 AND day_of_week = $2 AND is_active = true
         AND start_time < $3::TIME AND end_time > $4::TIME
     `;
-    const overlapParams = [doctorId, parseInt(day_of_week), end_time, start_time];
+    const overlapParams = [doctorId, dayOfWeekNum, end_time, start_time];
     
     if (slot_date) {
       overlapQuery += ` AND slot_date = $5`;
@@ -77,7 +86,7 @@ const addAvailabilitySlot = async (req, res) => {
        RETURNING *`,
       [
         doctorId,
-        parseInt(day_of_week),
+        dayOfWeekNum,
         start_time,
         end_time,
         parseInt(slot_duration_minutes) || 30,
@@ -242,8 +251,11 @@ const updateAvailabilitySlot = async (req, res) => {
 
   const { day_of_week, start_time, end_time, slot_duration_minutes, consultation_type } = req.body;
   
+  // Convert day_of_week to number if it's a string
+  const dayOfWeekNum = typeof day_of_week === 'string' ? parseInt(day_of_week) : day_of_week;
+  
   // Validations
-  if (!day_of_week || day_of_week < 0 || day_of_week > 6)
+  if (dayOfWeekNum === null || dayOfWeekNum === undefined || isNaN(dayOfWeekNum) || dayOfWeekNum < 0 || dayOfWeekNum > 6)
     return res.status(400).json({ error: 'Invalid day of week (0-6)' });
   if (!start_time || !end_time)
     return res.status(400).json({ error: 'Start time and end time are required' });
@@ -258,7 +270,7 @@ const updateAvailabilitySlot = async (req, res) => {
       `SELECT id FROM availability 
        WHERE doctor_id = $1 AND day_of_week = $2 AND is_active = true AND id != $3
        AND start_time < $4 AND end_time > $5`,
-      [doctorId, parseInt(day_of_week), req.params.slotId, end_time, start_time]
+      [doctorId, dayOfWeekNum, req.params.slotId, end_time, start_time]
     );
     
     if (overlapCheck.rows.length > 0)
@@ -270,7 +282,7 @@ const updateAvailabilitySlot = async (req, res) => {
            slot_duration_minutes = $4, consultation_type = $5
        WHERE id = $6 AND doctor_id = $7 RETURNING *`,
       [
-        parseInt(day_of_week),
+        dayOfWeekNum,
         start_time,
         end_time,
         parseInt(slot_duration_minutes) || 30,
