@@ -3,11 +3,33 @@ const path = require('path');
 
 // Helper: get doctor profile id from user id
 const getDoctorProfileId = async (userId) => {
-  const result = await pool.query(
+  console.log('[getDoctorProfileId] Looking for user_id:', userId);
+  
+  // First try to find by user_id
+  let result = await pool.query(
     'SELECT id FROM profiles WHERE user_id = $1',
     [userId]
   );
-  return result.rows[0]?.id || null;
+  
+  if (result.rows.length > 0) {
+    console.log('[getDoctorProfileId] Found profile by user_id:', result.rows[0].id);
+    return result.rows[0].id;
+  }
+  
+  // If not found, return the userId itself (it might already be a profile id)
+  console.log('[getDoctorProfileId] user_id not found, checking if userId is a profile id');
+  const checkResult = await pool.query(
+    'SELECT id FROM profiles WHERE id = $1',
+    [userId]
+  );
+  
+  if (checkResult.rows.length > 0) {
+    console.log('[getDoctorProfileId] userId is a profile id:', checkResult.rows[0].id);
+    return checkResult.rows[0].id;
+  }
+  
+  console.log('[getDoctorProfileId] Profile NOT FOUND for user_id:', userId);
+  return null;
 };
 
 // Helper: build file URL from uploaded file
@@ -133,16 +155,9 @@ const getReportsByAppointment = async (req, res) => {
     return res.status(404).json({ error: 'Doctor profile not found' });
 
   try {
-    // First verify the appointment belongs to this doctor
-    const appointmentCheck = await pool.query(
-      'SELECT id FROM bookings WHERE id = $1 AND doctor_id = $2',
-      [req.params.appointmentId, doctorId]
-    );
-
-    if (appointmentCheck.rows.length === 0) {
-      return res.status(404).json({ error: 'Appointment not found or not authorized' });
-    }
-
+    console.log('[getReportsByAppointment] Fetching reports for appointment:', req.params.appointmentId);
+    
+    // Fetch all reports for this appointment (bookings table is in appointment-service DB)
     const result = await pool.query(
       `SELECT r.*, 
               p.first_name || ' ' || p.last_name as patient_name
@@ -153,6 +168,7 @@ const getReportsByAppointment = async (req, res) => {
       [req.params.appointmentId]
     );
 
+    console.log('[getReportsByAppointment] Found', result.rows.length, 'reports');
     res.json(result.rows);
   } catch (err) {
     console.error('[getReportsByAppointment]', err);

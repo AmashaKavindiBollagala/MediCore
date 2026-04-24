@@ -19,7 +19,6 @@ const NAV_ITEMS = [
   { id: 'telemedicine', label: 'My Consultations', icon: <svg width="20" height="20" viewBox="0 0 24 24" fill="none"><path d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" stroke="currentColor" strokeWidth="1.8"/></svg> },
   { id: 'availability', label: 'Availability', icon: <svg width="20" height="20" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="9" stroke="currentColor" strokeWidth="1.8"/><path d="M12 6v6l4 2" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round"/></svg> },
   { id: 'prescriptions', label: 'Prescriptions', icon: <svg width="20" height="20" viewBox="0 0 24 24" fill="none"><path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" stroke="currentColor" strokeWidth="1.8"/></svg> },
-  { id: 'reports', label: 'Patient Reports', icon: <svg width="20" height="20" viewBox="0 0 24 24" fill="none"><path d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" stroke="currentColor" strokeWidth="1.8"/></svg> },
   { id: 'profile', label: 'My Profile', icon: <svg width="20" height="20" viewBox="0 0 24 24" fill="none"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round"/><circle cx="12" cy="7" r="4" stroke="currentColor" strokeWidth="1.8"/></svg> },
 ];
 
@@ -32,39 +31,70 @@ const STATUS_STYLES = {
 };
 
 const STAT_CONFIG = [
-  { key: 'today',     label: "Today's Appointments", sub: 'Scheduled today',  color: COLORS.navy,  bg: '#EBF4FF', icon: '📅' },
-  { key: 'confirmed', label: 'Confirmed',             sub: 'Upcoming',         color: COLORS.teal,  bg: '#E0F5F5', icon: '✅' },
-  { key: 'completed', label: 'Completed',             sub: 'All time',         color: COLORS.mint,  bg: '#E8F8EE', icon: '🏁' },
-  { key: 'pending',   label: 'Awaiting Approval',     sub: 'Need action',      color: '#C0703B',    bg: '#FFF0E6', icon: '⏳' },
+  { key: 'today',     label: "Today's Appointments", sub: 'Scheduled today',      color: COLORS.navy,  bg: '#EBF4FF', icon: '📅' },
+  { key: 'confirmed', label: 'Upcoming Consultations', sub: 'Video + Physical',   color: COLORS.teal,  bg: '#E0F5F5', icon: '✅' },
+  { key: 'completed', label: 'Completed Calls',        sub: 'Video sessions',     color: COLORS.mint,  bg: '#E8F8EE', icon: '🏁' },
+  { key: 'finished',  label: 'Finished Consultations', sub: 'Reviewed & Done',    color: '#3B82F6',    bg: '#DBEAFE', icon: '🎯' },
 ];
 
-const StatCard = ({ label, value, sub, color, bg }) => (
+const StatCard = ({ label, value, sub, color, bg, icon }) => (
   <div style={{
     background: 'white',
     borderRadius: 20,
     padding: '24px 26px',
     border: `1.5px solid ${bg}`,
     flex: 1,
-    minWidth: 150,
+    minWidth: 200,
     boxShadow: '0 2px 12px rgba(24,78,119,0.07)',
     position: 'relative',
     overflow: 'hidden',
-  }}>
+    transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+    cursor: 'default',
+  }}
+  onMouseEnter={(e) => {
+    e.currentTarget.style.transform = 'translateY(-4px)';
+    e.currentTarget.style.boxShadow = `0 8px 24px ${color}20`;
+    e.currentTarget.style.borderColor = color;
+  }}
+  onMouseLeave={(e) => {
+    e.currentTarget.style.transform = 'translateY(0)';
+    e.currentTarget.style.boxShadow = '0 2px 12px rgba(24,78,119,0.07)';
+    e.currentTarget.style.borderColor = bg;
+  }}
+  >
+    {/* Background decoration */}
     <div style={{
-      position: 'absolute', top: -16, right: -16,
-      width: 80, height: 80, borderRadius: '50%',
-      background: bg, opacity: 0.7,
+      position: 'absolute', top: -20, right: -20,
+      width: 100, height: 100, borderRadius: '50%',
+      background: bg, opacity: 0.5,
     }} />
     <div style={{
-      width: 46, height: 46, borderRadius: 14,
-      background: bg, display: 'flex', alignItems: 'center',
-      justifyContent: 'center', marginBottom: 16, fontSize: 22,
+      position: 'absolute', bottom: -30, left: -30,
+      width: 80, height: 80, borderRadius: '50%',
+      background: bg, opacity: 0.3,
+    }} />
+    
+    {/* Icon */}
+    <div style={{
+      width: 52, height: 52, borderRadius: 16,
+      background: `linear-gradient(135deg, ${bg}, white)`,
+      display: 'flex', alignItems: 'center',
+      justifyContent: 'center', marginBottom: 18, fontSize: 26,
+      position: 'relative', zIndex: 1,
+      border: `2px solid ${bg}`,
+      boxShadow: `0 4px 12px ${color}15`,
     }}>
-      <div style={{ width: 22, height: 22, borderRadius: 6, background: color, opacity: 0.85 }} />
+      {icon}
     </div>
-    <p style={{ margin: 0, fontSize: 32, fontWeight: 800, color: COLORS.navy, lineHeight: 1 }}>{value}</p>
-    <p style={{ margin: '8px 0 4px', fontSize: 15, fontWeight: 600, color: COLORS.navy }}>{label}</p>
-    {sub && <p style={{ margin: 0, fontSize: 12, color: color, fontWeight: 500 }}>{sub}</p>}
+    
+    {/* Value */}
+    <p style={{ margin: 0, fontSize: 36, fontWeight: 800, color: color, lineHeight: 1, position: 'relative', zIndex: 1 }}>{value}</p>
+    
+    {/* Label */}
+    <p style={{ margin: '10px 0 4px', fontSize: 14, fontWeight: 700, color: COLORS.navy, position: 'relative', zIndex: 1 }}>{label}</p>
+    
+    {/* Subtitle */}
+    {sub && <p style={{ margin: 0, fontSize: 12, color: color, fontWeight: 600, position: 'relative', zIndex: 1 }}>{sub}</p>}
   </div>
 );
 
@@ -75,14 +105,19 @@ export default function KaveeshaDoctorDashboard() {
   const [appointments, setAppointments] = useState([]);
   const [prescriptions, setPrescriptions] = useState([]);
   const [reports, setReports] = useState([]);
+  const [consultations, setConsultations] = useState([]);
   const [loadingAppts, setLoadingAppts] = useState(false);
   const [loadingPrescriptions, setLoadingPrescriptions] = useState(false);
   const [loadingReports, setLoadingReports] = useState(false);
+  const [loadingConsultations, setLoadingConsultations] = useState(false);
   const [sidebarOpen, setSidebarOpen] = useState(true);
 
   const token = localStorage.getItem('token');
 
-  useEffect(() => { fetchProfile(); }, []);
+  useEffect(() => { 
+    fetchProfile(); 
+    fetchConsultations();
+  }, []);
 
   useEffect(() => {
     if (activeTab === 'appointments') fetchAppointments();
@@ -112,6 +147,22 @@ export default function KaveeshaDoctorDashboard() {
     } catch (err) {
       console.error('❌ Profile fetch error:', err.message);
       console.error('Full error:', err);
+    }
+  };
+
+  const fetchConsultations = async () => {
+    setLoadingConsultations(true);
+    try {
+      const res = await fetch('/api/telemedicine/doctor/sessions', { 
+        headers: { Authorization: `Bearer ${token}` } 
+      });
+      if (res.ok) {
+        const data = await res.json();
+        setConsultations(data.data || data || []);
+      }
+    } catch { } 
+    finally { 
+      setLoadingConsultations(false); 
     }
   };
 
@@ -160,9 +211,16 @@ export default function KaveeshaDoctorDashboard() {
 
   const stats = {
     today: appointments.filter(a => new Date(a.scheduled_at).toDateString() === new Date().toDateString()).length,
-    confirmed: appointments.filter(a => a.status === 'CONFIRMED').length,
-    completed: appointments.filter(a => a.status === 'COMPLETED').length,
-    pending: appointments.filter(a => a.status === 'PENDING_PAYMENT').length,
+    confirmed: consultations.filter(c => c.status === 'SCHEDULED' || c.status === 'WAITING').length,
+    completed: consultations.filter(c => c.status === 'COMPLETED').length,
+    finished: (() => {
+      try {
+        const stored = localStorage.getItem('finishedConsultations');
+        return stored ? JSON.parse(stored).length : 0;
+      } catch {
+        return 0;
+      }
+    })(),
   };
 
   return (
@@ -331,88 +389,250 @@ export default function KaveeshaDoctorDashboard() {
         {/* ── Overview ── */}
         {activeTab === 'overview' && (
           <div>
-            {/* Stats */}
-            <div style={{ display: 'flex', gap: 18, marginBottom: 32, flexWrap: 'wrap' }}>
-              {STAT_CONFIG.map(cfg => (
-                <StatCard key={cfg.key} label={cfg.label} value={stats[cfg.key]} sub={cfg.sub} color={cfg.color} bg={cfg.bg} />
+            {/* Welcome Hero Card */}
+            <div style={{
+              background: `linear-gradient(135deg, ${COLORS.navy} 0%, ${COLORS.teal} 100%)`,
+              borderRadius: 24, padding: '40px 44px', color: 'white',
+              marginBottom: 32, position: 'relative', overflow: 'hidden',
+              boxShadow: `0 8px 32px ${COLORS.navy}30`,
+            }}>
+              {/* Decorative elements */}
+              <div style={{ position: 'absolute', right: -40, top: -40, width: 240, height: 240, borderRadius: '50%', background: 'rgba(255,255,255,0.08)' }} />
+              <div style={{ position: 'absolute', right: 80, bottom: -80, width: 200, height: 200, borderRadius: '50%', background: 'rgba(255,255,255,0.05)' }} />
+              <div style={{ position: 'absolute', left: -30, bottom: -50, width: 180, height: 180, borderRadius: '50%', background: 'rgba(255,255,255,0.04)' }} />
+
+              <div style={{ position: 'relative', zIndex: 1 }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 14 }}>
+                  <div style={{ width: 10, height: 10, borderRadius: '50%', background: COLORS.mint, animation: 'pulse 2s infinite' }} />
+                  <span style={{ fontSize: 14, color: COLORS.mint, fontWeight: 600, letterSpacing: 1.5, textTransform: 'uppercase' }}>Doctor Portal</span>
+                </div>
+                <h2 style={{ margin: '0 0 12px', fontSize: 34, fontWeight: 800, letterSpacing: '-0.5px', lineHeight: 1.2 }}>
+                  Welcome back, Dr. {doctor?.first_name || 'Doctor'} 👋
+                </h2>
+                <p style={{ margin: '0 0 8px', opacity: 0.85, fontSize: 17, fontWeight: 500 }}>
+                  {doctor?.specialty || 'Medical Professional'} · {doctor?.hospital || 'Your Practice'}
+                </p>
+                <p style={{ margin: '0 0 28px', opacity: 0.7, fontSize: 15 }}>
+                  {new Date().toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}
+                </p>
+                <div style={{ display: 'flex', gap: 14, flexWrap: 'wrap' }}>
+                  <button onClick={() => navigate('/doctor-appointments')} style={{
+                    background: 'white', border: 'none',
+                    borderRadius: 14, padding: '13px 28px', color: COLORS.navy,
+                    fontSize: 15, fontWeight: 700, cursor: 'pointer',
+                    boxShadow: '0 4px 16px rgba(0,0,0,0.2)',
+                    transition: 'all 0.3s',
+                  }}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.transform = 'translateY(-2px)';
+                    e.currentTarget.style.boxShadow = '0 6px 20px rgba(0,0,0,0.3)';
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.transform = 'translateY(0)';
+                    e.currentTarget.style.boxShadow = '0 4px 16px rgba(0,0,0,0.2)';
+                  }}
+                  >
+                    📅 View Appointments →
+                  </button>
+                  <button onClick={() => navigate('/doctor-telemedicine')} style={{
+                    background: 'rgba(255,255,255,0.15)', border: '2px solid rgba(255,255,255,0.4)',
+                    borderRadius: 14, padding: '13px 28px', color: 'white',
+                    fontSize: 15, fontWeight: 700, cursor: 'pointer',
+                    backdropFilter: 'blur(10px)',
+                    transition: 'all 0.3s',
+                  }}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.background = 'rgba(255,255,255,0.25)';
+                    e.currentTarget.style.transform = 'translateY(-2px)';
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.background = 'rgba(255,255,255,0.15)';
+                    e.currentTarget.style.transform = 'translateY(0)';
+                  }}
+                  >
+                    🎥 My Consultations
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            {/* Quick Actions Grid */}
+            <div style={{ 
+              display: 'grid', 
+              gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', 
+              gap: 20, 
+              marginBottom: 32 
+            }}>
+              {[
+                { 
+                  icon: '🎥', 
+                  title: 'Video Consultations', 
+                  desc: 'Join upcoming video calls', 
+                  color: COLORS.teal,
+                  bg: '#E0F5F5',
+                  action: () => navigate('/doctor-telemedicine')
+                },
+                { 
+                  icon: '⏰', 
+                  title: 'Set Availability', 
+                  desc: 'Manage your schedule and time slots', 
+                  color: COLORS.mint,
+                  bg: '#E8F8EE',
+                  action: () => navigate('/doctor-availability')
+                },
+                { 
+                  icon: '💊', 
+                  title: 'Prescriptions', 
+                  desc: 'Issue and manage prescriptions', 
+                  color: '#F97316',
+                  bg: '#FFF7ED',
+                  action: () => navigate('/doctor-prescriptions')
+                },
+                { 
+                  icon: '👤', 
+                  title: 'My Profile', 
+                  desc: 'Update your professional information', 
+                  color: '#8B5CF6',
+                  bg: '#F3F0FF',
+                  action: () => navigate('/doctor-profile')
+                },
+              ].map((item, idx) => (
+                <div key={idx}
+                  onClick={item.action}
+                  style={{
+                    background: 'white',
+                    borderRadius: 18,
+                    padding: '28px 26px',
+                    border: `1.5px solid ${item.bg}`,
+                    cursor: 'pointer',
+                    transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+                    boxShadow: '0 2px 12px rgba(24,78,119,0.06)',
+                    position: 'relative',
+                    overflow: 'hidden',
+                  }}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.transform = 'translateY(-6px)';
+                    e.currentTarget.style.boxShadow = `0 12px 28px ${item.color}20`;
+                    e.currentTarget.style.borderColor = item.color;
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.transform = 'translateY(0)';
+                    e.currentTarget.style.boxShadow = '0 2px 12px rgba(24,78,119,0.06)';
+                    e.currentTarget.style.borderColor = item.bg;
+                  }}
+                >
+                  <div style={{
+                    width: 58, height: 58, borderRadius: 16,
+                    background: item.bg,
+                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    fontSize: 28, marginBottom: 18,
+                    border: `2px solid ${item.bg}`,
+                  }}>
+                    {item.icon}
+                  </div>
+                  <h3 style={{ margin: '0 0 6px', fontSize: 17, fontWeight: 700, color: COLORS.navy }}>{item.title}</h3>
+                  <p style={{ margin: 0, fontSize: 13, color: '#64748B', lineHeight: 1.5 }}>{item.desc}</p>
+                  <div style={{ 
+                    position: 'absolute', bottom: 20, right: 20,
+                    width: 32, height: 32, borderRadius: '50%',
+                    background: item.bg,
+                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    fontSize: 14, color: item.color,
+                  }}>
+                    →
+                  </div>
+                </div>
               ))}
             </div>
 
-            {/* Welcome hero card */}
-            <div style={{
-              background: COLORS.navy,
-              borderRadius: 24, padding: '34px 38px', color: 'white',
-              marginBottom: 28, position: 'relative', overflow: 'hidden',
-            }}>
-              {/* Decorative circles */}
-              <div style={{ position: 'absolute', right: -30, top: -30, width: 200, height: 200, borderRadius: '50%', background: 'rgba(52,160,164,0.15)' }} />
-              <div style={{ position: 'absolute', right: 100, bottom: -60, width: 160, height: 160, borderRadius: '50%', background: 'rgba(118,200,147,0.12)' }} />
-              <div style={{ position: 'absolute', left: -20, bottom: -40, width: 140, height: 140, borderRadius: '50%', background: 'rgba(255,229,236,0.07)' }} />
-
-              {/* Decorative plus icons */}
-              <div style={{ position: 'absolute', right: 48, top: 32, opacity: 0.2 }}>
-                <svg width="28" height="28" viewBox="0 0 24 24" fill="none"><path d="M12 5v14M5 12h14" stroke="white" strokeWidth="2" strokeLinecap="round"/></svg>
-              </div>
-
-              <div style={{ position: 'relative', zIndex: 1 }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 10 }}>
-                  <div style={{ width: 8, height: 8, borderRadius: '50%', background: COLORS.mint }} />
-                  <span style={{ fontSize: 13, color: COLORS.mintLight, fontWeight: 600, letterSpacing: 1, textTransform: 'uppercase' }}>Doctor Portal</span>
-                </div>
-                <h2 style={{ margin: '0 0 8px', fontSize: 28, fontWeight: 800, letterSpacing: '-0.5px' }}>
-                  Welcome back, Dr. {doctor?.first_name || '—'} 👋
-                </h2>
-                <p style={{ margin: '0 0 24px', opacity: 0.75, fontSize: 16 }}>
-                  {doctor?.specialty} · {doctor?.hospital}
-                </p>
-                <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap' }}>
-                  <button onClick={() => navigate('/doctor-appointments')} style={{
-                    background: COLORS.teal, border: 'none',
-                    borderRadius: 12, padding: '11px 22px', color: 'white',
-                    fontSize: 14, fontWeight: 700, cursor: 'pointer',
-                    boxShadow: '0 4px 14px rgba(52,160,164,0.4)',
-                  }}>
-                    View Appointments →
-                  </button>
-                  <button onClick={() => setActiveTab('availability')} style={{
-                    background: 'rgba(118,200,147,0.2)', border: `1.5px solid ${COLORS.mint}`,
-                    borderRadius: 12, padding: '11px 22px', color: COLORS.mint,
-                    fontSize: 14, fontWeight: 700, cursor: 'pointer',
-                  }}>
-                    Manage Schedule
-                  </button>
-                </div>
-              </div>
-            </div>
-
-            {/* Recent appointments */}
+            {/* Recent Activity */}
             <div style={{
               background: 'white', borderRadius: 20,
-              border: `1.5px solid #E0EFF5`, padding: '24px 28px',
+              border: `1.5px solid #E0EFF5`, padding: '28px 32px',
               boxShadow: '0 2px 16px rgba(24,78,119,0.06)',
             }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24 }}>
                 <div>
-                  <h3 style={{ margin: 0, fontSize: 18, fontWeight: 800, color: COLORS.navy }}>Recent Appointments</h3>
-                  <p style={{ margin: '3px 0 0', fontSize: 13, color: COLORS.teal }}>Latest patient bookings</p>
+                  <h3 style={{ margin: 0, fontSize: 20, fontWeight: 800, color: COLORS.navy }}>Recent Appointments</h3>
+                  <p style={{ margin: '4px 0 0', fontSize: 14, color: COLORS.teal }}>Latest patient bookings</p>
                 </div>
-                <button onClick={() => setActiveTab('appointments')} style={{
+                <button onClick={() => navigate('/doctor-appointments')} style={{
                   background: COLORS.cream, border: `1.5px solid ${COLORS.mint}`,
-                  borderRadius: 10, padding: '8px 16px', color: COLORS.navy,
-                  fontSize: 13, fontWeight: 700, cursor: 'pointer',
-                }}>
-                  View all →
+                  borderRadius: 12, padding: '9px 18px', color: COLORS.navy,
+                  fontSize: 14, fontWeight: 700, cursor: 'pointer',
+                  transition: 'all 0.2s',
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.background = COLORS.mint;
+                  e.currentTarget.style.color = 'white';
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.background = COLORS.cream;
+                  e.currentTarget.style.color = COLORS.navy;
+                }}
+                >
+                  View All →
                 </button>
               </div>
               {appointments.length === 0 ? (
-                <div style={{ textAlign: 'center', padding: '40px 0' }}>
-                  <div style={{ fontSize: 40, marginBottom: 12 }}>📭</div>
-                  <p style={{ color: COLORS.teal, fontSize: 15, margin: 0 }}>No appointments yet. Share your profile to start receiving bookings.</p>
+                <div style={{ textAlign: 'center', padding: '50px 20px' }}>
+                  <div style={{ fontSize: 56, marginBottom: 16, opacity: 0.6 }}>📭</div>
+                  <p style={{ color: COLORS.teal, fontSize: 16, margin: 0, fontWeight: 500 }}>No appointments yet</p>
+                  <p style={{ color: '#94A3B8', fontSize: 14, margin: '8px 0 0' }}>Share your profile to start receiving bookings</p>
                 </div>
               ) : (
-                appointments.slice(0, 4).map(appt => (
-                  <AppointmentRow key={appt.id} appt={appt} onAction={handleAppointmentAction} />
-                ))
+                <div style={{ display: 'grid', gap: 14 }}>
+                  {appointments.slice(0, 5).map(appt => {
+                    const s = STATUS_STYLES[appt.status] || STATUS_STYLES.PENDING_PAYMENT;
+                    const date = new Date(appt.scheduled_at);
+                    return (
+                      <div key={appt.id} style={{
+                        display: 'flex', alignItems: 'center', gap: 16,
+                        padding: '18px 20px', borderRadius: 14,
+                        background: '#F8FAFC',
+                        border: `1.5px solid ${COLORS.cream}`,
+                        transition: 'all 0.2s',
+                      }}
+                      onMouseEnter={(e) => {
+                        e.currentTarget.style.background = 'white';
+                        e.currentTarget.style.borderColor = COLORS.mint;
+                        e.currentTarget.style.boxShadow = '0 4px 12px rgba(24,78,119,0.08)';
+                      }}
+                      onMouseLeave={(e) => {
+                        e.currentTarget.style.background = '#F8FAFC';
+                        e.currentTarget.style.borderColor = COLORS.cream;
+                        e.currentTarget.style.boxShadow = 'none';
+                      }}
+                      >
+                        <div style={{
+                          width: 50, height: 50, borderRadius: 14,
+                          background: COLORS.cream, border: `1.5px solid #C8E6C9`,
+                          display: 'flex', flexDirection: 'column', alignItems: 'center',
+                          justifyContent: 'center', flexShrink: 0,
+                        }}>
+                          <span style={{ fontSize: 18, fontWeight: 800, color: COLORS.navy }}>{date.getDate()}</span>
+                          <span style={{ fontSize: 10, color: COLORS.teal, textTransform: 'uppercase', fontWeight: 700 }}>
+                            {date.toLocaleString('default', { month: 'short' })}
+                          </span>
+                        </div>
+                        <div style={{ flex: 1 }}>
+                          <p style={{ margin: 0, fontSize: 15, fontWeight: 700, color: COLORS.navy }}>{appt.patient_name || 'Patient'}</p>
+                          <p style={{ margin: '4px 0 0', fontSize: 13, color: COLORS.teal }}>
+                            {date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                            &nbsp;·&nbsp;
+                            {appt.consultation_type === 'video' ? '🎥 Video' : '🏥 In-person'}
+                          </p>
+                        </div>
+                        <span style={{
+                          background: s.bg, color: s.color, fontSize: 12, fontWeight: 700,
+                          padding: '6px 16px', borderRadius: 20, border: `1px solid ${s.border}`,
+                        }}>
+                          {s.label}
+                        </span>
+                      </div>
+                    );
+                  })}
+                </div>
               )}
             </div>
           </div>
