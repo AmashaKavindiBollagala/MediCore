@@ -3,7 +3,7 @@
 
 import React, { useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { getDoctorById, verifyDoctor, analyseLicenseWithAI } from '../services/dilshara-adminApi';
+import { getDoctorById, verifyDoctor } from '../services/dilshara-adminApi';
 
 const Field = ({ label, value }) => (
   <div style={{ marginBottom: 16 }}>
@@ -41,12 +41,7 @@ const DocViewer = ({ label, url }) => {
   );
 };
 
-const AIResultRow = ({ label, value, flag }) => (
-  <div style={{ display: 'flex', justifyContent: 'space-between', padding: '8px 0', borderBottom: '1px solid rgba(255,255,255,0.05)', fontSize: 13 }}>
-    <span style={{ color: 'rgba(255,255,255,0.45)' }}>{label}</span>
-    <span style={{ color: flag ? '#EF4444' : '#10B981', fontWeight: 600 }}>{value || '—'}</span>
-  </div>
-);
+
 
 export default function DilsharaDoctorVerificationDetail() {
   const { id } = useParams();
@@ -58,10 +53,7 @@ export default function DilsharaDoctorVerificationDetail() {
   const [submitting, setSubmitting] = useState(false);
   const [done, setDone]             = useState(null); // 'approved' | 'rejected'
 
-  // AI state
-  const [aiLoading, setAiLoading]   = useState(false);
-  const [aiResult, setAiResult]     = useState(null);
-  const [aiError, setAiError]       = useState('');
+
 
   useEffect(() => {
     getDoctorById(id)
@@ -97,24 +89,7 @@ export default function DilsharaDoctorVerificationDetail() {
     }
   };
 
-  const handleAIAnalysis = async () => {
-    if (!doctor?.medical_license_url) {
-      setAiError('No medical license uploaded by this doctor.');
-      return;
-    }
-    setAiLoading(true);
-    setAiResult(null);
-    setAiError('');
-    try {
-      const result = await analyseLicenseWithAI(id, doctor.medical_license_url);
-      if (result.error) setAiError(result.error);
-      else setAiResult(result);
-    } catch (err) {
-      setAiError('AI analysis failed. Please try again.');
-    } finally {
-      setAiLoading(false);
-    }
-  };
+
 
   if (loading) return (
     <div style={{ minHeight: '100vh', background: '#0A0F1E', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'rgba(255,255,255,0.4)', fontFamily: "'DM Sans', sans-serif" }}>
@@ -184,21 +159,6 @@ export default function DilsharaDoctorVerificationDetail() {
             </span>
           </div>
         </div>
-
-        {/* AI Analyse button */}
-        <button onClick={handleAIAnalysis} disabled={aiLoading} style={{
-          background: aiLoading ? 'rgba(103,192,144,0.1)' : 'linear-gradient(135deg, rgba(103,192,144,0.2), rgba(18,65,112,0.3))',
-          border: '1px solid rgba(103,192,144,0.4)',
-          borderRadius: 12, padding: '10px 20px', color: '#67C090',
-          fontSize: 13, fontWeight: 700, cursor: aiLoading ? 'not-allowed' : 'pointer',
-          display: 'flex', alignItems: 'center', gap: 8,
-        }}>
-          {aiLoading ? (
-            <><span style={{ animation: 'spin 1s linear infinite', display: 'inline-block' }}>⟳</span> Analysing…</>
-          ) : (
-            <><span>🤖</span> AI Analyse License</>
-          )}
-        </button>
       </div>
 
       <div style={{ maxWidth: 1100, margin: '0 auto', padding: '36px 40px' }}>
@@ -266,81 +226,8 @@ export default function DilsharaDoctorVerificationDetail() {
             </div>
           </div>
 
-          {/* RIGHT: AI Panel + Decision */}
+          {/* RIGHT: Decision Panel */}
           <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
-
-            {/* AI Result Panel */}
-            <div style={{
-              background: 'rgba(103,192,144,0.05)',
-              border: `1px solid ${aiResult ? 'rgba(103,192,144,0.3)' : 'rgba(255,255,255,0.08)'}`,
-              borderRadius: 20, padding: 24,
-              minHeight: 200,
-            }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 16 }}>
-                <span style={{ fontSize: 20 }}>🤖</span>
-                <h3 style={{ margin: 0, color: '#67C090', fontSize: 14, fontWeight: 700, fontFamily: "'Syne', sans-serif" }}>
-                  AI License Analysis
-                </h3>
-              </div>
-
-              {!aiResult && !aiLoading && !aiError && (
-                <p style={{ color: 'rgba(255,255,255,0.3)', fontSize: 13, lineHeight: 1.7 }}>
-                  Click <strong style={{ color: '#67C090' }}>"AI Analyse License"</strong> above to automatically extract and verify details from the uploaded medical license document.
-                </p>
-              )}
-
-              {aiLoading && (
-                <div style={{ color: 'rgba(255,255,255,0.4)', fontSize: 13, textAlign: 'center', paddingTop: 20 }}>
-                  Reading license document…
-                </div>
-              )}
-
-              {aiError && (
-                <div style={{ background: 'rgba(239,68,68,0.1)', border: '1px solid rgba(239,68,68,0.2)', borderRadius: 10, padding: 14, color: '#EF4444', fontSize: 13 }}>
-                  {aiError}
-                </div>
-              )}
-
-              {aiResult && (
-                <div>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14 }}>
-                    <span style={{
-                      fontSize: 11, fontWeight: 700, padding: '3px 10px', borderRadius: 20,
-                      background: aiResult.confidence === 'high' ? 'rgba(16,185,129,0.15)' : aiResult.confidence === 'medium' ? 'rgba(245,158,11,0.15)' : 'rgba(239,68,68,0.15)',
-                      color: aiResult.confidence === 'high' ? '#10B981' : aiResult.confidence === 'medium' ? '#F59E0B' : '#EF4444',
-                    }}>
-                      Confidence: {aiResult.confidence?.toUpperCase()}
-                    </span>
-                    <span style={{ fontSize: 11, color: aiResult.is_valid_format ? '#10B981' : '#EF4444', fontWeight: 700 }}>
-                      {aiResult.is_valid_format ? '✓ Valid format' : '✗ Invalid format'}
-                    </span>
-                  </div>
-
-                  <AIResultRow label="License Number" value={aiResult.license_number} flag={aiResult.license_number !== doctor.medical_license_number} />
-                  <AIResultRow label="Doctor Name" value={aiResult.doctor_name} />
-                  <AIResultRow label="Specialty" value={aiResult.specialty} />
-                  <AIResultRow label="Issuing Authority" value={aiResult.issuing_authority} />
-                  <AIResultRow label="Issue Date" value={aiResult.issue_date} />
-                  <AIResultRow label="Expiry Date" value={aiResult.expiry_date} flag={false} />
-
-                  {/* Cross-check note */}
-                  {aiResult.license_number && aiResult.license_number !== doctor.medical_license_number && (
-                    <div style={{ marginTop: 12, background: 'rgba(239,68,68,0.1)', border: '1px solid rgba(239,68,68,0.2)', borderRadius: 8, padding: 10, fontSize: 12, color: '#EF4444' }}>
-                      ⚠️ License number on document doesn't match submitted value: <strong>{doctor.medical_license_number}</strong>
-                    </div>
-                  )}
-
-                  {aiResult.flags?.length > 0 && (
-                    <div style={{ marginTop: 12 }}>
-                      <div style={{ fontSize: 11, fontWeight: 700, color: '#F59E0B', marginBottom: 6, textTransform: 'uppercase', letterSpacing: 1 }}>Flags</div>
-                      {aiResult.flags.map((f, i) => (
-                        <div key={i} style={{ fontSize: 12, color: '#F59E0B', marginBottom: 3 }}>• {f}</div>
-                      ))}
-                    </div>
-                  )}
-                </div>
-              )}
-            </div>
 
             {/* Decision Panel */}
             <div style={{
@@ -416,8 +303,6 @@ export default function DilsharaDoctorVerificationDetail() {
           </div>
         </div>
       </div>
-
-      <style>{`@keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }`}</style>
     </div>
   );
 }

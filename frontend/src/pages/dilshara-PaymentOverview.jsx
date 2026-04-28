@@ -157,9 +157,17 @@ export default function DilsharaPaymentOverview() {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div>
-        <h1 className="text-3xl font-bold text-gray-900">Payment Overview</h1>
-        <p className="text-gray-600 mt-1">Monitor all transactions and payment analytics</p>
+      <div className="flex items-center gap-4">
+        <button
+          onClick={() => navigate('/admin')}
+          className="px-4 py-2 bg-gray-100 hover:bg-gray-200 rounded-lg text-gray-700 font-medium transition-colors"
+        >
+          ← Back
+        </button>
+        <div>
+          <h1 className="text-3xl font-bold text-gray-900">Payment Overview</h1>
+          <p className="text-gray-600 mt-1">Monitor all transactions and payment analytics</p>
+        </div>
       </div>
 
       {/* Stats Cards */}

@@ -181,10 +181,19 @@ exports.checkByFile = async (req, res) => {
 
     console.log(`✅ Extracted ${extractedText.length} characters from file`);
 
-    const result = await aiService.analyzeSymptoms(
-      `The following data is extracted from a medical lab report (${originalname}). 
-Analyze ALL values carefully, identify which ones are OUTSIDE the normal range (marked in red or flagged), and provide detailed medical insights based on the abnormal values found.\n\n${extractedText}`
-    );
+ const result = await aiService.analyzeSymptoms(
+  `LAB REPORT DATA extracted from: ${originalname}
+
+${extractedText}
+
+IMPORTANT: 
+- Analyze every single test value listed above
+- Compare each value against its normal reference range
+- Identify ALL values that are LOW, HIGH, or BORDERLINE
+- Explain what each abnormal value means for the patient's health
+- Suggest what conditions these abnormal values together might indicate`,
+  true  
+);
 
     if (fs.existsSync(filePath)) fs.unlinkSync(filePath);
 

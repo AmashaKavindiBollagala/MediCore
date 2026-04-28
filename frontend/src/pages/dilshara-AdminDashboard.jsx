@@ -173,7 +173,7 @@ export default function DilsharaAdminDashboard() {
           <NavCard
             icon="🩺"
             title="Doctor Verification"
-            desc="Review pending doctor registrations, analyse their medical license with AI, and approve or reject applications."
+            desc="Review pending doctor registrations and approve or reject applications."
             badge={d.pending > 0 ? `${d.pending} pending` : null}
             accent="#67C090"
             onClick={() => navigate('/admin/doctors')}
@@ -201,18 +201,7 @@ export default function DilsharaAdminDashboard() {
           />
         </div>
 
-        {/* Footer note */}
-        <div style={{
-          marginTop: 48, padding: '20px 24px', borderRadius: 14,
-          background: 'rgba(103,192,144,0.06)', border: '1px solid rgba(103,192,144,0.15)',
-          display: 'flex', alignItems: 'center', gap: 14,
-        }}>
-          <span style={{ fontSize: 20 }}>🤖</span>
-          <div>
-            <div style={{ fontSize: 13, fontWeight: 600, color: '#67C090' }}>AI-Assisted Verification Active</div>
-            
-          </div>
-        </div>
+
       </div>
     </div>
   );
