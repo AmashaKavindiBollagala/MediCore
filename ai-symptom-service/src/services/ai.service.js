@@ -8,9 +8,7 @@ const genAI = new GoogleGenerativeAI(config.geminiKey);
 
 // ----------------- LANGUAGE DETECTION -----------------
 function detectLanguage(text) {
-  // Check for Sinhala characters (Unicode range: 0D80-0DFF)
   const sinhalaRegex = /[\u0D80-\u0DFF]/;
-  // Check for Tamil characters (Unicode range: 0B80-0BFF)
   const tamilRegex = /[\u0B80-\u0BFF]/;
   
   if (sinhalaRegex.test(text)) return 'Sinhala';
@@ -83,6 +81,47 @@ URGENCY LEVELS:
 
 If symptoms appear to be a medical emergency (chest pain, difficulty breathing, severe bleeding), set urgency to "high" and emphasize seeking immediate medical care in recommendations.`;
 }
+
+// ----------------- LAB REPORT SYSTEM PROMPT -----------------
+function buildLabReportPrompt() {
+  return `You are a medical lab report analyzer for MediCore healthcare platform.
+
+You will receive extracted text from a lab report. Your job is to:
+1. Identify ALL test values and their normal ranges
+2. Flag values that are LOW, HIGH, or BORDERLINE
+3. Explain in simple language what each abnormal value means
+4. Suggest possible conditions based on the combination of abnormal values
+5. Give clear, actionable recommendations
+
+Return ONLY valid JSON in this exact format:
+{
+  "summary": "Clear summary of the overall lab report findings",
+  "abnormal_values": [
+    {
+      "test": "Test name",
+      "value": "Patient value with unit",
+      "normal_range": "Normal range with unit",
+      "status": "LOW or HIGH or BORDERLINE",
+      "meaning": "What this means in simple language"
+    }
+  ],
+  "possible_conditions": ["condition1", "condition2", "condition3"],
+  "recommendations": ["recommendation1", "recommendation2", "recommendation3"],
+  "home_remedies": ["remedy1", "remedy2"],
+  "important_notes": ["warning sign 1", "warning sign 2"],
+  "specialty_recommended": "Medical specialist type",
+  "urgency": "low or medium or high",
+  "disclaimer": "This is not a medical diagnosis. Please consult a healthcare professional."
+}
+
+RULES:
+- NEVER diagnose definitively
+- Always recommend professional consultation
+- Explain medical terms in simple language
+- Be thorough - list every abnormal value
+- Return ONLY valid JSON, no markdown, no extra text`;
+}
+
 // ----------------- GROQ PROVIDER -----------------
 async function callGroq(text, detectedLanguage) {
   console.log(`🔄 Attempting Groq AI analysis (${detectedLanguage})...`);
@@ -125,19 +164,22 @@ async function callGemini(text, detectedLanguage) {
 // ----------------- RESPONSE PARSER -----------------
 function parseResponse(raw) {
   try {
-    // Remove markdown code blocks if present
     const cleaned = raw.replace(/```json|```/g, '').trim();
     const parsed = JSON.parse(cleaned);
     
-    // Validate required fields
     if (!parsed.summary || !Array.isArray(parsed.possible_conditions)) {
       console.warn('⚠️ AI response missing required fields, using fallback');
       return getFallbackResponse(raw);
     }
     
+    if (!parsed.abnormal_values) {
+      parsed.abnormal_values = [];
+    }
+
     return parsed;
   } catch (err) {
     console.error('❌ Failed to parse AI response:', err.message);
+    console.error('Raw response was:', raw?.substring(0, 500));
     return getFallbackResponse(raw);
   }
 }
@@ -160,34 +202,52 @@ function getFallbackResponse(rawText) {
 }
 
 // ----------------- MAIN ANALYSIS FUNCTION WITH FALLBACK -----------------
-async function analyzeSymptoms(text) {
+async function analyzeSymptoms(text, isLabReport = false) {
   let lastError = null;
   
-  // Detect language first
   const detectedLanguage = detectLanguage(text);
   console.log(`🌐 Detected language: ${detectedLanguage}`);
   
-  // Try Groq first (faster, free tier)
+  const systemPrompt = isLabReport 
+    ? buildLabReportPrompt() 
+    : buildSystemPrompt(detectedLanguage);
+
+  // Try Groq first
   try {
-    const groqResult = await callGroq(text, detectedLanguage);
-    return parseResponse(groqResult);
+    console.log(`🔄 Attempting Groq AI analysis...`);
+    const res = await groq.chat.completions.create({
+      model: 'llama-3.1-8b-instant',
+      messages: [
+        { role: 'system', content: systemPrompt },
+        { role: 'user', content: text }
+      ],
+      temperature: 0.2,
+      max_tokens: 2000,
+    });
+    const content = res.choices[0]?.message?.content;
+    if (!content) throw new Error('Groq returned empty response');
+    console.log('✅ Groq AI analysis successful');
+    return parseResponse(content);
   } catch (err1) {
     console.error('❌ Groq failed:', err1.message);
     lastError = err1;
-    
+
     // Fallback to Gemini
     try {
       console.log('🔄 Switching to Gemini fallback...');
-      const geminiResult = await callGemini(text, detectedLanguage);
-      return parseResponse(geminiResult);
+      const model = genAI.getGenerativeModel({ model: 'gemini-2.0-flash' });
+      const prompt = `${systemPrompt}\n\nData to analyze:\n${text}`;
+      const result = await model.generateContent(prompt);
+      const content = result.response.text();
+      if (!content) throw new Error('Gemini returned empty response');
+      console.log('✅ Gemini AI analysis successful');
+      return parseResponse(content);
     } catch (err2) {
       console.error('❌ Gemini also failed:', err2.message);
       lastError = err2;
     }
   }
-  
-  // Both providers failed
-  console.error('❌ All AI providers failed');
+
   throw new Error(`AI service unavailable. Last error: ${lastError.message}`);
 }
 
@@ -195,6 +255,7 @@ async function analyzeSymptoms(text) {
 module.exports = {
   analyzeSymptoms,
   buildSystemPrompt,
+  buildLabReportPrompt,
   parseResponse,
   detectLanguage
 };

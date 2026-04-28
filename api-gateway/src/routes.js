@@ -38,7 +38,7 @@ const proxyRequest = async (req, res, serviceUrl, path) => {
 
     const text = await response.text();
     
-    // Try to parse JSON, but handle non-JSON responses gracefully
+    // Try to parse JSON, but handle non-JSON responses
     let data;
     try {
       data = text ? JSON.parse(text) : {};
