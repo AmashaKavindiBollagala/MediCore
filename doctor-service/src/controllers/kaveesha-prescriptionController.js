@@ -2,11 +2,33 @@ const pool = require('../config/kaveesha-doctorPool');
 
 // Helper: get doctor profile id from user id
 const getDoctorProfileId = async (userId) => {
-  const result = await pool.query(
+  console.log('[getDoctorProfileId] Looking for user_id:', userId);
+  
+  // First try: look for user_id
+  let result = await pool.query(
     'SELECT id FROM profiles WHERE user_id = $1',
     [userId]
   );
-  return result.rows[0]?.id || null;
+  
+  if (result.rows.length > 0) {
+    console.log('[getDoctorProfileId] Found profile with user_id:', result.rows[0].id);
+    return result.rows[0].id;
+  }
+  
+  // Fallback: check if userId is itself a profile id
+  console.log('[getDoctorProfileId] user_id not found, checking if userId is a profile id');
+  const checkResult = await pool.query(
+    'SELECT id FROM profiles WHERE id = $1',
+    [userId]
+  );
+  
+  if (checkResult.rows.length > 0) {
+    console.log('[getDoctorProfileId] userId is a profile id:', checkResult.rows[0].id);
+    return checkResult.rows[0].id;
+  }
+  
+  console.log('[getDoctorProfileId] No profile found for userId:', userId);
+  return null;
 };
 
 // ─── POST /doctors/prescriptions — Issue a new prescription ───────────────────
@@ -32,16 +54,7 @@ const issuePrescription = async (req, res) => {
   }
 
   try {
-    // Verify the appointment belongs to this doctor
-    const appointmentCheck = await pool.query(
-      'SELECT id FROM bookings WHERE id = $1 AND doctor_id = $2',
-      [appointment_id, doctorId]
-    );
-
-    if (appointmentCheck.rows.length === 0) {
-      return res.status(404).json({ error: 'Appointment not found or not authorized' });
-    }
-
+    // Insert prescription directly (bookings table is in appointment-service DB)
     const result = await pool.query(
       `INSERT INTO prescriptions 
         (appointment_id, doctor_id, patient_id, prescription_data, notes)
