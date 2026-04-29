@@ -37,41 +37,62 @@ const COLORS = {
 };
 
 const styles = `
-  @import url('https://fonts.googleapis.com/css2?family=Fraunces:wght@400;600;700&family=DM+Sans:wght@400;500;600;700&display=swap');
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Poppins:wght@400;500;600;700&display=swap');
 
   .kda-root {
-    font-family: 'DM Sans', sans-serif;
-    background: linear-gradient(135deg, #f1faee 0%, #e8f8f8 50%, #f1faee 100%);
+    font-family: 'Inter', sans-serif;
+    background: linear-gradient(135deg, #f0f4f8 0%, #e2e8f0 50%, #f0f4f8 100%);
     min-height: 100vh;
-    padding: 36px 32px;
+    padding: 32px 24px;
     box-sizing: border-box;
+    position: relative;
+    overflow-x: hidden;
+  }
+
+  .kda-root::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: 
+      radial-gradient(circle at 20% 50%, rgba(59, 130, 246, 0.05) 0%, transparent 50%),
+      radial-gradient(circle at 80% 80%, rgba(139, 92, 246, 0.03) 0%, transparent 50%);
+    pointer-events: none;
   }
 
   .kda-header {
     display: flex;
     justify-content: space-between;
     align-items: flex-start;
-    margin-bottom: 36px;
-    background: white;
-    border-radius: 20px;
-    padding: 28px 32px;
-    box-shadow: 0 4px 24px rgba(24, 78, 119, 0.08);
-    border: 1.5px solid rgba(52, 160, 164, 0.15);
+    margin-bottom: 32px;
+    background: rgba(255, 255, 255, 0.98);
+    backdrop-filter: blur(20px);
+    border-radius: 24px;
+    padding: 32px 36px;
+    box-shadow: 0 4px 24px rgba(0, 0, 0, 0.06), 0 1px 4px rgba(0, 0, 0, 0.04);
+    border: 1px solid rgba(226, 232, 240, 0.8);
+    position: relative;
+    z-index: 1;
   }
 
   .kda-header-left h2 {
-    margin: 0 0 6px;
-    font-family: 'Fraunces', serif;
-    font-size: 26px;
+    margin: 0 0 8px;
+    font-family: 'Poppins', sans-serif;
+    font-size: 32px;
     font-weight: 700;
-    color: #184e77;
-    letter-spacing: -0.3px;
+    background: linear-gradient(135deg, #3b82f6, #8b5cf6);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    letter-spacing: -0.5px;
   }
 
   .kda-header-left p {
     margin: 0;
     font-size: 15px;
-    color: #5a8fa8;
+    color: #64748b;
     font-weight: 400;
   }
 
@@ -82,397 +103,458 @@ const styles = `
   }
 
   .kda-btn-block {
-    background: linear-gradient(135deg, #fff0f4, #ffe5ec);
-    border: 1.5px solid #ffb3c6;
-    border-radius: 12px;
-    padding: 11px 20px;
-    color: #8c2040;
-    font-size: 14px;
-    font-weight: 600;
-    cursor: pointer;
-    font-family: 'DM Sans', sans-serif;
-    transition: all 0.2s ease;
-    letter-spacing: 0.1px;
-  }
-  .kda-btn-block:hover {
-    background: #ffe5ec;
-    transform: translateY(-1px);
-    box-shadow: 0 4px 12px rgba(255, 107, 139, 0.2);
-  }
-
-  .kda-btn-add {
-    background: linear-gradient(135deg, #184e77, #34a0a4);
+    background: linear-gradient(135deg, #ef4444, #dc2626);
     border: none;
-    border-radius: 12px;
-    padding: 11px 22px;
+    border-radius: 14px;
+    padding: 12px 24px;
     color: white;
     font-size: 14px;
     font-weight: 600;
     cursor: pointer;
-    font-family: 'DM Sans', sans-serif;
-    transition: all 0.2s ease;
-    letter-spacing: 0.1px;
-    box-shadow: 0 4px 14px rgba(24, 78, 119, 0.25);
+    font-family: 'Inter', sans-serif;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    letter-spacing: 0.2px;
+    box-shadow: 0 4px 16px rgba(239, 68, 68, 0.25);
+  }
+  .kda-btn-block:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 24px rgba(239, 68, 68, 0.35);
+  }
+
+  .kda-btn-add {
+    background: linear-gradient(135deg, #3b82f6, #2563eb);
+    border: none;
+    border-radius: 14px;
+    padding: 12px 28px;
+    color: white;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    font-family: 'Inter', sans-serif;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    letter-spacing: 0.2px;
+    box-shadow: 0 4px 16px rgba(59, 130, 246, 0.25);
   }
   .kda-btn-add:hover {
-    transform: translateY(-1px);
-    box-shadow: 0 6px 20px rgba(24, 78, 119, 0.35);
+    transform: translateY(-2px);
+    box-shadow: 0 8px 24px rgba(59, 130, 246, 0.35);
   }
 
   .kda-alert-success {
-    background: linear-gradient(135deg, #edfaf2, #d4f5e2);
-    border: 1.5px solid #76c893;
-    border-radius: 12px;
-    padding: 13px 20px;
-    margin-bottom: 20px;
-    color: #1a5c36;
+    background: linear-gradient(135deg, rgba(16, 185, 129, 0.1), rgba(5, 150, 105, 0.05));
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(16, 185, 129, 0.3);
+    border-radius: 16px;
+    padding: 16px 24px;
+    margin-bottom: 24px;
+    color: #065f46;
     font-size: 14px;
     font-weight: 600;
     display: flex;
     align-items: center;
-    gap: 8px;
+    gap: 10px;
+    position: relative;
+    z-index: 1;
   }
 
   .kda-alert-error {
-    background: linear-gradient(135deg, #fff0f4, #ffe5ec);
-    border: 1.5px solid #ffb3c6;
-    border-radius: 12px;
-    padding: 13px 20px;
-    margin-bottom: 20px;
-    color: #8c2040;
+    background: linear-gradient(135deg, rgba(239, 68, 68, 0.1), rgba(220, 38, 38, 0.05));
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(239, 68, 68, 0.3);
+    border-radius: 16px;
+    padding: 16px 24px;
+    margin-bottom: 24px;
+    color: #991b1b;
     font-size: 14px;
     font-weight: 500;
     display: flex;
     align-items: center;
-    gap: 8px;
+    gap: 10px;
+    position: relative;
+    z-index: 1;
   }
 
   .kda-form-card {
-    background: white;
-    border-radius: 20px;
-    padding: 28px 32px;
-    margin-bottom: 28px;
-    box-shadow: 0 4px 24px rgba(24, 78, 119, 0.08);
-    border: 1.5px solid rgba(52, 160, 164, 0.2);
+    background: rgba(255, 255, 255, 0.98);
+    backdrop-filter: blur(20px);
+    border-radius: 24px;
+    padding: 32px 36px;
+    margin-bottom: 32px;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.05), 0 1px 4px rgba(0, 0, 0, 0.04);
+    border: 1px solid rgba(226, 232, 240, 0.8);
+    position: relative;
+    z-index: 1;
   }
 
   .kda-form-card h3 {
-    margin: 0 0 22px;
-    font-family: 'Fraunces', serif;
-    font-size: 18px;
+    margin: 0 0 24px;
+    font-family: 'Poppins', sans-serif;
+    font-size: 20px;
     font-weight: 600;
-    color: #184e77;
+    color: #1e293b;
   }
 
   .kda-block-card {
-    background: white;
-    border-radius: 20px;
-    padding: 28px 32px;
-    margin-bottom: 28px;
-    box-shadow: 0 4px 24px rgba(255, 107, 139, 0.08);
-    border: 1.5px solid #ffb3c6;
+    background: rgba(255, 255, 255, 0.98);
+    backdrop-filter: blur(20px);
+    border-radius: 24px;
+    padding: 32px 36px;
+    margin-bottom: 32px;
+    box-shadow: 0 4px 20px rgba(239, 68, 68, 0.08), 0 1px 4px rgba(0, 0, 0, 0.04);
+    border: 1px solid rgba(239, 68, 68, 0.2);
+    position: relative;
+    z-index: 1;
   }
 
   .kda-block-card h3 {
-    margin: 0 0 22px;
-    font-family: 'Fraunces', serif;
-    font-size: 18px;
+    margin: 0 0 24px;
+    font-family: 'Poppins', sans-serif;
+    font-size: 20px;
     font-weight: 600;
-    color: #8c2040;
+    color: #dc2626;
   }
 
   .kda-grid-3 {
     display: grid;
     grid-template-columns: 1fr 1fr 1fr;
-    gap: 18px;
+    gap: 20px;
   }
 
   .kda-grid-2 {
     display: grid;
     grid-template-columns: 1fr 2fr;
-    gap: 18px;
+    gap: 20px;
   }
 
   .kda-field label {
-    font-size: 12px;
-    font-weight: 700;
-    color: #184e77;
+    font-size: 13px;
+    font-weight: 600;
+    color: #475569;
     display: block;
-    margin-bottom: 7px;
-    text-transform: uppercase;
-    letter-spacing: 0.6px;
+    margin-bottom: 8px;
+    letter-spacing: 0.3px;
   }
 
   .kda-field select,
   .kda-field input {
     width: 100%;
-    padding: 11px 14px;
-    border-radius: 10px;
-    border: 1.5px solid #cce8ea;
+    padding: 12px 16px;
+    border-radius: 12px;
+    border: 2px solid #e2e8f0;
     font-size: 14px;
-    font-family: 'DM Sans', sans-serif;
-    color: #184e77;
-    background: #f7fcfc;
+    font-family: 'Inter', sans-serif;
+    color: #1e293b;
+    background: #f8fafc;
     box-sizing: border-box;
     outline: none;
-    transition: border-color 0.2s;
+    transition: all 0.2s;
   }
 
   .kda-field select:focus,
   .kda-field input:focus {
-    border-color: #34a0a4;
+    border-color: #3b82f6;
     background: white;
-    box-shadow: 0 0 0 3px rgba(52, 160, 164, 0.1);
+    box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.1);
   }
 
   .kda-form-actions {
     display: flex;
     gap: 12px;
-    margin-top: 22px;
+    margin-top: 24px;
   }
 
   .kda-btn-submit {
-    background: linear-gradient(135deg, #184e77, #34a0a4);
+    background: linear-gradient(135deg, #3b82f6, #2563eb);
     color: white;
     border: none;
-    border-radius: 10px;
-    padding: 11px 26px;
+    border-radius: 12px;
+    padding: 12px 28px;
     font-size: 14px;
     font-weight: 600;
     cursor: pointer;
-    font-family: 'DM Sans', sans-serif;
-    transition: all 0.2s;
-    box-shadow: 0 3px 10px rgba(24, 78, 119, 0.2);
+    font-family: 'Inter', sans-serif;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    box-shadow: 0 4px 12px rgba(59, 130, 246, 0.25);
   }
-  .kda-btn-submit:hover { transform: translateY(-1px); box-shadow: 0 5px 16px rgba(24, 78, 119, 0.3); }
+  .kda-btn-submit:hover { transform: translateY(-2px); box-shadow: 0 6px 20px rgba(59, 130, 246, 0.35); }
 
   .kda-btn-submit-warn {
-    background: linear-gradient(135deg, #ff6b8b, #e05577);
+    background: linear-gradient(135deg, #ef4444, #dc2626);
     color: white;
     border: none;
-    border-radius: 10px;
-    padding: 11px 26px;
+    border-radius: 12px;
+    padding: 12px 28px;
     font-size: 14px;
     font-weight: 600;
     cursor: pointer;
-    font-family: 'DM Sans', sans-serif;
-    transition: all 0.2s;
-    box-shadow: 0 3px 10px rgba(255, 107, 139, 0.25);
+    font-family: 'Inter', sans-serif;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    box-shadow: 0 4px 12px rgba(239, 68, 68, 0.25);
   }
-  .kda-btn-submit-warn:hover { transform: translateY(-1px); }
+  .kda-btn-submit-warn:hover { transform: translateY(-2px); box-shadow: 0 6px 20px rgba(239, 68, 68, 0.35); }
 
   .kda-btn-cancel {
-    background: #f1faee;
-    color: #5a8fa8;
-    border: 1.5px solid #cce8ea;
-    border-radius: 10px;
-    padding: 11px 20px;
+    background: #f1f5f9;
+    color: #64748b;
+    border: 2px solid #e2e8f0;
+    border-radius: 12px;
+    padding: 12px 24px;
     font-size: 14px;
     font-weight: 500;
     cursor: pointer;
-    font-family: 'DM Sans', sans-serif;
+    font-family: 'Inter', sans-serif;
     transition: all 0.2s;
   }
-  .kda-btn-cancel:hover { background: #e8f4ea; }
+  .kda-btn-cancel:hover { background: #e2e8f0; }
 
   /* Weekly calendar grid */
   .kda-week-grid {
     display: grid;
     grid-template-columns: repeat(7, 1fr);
-    gap: 10px;
-    margin-bottom: 28px;
+    gap: 12px;
+    margin-bottom: 32px;
+    position: relative;
+    z-index: 1;
   }
 
   .kda-day-col {
-    border-radius: 16px;
-    padding: 14px 10px 12px;
-    min-height: 120px;
-    transition: all 0.2s;
+    border-radius: 20px;
+    padding: 16px 12px;
+    min-height: 140px;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   }
 
   .kda-day-col.has-slots {
-    background: white;
-    border: 1.5px solid rgba(52, 160, 164, 0.25);
-    box-shadow: 0 2px 12px rgba(24, 78, 119, 0.06);
+    background: rgba(255, 255, 255, 0.98);
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(226, 232, 240, 0.8);
+    box-shadow: 0 2px 12px rgba(0, 0, 0, 0.04);
+  }
+  .kda-day-col.has-slots:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.08);
   }
 
   .kda-day-col.empty {
-    background: rgba(241, 250, 238, 0.6);
-    border: 1.5px dashed #c8e6d0;
+    background: rgba(255, 255, 255, 0.5);
+    backdrop-filter: blur(10px);
+    border: 2px dashed #cbd5e1;
   }
 
   .kda-day-label {
-    margin: 0 0 10px;
-    font-size: 11px;
+    margin: 0 0 12px;
+    font-size: 12px;
     font-weight: 700;
     text-transform: uppercase;
     letter-spacing: 0.8px;
   }
 
-  .kda-day-label.active { color: #184e77; }
-  .kda-day-label.inactive { color: #b0c8b8; }
+  .kda-day-label.active { color: #1e293b; }
+  .kda-day-label.inactive { color: #94a3b8; }
 
   .kda-day-empty-text {
-    font-size: 18px;
+    font-size: 20px;
     text-align: center;
-    margin-top: 24px;
-    opacity: 0.25;
+    margin-top: 28px;
+    opacity: 0.3;
   }
 
   .kda-slot-chip {
-    border-radius: 9px;
-    padding: 6px 8px;
-    margin-bottom: 6px;
+    border-radius: 10px;
+    padding: 8px 10px;
+    margin-bottom: 8px;
     position: relative;
+    transition: all 0.2s;
+  }
+  .kda-slot-chip:hover {
+    transform: scale(1.02);
   }
 
   .kda-slot-chip p { margin: 0; }
-  .kda-slot-time { font-size: 11px; font-weight: 700; line-height: 1.4; }
-  .kda-slot-meta { font-size: 9px; opacity: 0.75; margin-top: 1px !important; }
+  .kda-slot-time { font-size: 12px; font-weight: 700; line-height: 1.4; }
+  .kda-slot-meta { font-size: 10px; opacity: 0.75; margin-top: 2px !important; }
 
   .kda-slot-remove {
     position: absolute;
-    top: 3px;
-    right: 3px;
-    background: rgba(255,255,255,0.7);
+    top: 4px;
+    right: 4px;
+    background: rgba(255,255,255,0.9);
     border: none;
     cursor: pointer;
-    color: #e53935;
-    font-size: 13px;
+    color: #ef4444;
+    font-size: 14px;
     line-height: 1;
-    padding: 1px 4px;
-    border-radius: 5px;
+    padding: 2px 5px;
+    border-radius: 6px;
     font-weight: 700;
+    transition: all 0.2s;
   }
-  .kda-slot-remove:hover { background: #ffe5ec; }
+  .kda-slot-remove:hover { background: #fee2e2; transform: scale(1.1); }
 
   /* Bottom panels */
   .kda-panels {
     display: grid;
     grid-template-columns: 1fr 1fr;
-    gap: 20px;
+    gap: 24px;
+    position: relative;
+    z-index: 1;
   }
 
   .kda-panel {
-    background: white;
-    border-radius: 20px;
-    padding: 26px 28px;
-    box-shadow: 0 4px 20px rgba(24, 78, 119, 0.06);
-    border: 1.5px solid rgba(52, 160, 164, 0.12);
+    background: rgba(255, 255, 255, 0.98);
+    backdrop-filter: blur(20px);
+    border-radius: 24px;
+    padding: 32px 32px;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.05), 0 1px 4px rgba(0, 0, 0, 0.04);
+    border: 1px solid rgba(226, 232, 240, 0.8);
   }
 
   .kda-panel h3 {
-    margin: 0 0 20px;
-    font-family: 'Fraunces', serif;
-    font-size: 17px;
+    margin: 0 0 24px;
+    font-family: 'Poppins', sans-serif;
+    font-size: 18px;
     font-weight: 700;
-    color: #184e77;
+    color: #1e293b;
     display: flex;
     align-items: center;
-    gap: 8px;
+    gap: 10px;
   }
 
   .kda-panel-badge {
-    background: linear-gradient(135deg, #184e77, #34a0a4);
+    background: linear-gradient(135deg, #3b82f6, #2563eb);
     color: white;
-    font-size: 11px;
+    font-size: 12px;
     font-weight: 700;
-    padding: 2px 10px;
+    padding: 4px 12px;
     border-radius: 20px;
-    font-family: 'DM Sans', sans-serif;
+    font-family: 'Inter', sans-serif;
   }
 
   .kda-slot-row {
     display: flex;
     align-items: center;
-    gap: 14px;
-    padding: 13px 0;
-    border-bottom: 1px solid #f1faee;
-    transition: background 0.15s;
+    gap: 16px;
+    padding: 16px 0;
+    border-bottom: 1px solid #f1f5f9;
+    transition: all 0.2s;
   }
   .kda-slot-row:last-child { border-bottom: none; }
+  .kda-slot-row:hover {
+    background: rgba(59, 130, 246, 0.03);
+    margin: 0 -16px;
+    padding: 16px;
+    border-radius: 12px;
+  }
 
   .kda-slot-icon {
-    width: 44px;
-    height: 44px;
-    border-radius: 12px;
+    width: 48px;
+    height: 48px;
+    border-radius: 14px;
     display: flex;
     align-items: center;
     justify-content: center;
-    font-size: 18px;
+    font-size: 20px;
     flex-shrink: 0;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
   }
 
   .kda-slot-info { flex: 1; }
   .kda-slot-info p { margin: 0; }
-  .kda-slot-day { font-size: 15px; font-weight: 700; color: #184e77; }
-  .kda-slot-hours { font-size: 13px; color: #5a8fa8; margin-top: 2px !important; }
+  .kda-slot-day { font-size: 15px; font-weight: 700; color: #1e293b; }
+  .kda-slot-hours { font-size: 13px; color: #64748b; margin-top: 3px !important; }
 
   .kda-type-badge {
     font-size: 12px;
     font-weight: 600;
-    padding: 4px 12px;
+    padding: 6px 14px;
     border-radius: 20px;
   }
 
   .kda-remove-btn {
-    background: #ffe5ec;
-    color: #c0304f;
+    background: linear-gradient(135deg, #fee2e2, #fecaca);
+    color: #dc2626;
     border: none;
-    border-radius: 9px;
-    padding: 6px 14px;
+    border-radius: 10px;
+    padding: 8px 16px;
     font-size: 12px;
     font-weight: 700;
     cursor: pointer;
-    font-family: 'DM Sans', sans-serif;
-    transition: all 0.15s;
+    font-family: 'Inter', sans-serif;
+    transition: all 0.2s;
     letter-spacing: 0.2px;
   }
-  .kda-remove-btn:hover { background: #ffb3c6; }
+  .kda-remove-btn:hover { 
+    background: linear-gradient(135deg, #fecaca, #fca5a5);
+    transform: scale(1.05);
+  }
 
   .kda-empty-state {
     text-align: center;
-    padding: 32px 0 16px;
+    padding: 40px 0 20px;
   }
-  .kda-empty-state p { color: #a0bec8; font-size: 15px; margin: 0 0 12px; }
+  .kda-empty-state p { color: #94a3b8; font-size: 15px; margin: 0 0 16px; }
 
   .kda-empty-add-btn {
-    background: linear-gradient(135deg, #f1faee, #e8f8f8);
-    color: #184e77;
-    border: 1.5px solid #cce8ea;
-    border-radius: 10px;
-    padding: 10px 20px;
+    background: linear-gradient(135deg, #3b82f6, #2563eb);
+    color: white;
+    border: none;
+    border-radius: 12px;
+    padding: 12px 24px;
     font-size: 14px;
     font-weight: 600;
     cursor: pointer;
-    font-family: 'DM Sans', sans-serif;
-    transition: all 0.2s;
+    font-family: 'Inter', sans-serif;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    box-shadow: 0 4px 12px rgba(59, 130, 246, 0.25);
   }
-  .kda-empty-add-btn:hover { background: #d4f0ee; }
+  .kda-empty-add-btn:hover { 
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(59, 130, 246, 0.35);
+  }
 
   .kda-blocked-row {
     display: flex;
     align-items: center;
-    gap: 14px;
-    padding: 13px 0;
-    border-bottom: 1px solid #f1faee;
+    gap: 16px;
+    padding: 16px 0;
+    border-bottom: 1px solid #f1f5f9;
+    transition: all 0.2s;
   }
   .kda-blocked-row:last-child { border-bottom: none; }
+  .kda-blocked-row:hover {
+    background: rgba(239, 68, 68, 0.03);
+    margin: 0 -16px;
+    padding: 16px;
+    border-radius: 12px;
+  }
 
   .kda-blocked-icon {
-    width: 44px;
-    height: 44px;
-    border-radius: 12px;
-    background: linear-gradient(135deg, #ffe5ec, #ffccd8);
+    width: 48px;
+    height: 48px;
+    border-radius: 14px;
+    background: linear-gradient(135deg, #ef4444, #dc2626);
     display: flex;
     align-items: center;
     justify-content: center;
-    font-size: 18px;
+    font-size: 20px;
     flex-shrink: 0;
+    box-shadow: 0 2px 8px rgba(239, 68, 68, 0.25);
   }
 
-  .kda-blocked-date { font-size: 15px; font-weight: 700; color: #184e77; margin: 0; }
-  .kda-blocked-reason { font-size: 13px; color: #a07080; margin: 2px 0 0; }
+  .kda-blocked-date { font-size: 15px; font-weight: 700; color: #1e293b; margin: 0; }
+  .kda-blocked-reason { font-size: 13px; color: #64748b; margin: 3px 0 0; }
+
+  /* Pulse animation for blocked date icon */
+  @keyframes pulse {
+    0%, 100% {
+      transform: scale(1);
+      box-shadow: 0 2px 8px rgba(220, 38, 38, 0.4);
+    }
+    50% {
+      transform: scale(1.05);
+      box-shadow: 0 4px 16px rgba(220, 38, 38, 0.6);
+    }
+  }
 `;
 
 export default function KaveeshaDoctorAvailability({ token }) {
@@ -599,6 +681,18 @@ export default function KaveeshaDoctorAvailability({ token }) {
     // Validate week start date
     if (!form.week_start_date) {
       setError('Please select a week start date');
+      return;
+    }
+    
+    // Check if the selected date is blocked
+    const selectedDate = form.week_start_date;
+    const isDateBlocked = exceptions.some(ex => {
+      const exDate = ex.exception_date.includes('T') ? ex.exception_date.split('T')[0] : ex.exception_date;
+      return exDate === selectedDate;
+    });
+    
+    if (isDateBlocked) {
+      setError('Cannot add time slots on a blocked date. Please remove the block first or select a different date.');
       return;
     }
     
@@ -1054,6 +1148,13 @@ export default function KaveeshaDoctorAvailability({ token }) {
           console.log('All slots:', slots.map(s => ({ id: s.id, date: s.slot_date, day: s.day_of_week })));
           
           return weekDays.map((dayInfo) => {
+            // Check if this date is blocked
+            const blockedException = exceptions.find(ex => {
+              const exDate = ex.exception_date.includes('T') ? ex.exception_date.split('T')[0] : ex.exception_date;
+              return exDate === dayInfo.dateStr;
+            });
+            const isBlocked = !!blockedException;
+            
             // Filter slots: show date-specific slots OR recurring weekly slots matching the day of week
             const daySlots = slots.filter(s => {
               // If slot has a specific date, match by date
@@ -1065,46 +1166,240 @@ export default function KaveeshaDoctorAvailability({ token }) {
               // If slot is recurring (no date), match by day of week
               return s.day_of_week === dayInfo.dayOfWeek;
             });
-            console.log(`Date ${dayInfo.dateStr} has ${daySlots.length} slots`);
+            console.log(`Date ${dayInfo.dateStr} has ${daySlots.length} slots, blocked: ${isBlocked}`);
             const hasSlots = daySlots.length > 0;
             const isToday = dayInfo.dateStr === new Date().toISOString().split('T')[0];
             
             return (
-              <div key={dayInfo.dateStr} className={`kda-day-col ${hasSlots ? 'has-slots' : 'empty'}`}>
-                <p className={`kda-day-label ${hasSlots ? 'active' : 'inactive'}`}>
+              <div key={dayInfo.dateStr} className={`kda-day-col ${isBlocked ? 'blocked' : (hasSlots ? 'has-slots' : 'empty')}`} style={isBlocked ? {
+                background: 'linear-gradient(135deg, #fee2e2 0%, #fecaca 50%, #fca5a5 100%)',
+                border: '2px solid #dc2626',
+                borderLeft: '5px solid #b91c1c',
+                borderRadius: 16,
+                padding: 0,
+                boxShadow: '0 4px 12px rgba(220, 38, 38, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.3)',
+                position: 'relative',
+                overflow: 'hidden',
+                minHeight: 120,
+                transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+              } : hasSlots ? {
+                background: 'linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 50%, #bae6fd 100%)',
+                border: '2px solid #0ea5e9',
+                borderLeft: '5px solid #0284c7',
+                borderRadius: 16,
+                padding: 0,
+                boxShadow: '0 4px 12px rgba(14, 165, 233, 0.25), inset 0 1px 0 rgba(255, 255, 255, 0.4)',
+                position: 'relative',
+                overflow: 'hidden',
+                minHeight: 120,
+                transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+              } : {
+                background: 'linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%)',
+                border: '2px solid #cbd5e1',
+                borderLeft: '5px solid #94a3b8',
+                borderRadius: 16,
+                padding: 0,
+                boxShadow: '0 2px 8px rgba(148, 163, 184, 0.15), inset 0 1px 0 rgba(255, 255, 255, 0.6)',
+                minHeight: 120,
+                transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+              }}>
+                {/* Decorative background pattern */}
+                {isBlocked && (
+                  <div style={{
+                    position: 'absolute',
+                    top: 0,
+                    right: 0,
+                    width: 60,
+                    height: 60,
+                    background: 'radial-gradient(circle, rgba(255,255,255,0.2) 0%, transparent 70%)',
+                    borderRadius: '50%',
+                    transform: 'translate(30%, -30%)',
+                  }} />
+                )}
+                {hasSlots && !isBlocked && (
+                  <div style={{
+                    position: 'absolute',
+                    top: 0,
+                    right: 0,
+                    width: 50,
+                    height: 50,
+                    background: 'radial-gradient(circle, rgba(255,255,255,0.3) 0%, transparent 70%)',
+                    borderRadius: '50%',
+                    transform: 'translate(25%, -25%)',
+                  }} />
+                )}
+                
+                <p className={`kda-day-label ${isBlocked ? 'blocked' : (hasSlots ? 'active' : 'inactive')}`} style={isBlocked ? { 
+                  color: '#991b1b',
+                  fontWeight: 700,
+                  fontSize: 13,
+                  padding: '10px 12px 8px',
+                  margin: 0,
+                  background: 'linear-gradient(135deg, rgba(255,255,255,0.3), transparent)',
+                  borderBottom: '1px solid rgba(185, 28, 28, 0.2)',
+                } : hasSlots ? {
+                  color: '#0c4a6e',
+                  fontWeight: 700,
+                  fontSize: 13,
+                  padding: '10px 12px 8px',
+                  margin: 0,
+                  background: 'linear-gradient(135deg, rgba(255,255,255,0.4), transparent)',
+                  borderBottom: '1px solid rgba(14, 165, 233, 0.2)',
+                } : {
+                  color: '#64748b',
+                  fontWeight: 600,
+                  fontSize: 13,
+                  padding: '10px 12px 8px',
+                  margin: 0,
+                  background: 'linear-gradient(135deg, rgba(255,255,255,0.5), transparent)',
+                  borderBottom: '1px solid rgba(148, 163, 184, 0.2)',
+                }}>
                   {dayInfo.dayShort}
-                  <span style={{ display: 'block', fontSize: 10, fontWeight: 400, marginTop: 2, opacity: 0.8 }}>
+                  <span style={{ display: 'block', fontSize: 11, fontWeight: 600, marginTop: 3, opacity: 0.9 }}>
                     {dayInfo.month} {dayInfo.dayNum}
                   </span>
                 </p>
-                {daySlots.length === 0 ? (
-                  <p className="kda-day-empty-text">○</p>
-                ) : (
-                  daySlots.map((slot) => {
-                    const tc = TYPE_CONFIG[slot.consultation_type] || TYPE_CONFIG.online;
-                    return (
-                      <div key={slot.id} className="kda-slot-chip" style={{ background: tc.bg, border: `1.5px solid ${tc.border}` }}>
-                        <p className="kda-slot-time" style={{ color: tc.color }}>{slot.start_time?.slice(0,5)} – {slot.end_time?.slice(0,5)}</p>
-                        <p className="kda-slot-meta" style={{ color: tc.color }}>{tc.label} · {slot.slot_duration_minutes}min</p>
-                        <button className="kda-slot-edit" onClick={() => startEditSlot(slot)} style={{
-                          position: 'absolute',
-                          top: 4,
-                          right: 24,
-                          width: 20,
-                          height: 20,
-                          borderRadius: '50%',
-                          border: 'none',
-                          background: 'rgba(0,0,0,0.1)',
-                          color: '#fff',
-                          cursor: 'pointer',
-                          fontSize: 12,
-                          lineHeight: '20px',
+                {isBlocked ? (
+                  // Show blocked date card - beautiful design
+                  <div style={{ 
+                    padding: '12px',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    justifyContent: 'center',
+                    alignItems: 'center',
+                    height: 'calc(100% - 45px)',
+                    gap: 8,
+                  }}>
+                    <div style={{
+                      width: 40,
+                      height: 40,
+                      borderRadius: '50%',
+                      background: 'linear-gradient(135deg, #ffffff, #fee2e2)',
+                      border: '3px solid #dc2626',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      fontSize: 18,
+                      boxShadow: '0 2px 8px rgba(220, 38, 38, 0.4)',
+                      animation: 'pulse 2s ease-in-out infinite',
+                    }}>🚫</div>
+                    <span style={{ 
+                      fontSize: 13, 
+                      fontWeight: 800, 
+                      color: '#b91c1c',
+                      textTransform: 'uppercase',
+                      letterSpacing: '0.5px',
+                      textShadow: '0 1px 2px rgba(255,255,255,0.5)',
+                    }}>Blocked</span>
+                    {blockedException.reason && (
+                      <div style={{
+                        width: '100%',
+                        padding: '6px 8px',
+                        background: 'rgba(255, 255, 255, 0.5)',
+                        borderRadius: 8,
+                        border: '1px solid rgba(185, 28, 28, 0.3)',
+                        marginTop: 2,
+                      }}>
+                        <p style={{ 
+                          fontSize: 11, 
+                          color: '#991b1b', 
+                          margin: 0, 
+                          lineHeight: 1.4, 
+                          fontWeight: 600,
                           textAlign: 'center',
-                        }}>✏️</button>
-                        <button className="kda-slot-remove" onClick={() => removeSlot(slot.id)}>×</button>
+                          fontStyle: 'italic',
+                        }}>
+                          "{blockedException.reason}"
+                        </p>
                       </div>
-                    );
-                  })
+                    )}
+                  </div>
+                ) : daySlots.length === 0 ? (
+                  <div style={{
+                    display: 'flex',
+                    flexDirection: 'column',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    height: 'calc(100% - 45px)',
+                    padding: '12px',
+                  }}>
+                    <p style={{
+                      fontSize: 32,
+                      color: '#cbd5e1',
+                      margin: 0,
+                      lineHeight: 1,
+                    }}>○</p>
+                    <p style={{
+                      fontSize: 11,
+                      color: '#94a3b8',
+                      margin: '8px 0 0',
+                      fontWeight: 500,
+                    }}>No slots</p>
+                  </div>
+                ) : (
+                  <div style={{
+                    padding: '10px',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    gap: 8,
+                    maxHeight: 'calc(100% - 45px)',
+                    overflowY: 'auto',
+                  }}>
+                    {daySlots.map((slot) => {
+                      const tc = TYPE_CONFIG[slot.consultation_type] || TYPE_CONFIG.online;
+                      return (
+                        <div key={slot.id} className="kda-slot-chip" style={{ 
+                          background: tc.bg, 
+                          border: `2px solid ${tc.border}`,
+                          borderRadius: 10,
+                          padding: '8px 10px',
+                          position: 'relative',
+                          boxShadow: `0 2px 6px ${tc.border}30`,
+                          transition: 'all 0.2s ease',
+                        }}>
+                          <p className="kda-slot-time" style={{ color: tc.color, fontSize: 12, fontWeight: 700, margin: '0 0 3px' }}>
+                            {slot.start_time?.slice(0,5)} – {slot.end_time?.slice(0,5)}
+                          </p>
+                          <p className="kda-slot-meta" style={{ color: tc.color, fontSize: 10, margin: 0, fontWeight: 600 }}>
+                            {tc.label} · {slot.slot_duration_minutes}min
+                          </p>
+                          <button className="kda-slot-edit" onClick={() => startEditSlot(slot)} style={{
+                            position: 'absolute',
+                            top: 4,
+                            right: 26,
+                            width: 18,
+                            height: 18,
+                            borderRadius: '50%',
+                            border: 'none',
+                            background: 'rgba(0,0,0,0.08)',
+                            color: '#fff',
+                            cursor: 'pointer',
+                            fontSize: 10,
+                            lineHeight: '18px',
+                            textAlign: 'center',
+                            transition: 'all 0.2s ease',
+                          }}>✏️</button>
+                          <button className="kda-slot-remove" onClick={() => removeSlot(slot.id)} style={{
+                            position: 'absolute',
+                            top: 4,
+                            right: 4,
+                            width: 18,
+                            height: 18,
+                            borderRadius: '50%',
+                            border: 'none',
+                            background: 'rgba(220, 38, 38, 0.15)',
+                            color: '#dc2626',
+                            cursor: 'pointer',
+                            fontSize: 14,
+                            lineHeight: '18px',
+                            textAlign: 'center',
+                            fontWeight: 700,
+                            transition: 'all 0.2s ease',
+                          }}>×</button>
+                        </div>
+                      );
+                    })}
+                  </div>
                 )}
               </div>
             );

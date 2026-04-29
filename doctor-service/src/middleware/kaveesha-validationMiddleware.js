@@ -92,26 +92,41 @@ const validateAvailability = (req, res, next) => {
   if (!consultation_type || !validTypes.includes(consultation_type))
     errors.push(`consultation_type must be one of: ${validTypes.join(', ')}`);
   
-  // Validate slot_date if provided - must be within current week (tomorrow + 6 days)
+  // Validate slot_date if provided - must be within current week (tomorrow + 6 days = 7 days total)
   if (slot_date) {
     const dateRegex = /^\d{4}-\d{2}-\d{2}$/;
     if (!dateRegex.test(slot_date))
       errors.push('slot_date must be in YYYY-MM-DD format');
     
-    const selectedDate = new Date(slot_date + 'T00:00:00'); // Local timezone
-    const tomorrow = new Date();
-    tomorrow.setDate(tomorrow.getDate() + 1);
-    tomorrow.setHours(0, 0, 0, 0);
+    // Use string-based comparison to avoid timezone issues
+    // Calculate dates using local timezone components
+    const now = new Date();
+    const year = now.getFullYear();
+    const month = now.getMonth();
+    const date = now.getDate();
     
-    const endOfWeek = new Date(tomorrow);
-    endOfWeek.setDate(tomorrow.getDate() + 6);
-    endOfWeek.setHours(23, 59, 59, 999);
+    // Rolling 7-day window: tomorrow to tomorrow+6 (inclusive)
+    const tomorrowDate = new Date(year, month, date + 1);
+    const endDate = new Date(year, month, date + 7); // tomorrow + 6 = today + 7
     
-    if (selectedDate < tomorrow)
+    // Format as YYYY-MM-DD using local timezone (NOT toISOString which converts to UTC)
+    const formatDate = (d) => {
+      const yyyy = d.getFullYear();
+      const mm = String(d.getMonth() + 1).padStart(2, '0');
+      const dd = String(d.getDate()).padStart(2, '0');
+      return `${yyyy}-${mm}-${dd}`;
+    };
+    
+    const tomorrowStr = formatDate(tomorrowDate);
+    const endStr = formatDate(endDate);
+    
+    console.log(`[Validation] slot_date=${slot_date}, range=${tomorrowStr} to ${endStr}`);
+    
+    if (slot_date < tomorrowStr)
       errors.push('slot_date cannot be in the past');
     
-    if (selectedDate > endOfWeek)
-      errors.push('slot_date must be within the current week (next 7 days)');
+    if (slot_date > endStr)
+      errors.push(`slot_date must be within the next 7 days (${tomorrowStr} to ${endStr})`);
   }
 
   if (errors.length > 0) return res.status(422).json({ errors });
