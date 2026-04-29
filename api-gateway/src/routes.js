@@ -133,6 +133,17 @@ router.get('/patients/prescriptions', (req, res) => {
   proxyRequest(req, res, SERVICES.doctor, `/doctors/patients/${req.query.patient_id}/prescriptions?${query}`);
 });
 
+// Patient prescriptions by user_id (auto-lookup patient UUID)
+router.get('/api/patients/me/prescriptions', (req, res) => {
+  const userId = req.query.user_id;
+  proxyRequest(req, res, SERVICES.doctor, `/doctors/patients/user/${userId}/prescriptions`);
+});
+
+router.get('/patients/me/prescriptions', (req, res) => {
+  const userId = req.query.user_id;
+  proxyRequest(req, res, SERVICES.doctor, `/doctors/patients/user/${userId}/prescriptions`);
+});
+
 // Routes without /api prefix (for direct calls)
 router.get('/patients/profile', (req, res) => {
   proxyRequest(req, res, SERVICES.patient, '/api/patients/profile');
@@ -351,7 +362,25 @@ router.put('/api/doctors/me/prescriptions/:id', (req, res) => {
   proxyRequest(req, res, SERVICES.doctor, `/doctors/me/prescriptions/${req.params.id}`);
 });
 
+router.patch('/api/doctors/me/prescriptions/appointment/:appointmentId/finish', (req, res) => {
+  proxyRequest(req, res, SERVICES.doctor, `/doctors/me/prescriptions/appointment/${req.params.appointmentId}/finish`);
+});
+
+// Vite proxy route (without /api prefix)
+router.patch('/doctors/me/prescriptions/appointment/:appointmentId/finish', (req, res) => {
+  proxyRequest(req, res, SERVICES.doctor, `/doctors/me/prescriptions/appointment/${req.params.appointmentId}/finish`);
+});
+
 router.delete('/api/doctors/me/prescriptions/:id', (req, res) => {
+  proxyRequest(req, res, SERVICES.doctor, `/doctors/me/prescriptions/${req.params.id}`);
+});
+
+// Doctor prescription update and delete (without /api prefix - for Vite proxy)
+router.put('/doctors/me/prescriptions/:id', (req, res) => {
+  proxyRequest(req, res, SERVICES.doctor, `/doctors/me/prescriptions/${req.params.id}`);
+});
+
+router.delete('/doctors/me/prescriptions/:id', (req, res) => {
   proxyRequest(req, res, SERVICES.doctor, `/doctors/me/prescriptions/${req.params.id}`);
 });
 

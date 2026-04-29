@@ -2,6 +2,37 @@ const express = require('express');
 const router = express.Router();
 const pool = require('../config/kaveesha-doctorPool');
 
+// Helper: get doctor profile id from user id
+const getDoctorProfileId = async (userId) => {
+  console.log('[getDoctorProfileId] Looking for user_id:', userId);
+  
+  // First try: look for user_id
+  let result = await pool.query(
+    'SELECT id FROM profiles WHERE user_id = $1',
+    [userId]
+  );
+  
+  if (result.rows.length > 0) {
+    console.log('[getDoctorProfileId] Found profile with user_id:', result.rows[0].id);
+    return result.rows[0].id;
+  }
+  
+  // Fallback: check if userId is itself a profile id
+  console.log('[getDoctorProfileId] user_id not found, checking if userId is a profile id');
+  const checkResult = await pool.query(
+    'SELECT id FROM profiles WHERE id = $1',
+    [userId]
+  );
+  
+  if (checkResult.rows.length > 0) {
+    console.log('[getDoctorProfileId] userId is a profile id:', checkResult.rows[0].id);
+    return checkResult.rows[0].id;
+  }
+  
+  console.log('[getDoctorProfileId] No profile found for userId:', userId);
+  return null;
+};
+
 const {
   registerDoctor, getMyProfile, updateMyProfile,
   listDoctors, getDoctorById,
@@ -23,6 +54,7 @@ const {
 const {
   issuePrescription, getMyPrescriptions, getPrescriptionById,
   getPrescriptionsByAppointment, updatePrescription, getPatientPrescriptions,
+  getPatientPrescriptionsByUserId,
 } = require('../controllers/kaveesha-prescriptionController');
 
 const {
@@ -82,14 +114,57 @@ router.patch('/me/appointments/:id/complete', authenticate, requireDoctor, compl
 // ── Doctor: manage prescriptions ──────────────────────────────────────────────
 router.post('/me/prescriptions', authenticate, requireDoctor, issuePrescription);
 router.get('/me/prescriptions', authenticate, requireDoctor, getMyPrescriptions);
-router.get('/me/prescriptions/:id', authenticate, requireDoctor, getPrescriptionById);
+// IMPORTANT: More specific routes MUST come before parameterized routes
 router.get('/me/prescriptions/appointment/:appointmentId', authenticate, requireDoctor, getPrescriptionsByAppointment);
+router.get('/me/prescriptions/:id', authenticate, requireDoctor, getPrescriptionById);
 router.put('/me/prescriptions/:id', authenticate, requireDoctor, updatePrescription);
-router.delete('/me/prescriptions/:id', authenticate, requireDoctor, async (req, res) => {
+router.patch('/me/prescriptions/appointment/:appointmentId/finish', authenticate, requireDoctor, async (req, res) => {
+  const doctorId = await getDoctorProfileId(req.user.id);
+  if (!doctorId) {
+    return res.status(404).json({ error: 'Doctor profile not found' });
+  }
+  
   try {
-    const result = await pool.query('DELETE FROM prescriptions WHERE id = $1 RETURNING *', [req.params.id]);
+    // Check if appointment already has prescriptions
+    const checkResult = await pool.query(
+      'SELECT id FROM prescriptions WHERE appointment_id = $1 AND doctor_id = $2 LIMIT 1',
+      [req.params.appointmentId, doctorId]
+    );
+    
+    if (checkResult.rows.length > 0) {
+      // Update existing prescriptions
+      await pool.query(
+        'UPDATE prescriptions SET is_finished = TRUE WHERE appointment_id = $1 AND doctor_id = $2',
+        [req.params.appointmentId, doctorId]
+      );
+    } else {
+      // Create a dummy prescription record to track finished status
+      await pool.query(
+        `INSERT INTO prescriptions (appointment_id, doctor_id, patient_id, prescription_data, notes, is_finished) 
+         VALUES ($1, $2, $3, $4, $5, TRUE)`,
+        [req.params.appointmentId, doctorId, '00000000-0000-0000-0000-000000000000', '{"medications": []}', 'Finished consultation tracking record']
+      );
+    }
+    
+    res.json({ 
+      message: 'Appointment marked as finished',
+      appointment_id: req.params.appointmentId
+    });
+  } catch (err) {
+    console.error('[markAppointmentFinished]', err);
+    res.status(500).json({ error: err.message });
+  }
+});
+router.delete('/me/prescriptions/:id', authenticate, requireDoctor, async (req, res) => {
+  const doctorId = await getDoctorProfileId(req.user.id);
+  if (!doctorId) {
+    return res.status(404).json({ error: 'Doctor profile not found' });
+  }
+  
+  try {
+    const result = await pool.query('DELETE FROM prescriptions WHERE id = $1 AND doctor_id = $2 RETURNING *', [req.params.id, doctorId]);
     if (result.rows.length === 0) {
-      return res.status(404).json({ error: 'Prescription not found' });
+      return res.status(404).json({ error: 'Prescription not found or not authorized' });
     }
     res.json({ message: 'Prescription deleted successfully' });
   } catch (err) {
@@ -100,6 +175,7 @@ router.delete('/me/prescriptions/:id', authenticate, requireDoctor, async (req, 
 
 // ── Patient: get their prescriptions ──────────────────────────────────────────
 router.get('/patients/:patientId/prescriptions', getPatientPrescriptions);
+router.get('/patients/user/:userId/prescriptions', getPatientPrescriptionsByUserId);
 
 // ── Doctor: manage reports ────────────────────────────────────────────────────
 router.get('/me/reports', authenticate, requireDoctor, getMyPatientReports);
@@ -112,8 +188,9 @@ router.delete('/:id/availability/delete-by-slot', deleteAvailabilityBySlot); // 
 // ── Doctor: manage patient reports ────────────────────────────────────────────
 router.post('/me/reports/upload', authenticate, requireDoctor, reportUpload.single('report_file'), uploadPatientReport);
 router.get('/me/reports', authenticate, requireDoctor, getMyPatientReports);
-router.get('/me/reports/:id', authenticate, requireDoctor, getReportById);
+// IMPORTANT: More specific routes MUST come before parameterized routes
 router.get('/me/reports/appointment/:appointmentId', authenticate, requireDoctor, getReportsByAppointment);
+router.get('/me/reports/:id', authenticate, requireDoctor, getReportById);
 router.delete('/me/reports/:id', authenticate, requireDoctor, deleteReport);
 
 // ── Doctor: telemedicine/video calls ──────────────────────────────────────────
