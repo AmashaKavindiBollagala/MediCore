@@ -1,6 +1,19 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 
+const AVAILABILITY_STYLES = `
+  .nav-btn {
+    display: flex; align-items: center; gap: 12px;
+    width: 100%; padding: 11px 14px; border-radius: 12px;
+    border: none; cursor: pointer; background: transparent;
+    color: rgba(255,255,255,0.55); margin-bottom: 3px;
+    font-size: 14px; font-weight: 500; text-align: left;
+    transition: all 0.18s ease; font-family: 'DM Sans', sans-serif;
+    position: relative; overflow: hidden;
+  }
+  .nav-btn:hover { background: rgba(255,255,255,0.08); color: white; }
+`;
+
 const DAYS = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
 const DAY_SHORT = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 const TYPE_CONFIG = {
@@ -848,15 +861,22 @@ export default function KaveeshaDoctorAvailability({ token }) {
   })).filter((g) => g.slots.length > 0);
 
   return (
-    <div style={{ display: 'flex', minHeight: '100vh' }}>
+    <>
+      <style>{AVAILABILITY_STYLES}</style>
+      <div style={{ display: 'flex', minHeight: '100vh' }}>
       {/* Sidebar */}
       <aside style={{
-        width: sidebarOpen ? 260 : 78, minHeight: '100vh',
+        width: sidebarOpen ? 260 : 78,
+        height: '100vh',
+        position: 'sticky',
+        top: 0,
+        left: 0,
         background: COLORS.navy,
         display: 'flex', flexDirection: 'column',
         transition: 'width 0.3s cubic-bezier(.4,0,.2,1)',
         overflow: 'hidden', flexShrink: 0,
         boxShadow: '4px 0 24px rgba(24,78,119,0.15)',
+        zIndex: 100,
       }}>
         {/* Logo */}
         <div style={{
@@ -933,13 +953,39 @@ export default function KaveeshaDoctorAvailability({ token }) {
         </nav>
 
         {/* Logout */}
-        <div style={{ padding: '14px 12px', borderTop: '1px solid rgba(255,255,255,0.1)' }}>
-          <button onClick={() => { localStorage.clear(); navigate('/login'); }} style={{
-            display: 'flex', alignItems: 'center', gap: 14, width: '100%',
-            padding: '12px 14px', borderRadius: 12, border: 'none', cursor: 'pointer',
-            background: 'transparent', color: COLORS.blush, fontSize: 15, fontWeight: 500,
-          }}>
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
+        <div style={{ padding: '14px 12px', borderTop: '1px solid rgba(255,255,255,0.08)' }}>
+          <button
+            onClick={() => { localStorage.clear(); navigate('/login'); }}
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: '12px',
+              width: '100%',
+              padding: '11px 14px',
+              borderRadius: '12px',
+              border: 'none',
+              cursor: 'pointer',
+              background: 'transparent',
+              color: '#FFB3C6',
+              fontSize: '14px',
+              fontWeight: '500',
+              textAlign: 'left',
+              justifyContent: sidebarOpen ? 'flex-start' : 'center',
+              transition: 'all 0.18s ease',
+              fontFamily: "'DM Sans', sans-serif",
+              position: 'relative',
+              overflow: 'hidden',
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.background = 'rgba(255,255,255,0.08)';
+              e.currentTarget.style.color = 'white';
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.background = 'transparent';
+              e.currentTarget.style.color = '#FFB3C6';
+            }}
+          >
+            <svg width="17" height="17" viewBox="0 0 24 24" fill="none">
               <path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4M16 17l5-5-5-5M21 12H9" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/>
             </svg>
             {sidebarOpen && 'Logout'}
@@ -1502,5 +1548,6 @@ export default function KaveeshaDoctorAvailability({ token }) {
     </div>
     </div>
     </div>
+    </>
   );
 }

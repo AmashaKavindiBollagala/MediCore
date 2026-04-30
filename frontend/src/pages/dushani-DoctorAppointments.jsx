@@ -798,25 +798,6 @@ const DoctorAppointments = () => {
                         {/* Actions */}
                         {appt.status === 'CONFIRMED' && (
                           <div style={{ display: 'flex', gap: 10, marginTop: 14, paddingTop: 14, borderTop: '1px dashed #E8F4F8', flexWrap: 'wrap' }}>
-                            {/* Join Video Call button for video appointments */}
-                            {isVideo && (
-                              <button
-                                className="action-btn"
-                                onClick={() => handleJoinVideoCall(appt.id)}
-                                style={{
-                                  background: 'linear-gradient(135deg, #8B5CF6, #7C3AED)',
-                                  color: 'white',
-                                  border: 'none',
-                                  boxShadow: '0 4px 14px rgba(139,92,246,0.35)',
-                                }}
-                              >
-                                <svg width="13" height="13" viewBox="0 0 24 24" fill="none">
-                                  <path d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                                </svg>
-                                Join Video Call
-                              </button>
-                            )}
-                            
                             <button
                               className="action-btn action-btn-complete"
                               onClick={() => handleAppointmentAction(appt.id, 'complete')}

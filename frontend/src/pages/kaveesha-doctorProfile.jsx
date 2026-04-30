@@ -136,6 +136,17 @@ const STYLES = `
 
   @keyframes pulse { 0%,100% { opacity: 1; } 50% { opacity: 0.35; } }
   .pulse-dot { animation: pulse 2s ease-in-out infinite; }
+
+  .nav-btn {
+    display: flex; align-items: center; gap: 12px;
+    width: 100%; padding: 11px 14px; border-radius: 12px;
+    border: none; cursor: pointer; background: transparent;
+    color: rgba(255,255,255,0.55); margin-bottom: 3px;
+    font-size: 14px; font-weight: 500; text-align: left;
+    transition: all 0.18s ease; font-family: 'DM Sans', sans-serif;
+    position: relative; overflow: hidden;
+  }
+  .nav-btn:hover { background: rgba(255,255,255,0.08); color: white; }
 `;
 
 // ── Mock doctor data ──────────────────────────────────────────────────
@@ -435,7 +446,20 @@ export default function KaveeshaDoctorProfile({ doctor: propDoctor, onRefresh, t
 
   return (
     <div style={{ display: 'flex', minHeight: '100vh' }}>
-      <aside style={{ width: sidebarOpen ? 260 : 78, minHeight: '100vh', background: COLORS.navy, display: 'flex', flexDirection: 'column', transition: 'width 0.3s cubic-bezier(.4,0,.2,1)', overflow: 'hidden', flexShrink: 0, boxShadow: '4px 0 24px rgba(24,78,119,0.15)' }}>
+      <aside style={{
+        width: sidebarOpen ? 260 : 78,
+        height: '100vh',
+        position: 'sticky',
+        top: 0,
+        left: 0,
+        background: COLORS.navy,
+        display: 'flex', flexDirection: 'column',
+        transition: 'width 0.3s cubic-bezier(.4,0,.2,1)',
+        overflow: 'hidden',
+        flexShrink: 0,
+        boxShadow: '4px 0 24px rgba(24,78,119,0.15)',
+        zIndex: 100,
+      }}>
         <div style={{ padding: sidebarOpen ? '28px 22px 22px' : '28px 16px 22px', borderBottom: '1px solid rgba(255,255,255,0.1)', display: 'flex', alignItems: 'center', gap: 12 }}>
           <div style={{ width: 42, height: 42, borderRadius: 12, background: COLORS.teal, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
             <svg width="22" height="22" viewBox="0 0 24 24" fill="none"><path d="M12 5v14M5 12h14" stroke="white" strokeWidth="2.5" strokeLinecap="round"/></svg>
@@ -469,9 +493,41 @@ export default function KaveeshaDoctorProfile({ doctor: propDoctor, onRefresh, t
             );
           })}
         </nav>
-        <div style={{ padding: '14px 12px', borderTop: '1px solid rgba(255,255,255,0.1)' }}>
-          <button onClick={() => { localStorage.clear(); navigate('/login'); }} style={{ display: 'flex', alignItems: 'center', gap: 14, width: '100%', padding: '12px 14px', borderRadius: 12, border: 'none', cursor: 'pointer', background: 'transparent', color: COLORS.blush, fontSize: 15, fontWeight: 500 }}>
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none"><path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4M16 17l5-5-5-5M21 12H9" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/></svg>
+        <div style={{ padding: '14px 12px', borderTop: '1px solid rgba(255,255,255,0.08)' }}>
+          <button
+            onClick={() => { localStorage.clear(); navigate('/login'); }}
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: '12px',
+              width: '100%',
+              padding: '11px 14px',
+              borderRadius: '12px',
+              border: 'none',
+              cursor: 'pointer',
+              background: 'transparent',
+              color: '#FFB3C6',
+              fontSize: '14px',
+              fontWeight: '500',
+              textAlign: 'left',
+              justifyContent: sidebarOpen ? 'flex-start' : 'center',
+              transition: 'all 0.18s ease',
+              fontFamily: "'DM Sans', sans-serif",
+              position: 'relative',
+              overflow: 'hidden',
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.background = 'rgba(255,255,255,0.08)';
+              e.currentTarget.style.color = 'white';
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.background = 'transparent';
+              e.currentTarget.style.color = '#FFB3C6';
+            }}
+          >
+            <svg width="17" height="17" viewBox="0 0 24 24" fill="none">
+              <path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4M16 17l5-5-5-5M21 12H9" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/>
+            </svg>
             {sidebarOpen && 'Logout'}
           </button>
         </div>
