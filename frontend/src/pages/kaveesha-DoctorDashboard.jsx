@@ -1,6 +1,19 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 
+const DASHBOARD_STYLES = `
+  .nav-btn {
+    display: flex; align-items: center; gap: 12px;
+    width: 100%; padding: 11px 14px; border-radius: 12px;
+    border: none; cursor: pointer; background: transparent;
+    color: rgba(255,255,255,0.55); margin-bottom: 3px;
+    font-size: 14px; font-weight: 500; text-align: left;
+    transition: all 0.18s ease; font-family: 'DM Sans', sans-serif;
+    position: relative; overflow: hidden;
+  }
+  .nav-btn:hover { background: rgba(255,255,255,0.08); color: white; }
+`;
+
 const COLORS = {
   navy: '#184E77',
   teal: '#34A0A4',
@@ -106,6 +119,7 @@ export default function KaveeshaDoctorDashboard() {
   const [prescriptions, setPrescriptions] = useState([]);
   const [reports, setReports] = useState([]);
   const [consultations, setConsultations] = useState([]);
+  const [upcomingConsultations, setUpcomingConsultations] = useState([]);
   const [loadingAppts, setLoadingAppts] = useState(false);
   const [loadingPrescriptions, setLoadingPrescriptions] = useState(false);
   const [loadingReports, setLoadingReports] = useState(false);
@@ -117,6 +131,7 @@ export default function KaveeshaDoctorDashboard() {
   useEffect(() => { 
     fetchProfile(); 
     fetchConsultations();
+    fetchUpcomingConsultations();
   }, []);
 
   useEffect(() => {
@@ -163,6 +178,28 @@ export default function KaveeshaDoctorDashboard() {
     } catch { } 
     finally { 
       setLoadingConsultations(false); 
+    }
+  };
+
+  const fetchUpcomingConsultations = async () => {
+    try {
+      const res = await fetch('/api/appointments/doctor/my-appointments', {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      if (res.ok) {
+        const result = await res.json();
+        const allAppointments = result.data || [];
+        // Filter for upcoming video/online consultations that are confirmed
+        const upcoming = allAppointments.filter(appt => {
+          const isVideo = appt.consultation_type === 'video' || appt.consultation_type === 'online';
+          const isConfirmed = appt.status === 'CONFIRMED';
+          const isUpcoming = new Date(appt.scheduled_at) >= new Date();
+          return isVideo && isConfirmed && isUpcoming;
+        });
+        setUpcomingConsultations(upcoming);
+      }
+    } catch (err) {
+      console.error('Failed to fetch upcoming consultations:', err);
     }
   };
 
@@ -224,16 +261,25 @@ export default function KaveeshaDoctorDashboard() {
   };
 
   return (
-    <div style={{ display: 'flex', minHeight: '100vh', background: COLORS.cream, fontFamily: "'DM Sans', 'Segoe UI', sans-serif" }}>
+    <>
+      <style>{DASHBOARD_STYLES}</style>
+      <div style={{ display: 'flex', minHeight: '100vh', background: COLORS.cream, fontFamily: "'DM Sans', 'Segoe UI', sans-serif" }}>
 
       {/* ── Sidebar ── */}
       <aside style={{
-        width: sidebarOpen ? 260 : 78, minHeight: '100vh',
+        width: sidebarOpen ? 260 : 78, 
+        height: '100vh',
+        position: 'sticky',
+        top: 0,
+        left: 0,
         background: COLORS.navy,
-        display: 'flex', flexDirection: 'column',
+        display: 'flex', 
+        flexDirection: 'column',
         transition: 'width 0.3s cubic-bezier(.4,0,.2,1)',
-        overflow: 'hidden', flexShrink: 0,
+        overflow: 'hidden', 
+        flexShrink: 0,
         boxShadow: '4px 0 24px rgba(24,78,119,0.15)',
+        zIndex: 100,
       }}>
         {/* Logo */}
         <div style={{
@@ -304,18 +350,16 @@ export default function KaveeshaDoctorDashboard() {
               ? () => navigate('/doctor-profile')
               : () => setActiveTab(id);
             return (
-              <button key={id} onClick={handleClick} style={{
-                display: 'flex', alignItems: 'center', gap: 14, width: '100%',
-                padding: '12px 14px', borderRadius: 12, border: 'none', cursor: 'pointer',
-                background: active ? COLORS.teal : 'transparent',
-                color: active ? 'white' : 'rgba(255,255,255,0.6)',
-                marginBottom: 4, fontWeight: active ? 700 : 400,
-                fontSize: 15, textAlign: 'left', transition: 'all 0.18s',
-              }}>
+              <button 
+                key={id} 
+                onClick={handleClick}
+                className={`nav-btn${active ? ' active' : ''}`}
+                style={{ justifyContent: sidebarOpen ? 'flex-start' : 'center' }}
+              >
                 <span style={{ flexShrink: 0, opacity: active ? 1 : 0.8 }}>{icon}</span>
                 {sidebarOpen && <span style={{ whiteSpace: 'nowrap' }}>{label}</span>}
                 {active && sidebarOpen && (
-                  <div style={{ marginLeft: 'auto', width: 7, height: 7, borderRadius: '50%', background: COLORS.mint }} />
+                  <div style={{ marginLeft: 'auto', width: 6, height: 6, borderRadius: '50%', background: '#76C893' }} />
                 )}
               </button>
             );
@@ -323,13 +367,39 @@ export default function KaveeshaDoctorDashboard() {
         </nav>
 
         {/* Logout */}
-        <div style={{ padding: '14px 12px', borderTop: '1px solid rgba(255,255,255,0.1)' }}>
-          <button onClick={logout} style={{
-            display: 'flex', alignItems: 'center', gap: 14, width: '100%',
-            padding: '12px 14px', borderRadius: 12, border: 'none', cursor: 'pointer',
-            background: 'transparent', color: COLORS.blush, fontSize: 15, fontWeight: 500,
-          }}>
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
+        <div style={{ padding: '14px 12px', borderTop: '1px solid rgba(255,255,255,0.08)' }}>
+          <button
+            onClick={logout}
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: '12px',
+              width: '100%',
+              padding: '11px 14px',
+              borderRadius: '12px',
+              border: 'none',
+              cursor: 'pointer',
+              background: 'transparent',
+              color: '#FFB3C6',
+              fontSize: '14px',
+              fontWeight: '500',
+              textAlign: 'left',
+              justifyContent: sidebarOpen ? 'flex-start' : 'center',
+              transition: 'all 0.18s ease',
+              fontFamily: "'DM Sans', sans-serif",
+              position: 'relative',
+              overflow: 'hidden',
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.background = 'rgba(255,255,255,0.08)';
+              e.currentTarget.style.color = 'white';
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.background = 'transparent';
+              e.currentTarget.style.color = '#FFB3C6';
+            }}
+          >
+            <svg width="17" height="17" viewBox="0 0 24 24" fill="none">
               <path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4M16 17l5-5-5-5M21 12H9" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/>
             </svg>
             {sidebarOpen && 'Logout'}
@@ -545,7 +615,7 @@ export default function KaveeshaDoctorDashboard() {
               ))}
             </div>
 
-            {/* Recent Activity */}
+            {/* Upcoming Consultations Calendar */}
             <div style={{
               background: 'white', borderRadius: 20,
               border: `1.5px solid #E0EFF5`, padding: '28px 32px',
@@ -553,10 +623,10 @@ export default function KaveeshaDoctorDashboard() {
             }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24 }}>
                 <div>
-                  <h3 style={{ margin: 0, fontSize: 20, fontWeight: 800, color: COLORS.navy }}>Recent Appointments</h3>
-                  <p style={{ margin: '4px 0 0', fontSize: 14, color: COLORS.teal }}>Latest patient bookings</p>
+                  <h3 style={{ margin: 0, fontSize: 20, fontWeight: 800, color: COLORS.navy }}>Upcoming Consultations</h3>
+                  <p style={{ margin: '4px 0 0', fontSize: 14, color: COLORS.teal }}>Your scheduled video appointments</p>
                 </div>
-                <button onClick={() => navigate('/doctor-appointments')} style={{
+                <button onClick={() => navigate('/doctor-telemedicine')} style={{
                   background: COLORS.cream, border: `1.5px solid ${COLORS.mint}`,
                   borderRadius: 12, padding: '9px 18px', color: COLORS.navy,
                   fontSize: 14, fontWeight: 700, cursor: 'pointer',
@@ -574,61 +644,104 @@ export default function KaveeshaDoctorDashboard() {
                   View All →
                 </button>
               </div>
-              {appointments.length === 0 ? (
+              {upcomingConsultations.length === 0 ? (
                 <div style={{ textAlign: 'center', padding: '50px 20px' }}>
                   <div style={{ fontSize: 56, marginBottom: 16, opacity: 0.6 }}>📭</div>
-                  <p style={{ color: COLORS.teal, fontSize: 16, margin: 0, fontWeight: 500 }}>No appointments yet</p>
-                  <p style={{ color: '#94A3B8', fontSize: 14, margin: '8px 0 0' }}>Share your profile to start receiving bookings</p>
+                  <p style={{ color: COLORS.teal, fontSize: 16, margin: 0, fontWeight: 500 }}>No upcoming consultations</p>
+                  <p style={{ color: '#94A3B8', fontSize: 14, margin: '8px 0 0' }}>Video appointments will appear here</p>
                 </div>
               ) : (
-                <div style={{ display: 'grid', gap: 14 }}>
-                  {appointments.slice(0, 5).map(appt => {
-                    const s = STATUS_STYLES[appt.status] || STATUS_STYLES.PENDING_PAYMENT;
+                <div style={{ display: 'grid', gap: 16 }}>
+                  {upcomingConsultations.slice(0, 6).map(appt => {
                     const date = new Date(appt.scheduled_at);
+                    const dayNum = date.getDate();
+                    const month = date.toLocaleString('default', { month: 'short' });
+                    const weekday = date.toLocaleString('default', { weekday: 'short' });
+                    const time = date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+                    
                     return (
-                      <div key={appt.id} style={{
-                        display: 'flex', alignItems: 'center', gap: 16,
-                        padding: '18px 20px', borderRadius: 14,
-                        background: '#F8FAFC',
-                        border: `1.5px solid ${COLORS.cream}`,
-                        transition: 'all 0.2s',
-                      }}
-                      onMouseEnter={(e) => {
-                        e.currentTarget.style.background = 'white';
-                        e.currentTarget.style.borderColor = COLORS.mint;
-                        e.currentTarget.style.boxShadow = '0 4px 12px rgba(24,78,119,0.08)';
-                      }}
-                      onMouseLeave={(e) => {
-                        e.currentTarget.style.background = '#F8FAFC';
-                        e.currentTarget.style.borderColor = COLORS.cream;
-                        e.currentTarget.style.boxShadow = 'none';
-                      }}
+                      <div 
+                        key={appt.id} 
+                        onClick={() => navigate('/doctor-telemedicine')}
+                        style={{
+                          display: 'flex', alignItems: 'center', gap: 20,
+                          padding: '20px 22px', borderRadius: 16,
+                          background: 'linear-gradient(135deg, #F0F9FF, #E0F2FE)',
+                          border: '2px solid #34A0A4',
+                          cursor: 'pointer',
+                          transition: 'all 0.25s cubic-bezier(0.4, 0, 0.2, 1)',
+                          position: 'relative',
+                          overflow: 'hidden',
+                        }}
+                        onMouseEnter={(e) => {
+                          e.currentTarget.style.transform = 'translateY(-3px)';
+                          e.currentTarget.style.boxShadow = '0 8px 24px rgba(52,160,164,0.2)';
+                          e.currentTarget.style.borderColor = COLORS.navy;
+                        }}
+                        onMouseLeave={(e) => {
+                          e.currentTarget.style.transform = 'translateY(0)';
+                          e.currentTarget.style.boxShadow = 'none';
+                          e.currentTarget.style.borderColor = COLORS.teal;
+                        }}
                       >
+                        {/* Calendar Date Box */}
                         <div style={{
-                          width: 50, height: 50, borderRadius: 14,
-                          background: COLORS.cream, border: `1.5px solid #C8E6C9`,
-                          display: 'flex', flexDirection: 'column', alignItems: 'center',
-                          justifyContent: 'center', flexShrink: 0,
+                          width: 72, height: 80, borderRadius: 16,
+                          background: 'linear-gradient(145deg, #184E77, #34A0A4)',
+                          display: 'flex', flexDirection: 'column',
+                          alignItems: 'center', justifyContent: 'center',
+                          color: 'white', flexShrink: 0,
+                          boxShadow: '0 4px 16px rgba(24,78,119,0.3)',
                         }}>
-                          <span style={{ fontSize: 18, fontWeight: 800, color: COLORS.navy }}>{date.getDate()}</span>
-                          <span style={{ fontSize: 10, color: COLORS.teal, textTransform: 'uppercase', fontWeight: 700 }}>
-                            {date.toLocaleString('default', { month: 'short' })}
+                          <span style={{ fontSize: 28, fontWeight: 800, lineHeight: 1, fontFamily: 'Sora, sans-serif' }}>
+                            {dayNum}
+                          </span>
+                          <span style={{ fontSize: 11, textTransform: 'uppercase', letterSpacing: 0.8, fontWeight: 600, opacity: 0.9, marginTop: 2 }}>
+                            {month}
+                          </span>
+                          <span style={{ fontSize: 10, opacity: 0.75, fontWeight: 500 }}>
+                            {weekday}
                           </span>
                         </div>
+
+                        {/* Consultation Info */}
                         <div style={{ flex: 1 }}>
-                          <p style={{ margin: 0, fontSize: 15, fontWeight: 700, color: COLORS.navy }}>{appt.patient_name || 'Patient'}</p>
-                          <p style={{ margin: '4px 0 0', fontSize: 13, color: COLORS.teal }}>
-                            {date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                            &nbsp;·&nbsp;
-                            {appt.consultation_type === 'video' ? '🎥 Video' : '🏥 In-person'}
+                          <p style={{ margin: '0 0 6px', fontSize: 16, fontWeight: 700, color: COLORS.navy }}>
+                            {appt.patient_name || 'Patient'}
                           </p>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                              <svg width="14" height="14" viewBox="0 0 24 24" fill="none">
+                                <circle cx="12" cy="12" r="9" stroke={COLORS.teal} strokeWidth="1.8"/>
+                                <path d="M12 6v6l4 2" stroke={COLORS.teal} strokeWidth="1.8" strokeLinecap="round"/>
+                              </svg>
+                              <span style={{ fontSize: 14, color: COLORS.teal, fontWeight: 600 }}>
+                                {time}
+                              </span>
+                            </div>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                              <span style={{ fontSize: 14 }}>🎥</span>
+                              <span style={{ fontSize: 13, color: COLORS.navy, fontWeight: 600 }}>
+                                Video Consultation
+                              </span>
+                            </div>
+                          </div>
+                          {appt.symptoms && (
+                            <p style={{ margin: '8px 0 0', fontSize: 13, color: '#64748B', fontStyle: 'italic' }}>
+                              Symptoms: {appt.symptoms}
+                            </p>
+                          )}
                         </div>
-                        <span style={{
-                          background: s.bg, color: s.color, fontSize: 12, fontWeight: 700,
-                          padding: '6px 16px', borderRadius: 20, border: `1px solid ${s.border}`,
+
+                        {/* Arrow Icon */}
+                        <div style={{
+                          width: 36, height: 36, borderRadius: '50%',
+                          background: COLORS.teal,
+                          display: 'flex', alignItems: 'center', justifyContent: 'center',
+                          color: 'white', fontSize: 18, flexShrink: 0,
                         }}>
-                          {s.label}
-                        </span>
+                          →
+                        </div>
                       </div>
                     );
                   })}
@@ -646,6 +759,7 @@ export default function KaveeshaDoctorDashboard() {
         )}
       </main>
     </div>
+    </>
   );
 }
 

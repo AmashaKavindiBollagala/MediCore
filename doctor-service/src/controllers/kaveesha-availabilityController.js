@@ -20,6 +20,9 @@ const addAvailabilitySlot = async (req, res) => {
 
   const { day_of_week, start_time, end_time, slot_duration_minutes, consultation_type, slot_date } = req.body;
 
+  console.log(`[addAvailabilitySlot] Received body:`, req.body);
+  console.log(`[addAvailabilitySlot] slot_date value:`, slot_date, typeof slot_date);
+
   // Convert day_of_week to number if it's a string
   const dayOfWeekNum = typeof day_of_week === 'string' ? parseInt(day_of_week) : day_of_week;
 
@@ -31,32 +34,56 @@ const addAvailabilitySlot = async (req, res) => {
   if (start_time >= end_time)
     return res.status(400).json({ error: 'Start time must be before end time' });
   
-  // If slot_date is provided, validate it's within the current week (tomorrow + 6 days)
+  // If slot_date is provided, validate it's within the current week (tomorrow + 6 days = 7 days total)
   if (slot_date) {
-    // Parse date components directly to avoid timezone issues
-    const [year, month, day] = slot_date.split('-').map(Number);
-    const selectedDate = new Date(year, month - 1, day); // month is 0-indexed
-    selectedDate.setHours(0, 0, 0, 0);
+    // Use string-based comparison to avoid timezone issues
+    const now = new Date();
+    const year = now.getFullYear();
+    const month = now.getMonth();
+    const date = now.getDate();
     
-    const tomorrow = new Date();
-    tomorrow.setDate(tomorrow.getDate() + 1);
-    tomorrow.setHours(0, 0, 0, 0);
+    // Rolling 7-day window: tomorrow to tomorrow+6 (inclusive)
+    const tomorrowDate = new Date(year, month, date + 1);
+    const endDate = new Date(year, month, date + 7); // tomorrow + 6 = today + 7
     
-    const endOfWeek = new Date(tomorrow);
-    endOfWeek.setDate(tomorrow.getDate() + 6);
-    endOfWeek.setHours(23, 59, 59, 999);
+    // Format as YYYY-MM-DD using local timezone (NOT toISOString which converts to UTC)
+    const formatDate = (d) => {
+      const yyyy = d.getFullYear();
+      const mm = String(d.getMonth() + 1).padStart(2, '0');
+      const dd = String(d.getDate()).padStart(2, '0');
+      return `${yyyy}-${mm}-${dd}`;
+    };
     
-    console.log(`[Availability Validation] Selected: ${selectedDate.toDateString()}, Tomorrow: ${tomorrow.toDateString()}, End: ${endOfWeek.toDateString()}`);
+    const tomorrowStr = formatDate(tomorrowDate);
+    const endStr = formatDate(endDate);
     
-    if (selectedDate < tomorrow)
+    console.log(`[Availability Validation] Selected: ${slot_date}, Valid range: ${tomorrowStr} to ${endStr}`);
+    
+    if (slot_date < tomorrowStr)
       return res.status(400).json({ error: 'Cannot add slots for past dates' });
     
-    if (selectedDate > endOfWeek)
-      return res.status(400).json({ error: `Can only add slots for the current week (${tomorrow.toDateString()} to ${endOfWeek.toDateString()})` });
+    if (slot_date > endStr)
+      return res.status(400).json({ error: `Can only add slots for the next 7 days (${tomorrowStr} to ${endStr})` });
   }
 
   try {
+    // If slot_date is provided, check if it's a blocked date
+    if (slot_date) {
+      const blockedCheck = await pool.query(
+        `SELECT id, reason FROM availability_exceptions
+         WHERE doctor_id = $1 AND exception_date = $2::DATE`,
+        [doctorId, slot_date]
+      );
+      
+      if (blockedCheck.rows.length > 0) {
+        return res.status(400).json({
+          error: `Cannot add time slots on a blocked date (${slot_date}). Reason: ${blockedCheck.rows[0].reason || 'No reason provided'}`,
+        });
+      }
+    }
+    
     // Check for ANY overlapping slots on the same day and date
+    // Two time ranges overlap if: start1 < end2 AND end1 > start2
     let overlapQuery = `
       SELECT id FROM availability
       WHERE doctor_id = $1 AND day_of_week = $2 AND is_active = true
@@ -65,7 +92,7 @@ const addAvailabilitySlot = async (req, res) => {
     const overlapParams = [doctorId, dayOfWeekNum, end_time, start_time];
     
     if (slot_date) {
-      overlapQuery += ` AND slot_date = $5`;
+      overlapQuery += ` AND slot_date = $5::DATE`;
       overlapParams.push(slot_date);
     } else {
       overlapQuery += ` AND slot_date IS NULL`;
@@ -97,6 +124,15 @@ const addAvailabilitySlot = async (req, res) => {
 
     const slot = result.rows[0];
     slot.day_name = DAY_NAMES[slot.day_of_week];
+    
+    // Format slot_date as YYYY-MM-DD string to avoid timezone issues in frontend
+    if (slot.slot_date) {
+      const slotDate = new Date(slot.slot_date);
+      slot.slot_date = slotDate.getFullYear() + '-' + 
+        String(slotDate.getMonth() + 1).padStart(2, '0') + '-' + 
+        String(slotDate.getDate()).padStart(2, '0');
+    }
+    
     res.status(201).json({ message: 'Availability slot added', slot });
   } catch (err) {
     console.error('[addAvailabilitySlot]', err);
@@ -112,28 +148,58 @@ const getMyAvailability = async (req, res) => {
     return res.status(404).json({ error: 'Doctor profile not found' });
 
   try {
-    // First, clean up expired slots
+    // Calculate today's date in IST (Asia/Colombo) using string formatting
+    const now = new Date();
+    const year = now.getFullYear();
+    const month = now.getMonth();
+    const date = now.getDate();
+    const todayIST = new Date(year, month, date);
+    const todayISTStr = todayIST.getFullYear() + '-' + 
+      String(todayIST.getMonth() + 1).padStart(2, '0') + '-' + 
+      String(todayIST.getDate()).padStart(2, '0');
+    
+    console.log(`[getMyAvailability] Today in IST: ${todayISTStr}`);
+    
+    // First, clean up expired slots (using IST date)
     await pool.query(
       `DELETE FROM availability 
-       WHERE doctor_id = $1 AND slot_date IS NOT NULL AND slot_date < CURRENT_DATE`,
-      [doctorId]
+       WHERE doctor_id = $1 AND slot_date IS NOT NULL AND slot_date < $2::DATE`,
+      [doctorId, todayISTStr]
     );
     
     // Then fetch active slots (both recurring and future date-specific)
     const result = await pool.query(
       `SELECT * FROM availability
        WHERE doctor_id = $1 AND is_active = true
-         AND (slot_date IS NULL OR slot_date >= CURRENT_DATE)
+         AND (slot_date IS NULL OR slot_date >= $2::DATE)
        ORDER BY 
          CASE WHEN slot_date IS NULL THEN 0 ELSE 1 END,
          slot_date,
          day_of_week, 
          start_time`,
-      [doctorId]
+      [doctorId, todayISTStr]
     );
-    const slots = result.rows.map((s) => ({ ...s, day_name: DAY_NAMES[s.day_of_week] }));
+    
+    // Format slot_date as YYYY-MM-DD string to avoid timezone issues in frontend
+    const slots = result.rows.map((s) => {
+      let formattedSlot = { ...s, day_name: DAY_NAMES[s.day_of_week] };
+      
+      // If slot_date exists, format it as YYYY-MM-DD string (not ISO datetime)
+      if (s.slot_date) {
+        const slotDate = new Date(s.slot_date);
+        formattedSlot.slot_date = slotDate.getFullYear() + '-' + 
+          String(slotDate.getMonth() + 1).padStart(2, '0') + '-' + 
+          String(slotDate.getDate()).padStart(2, '0');
+      }
+      
+      return formattedSlot;
+    });
+    
+    console.log(`[getMyAvailability] Found ${slots.length} active slots`);
+    console.log(`[getMyAvailability] Sample slot_date format:`, slots[0]?.slot_date);
     res.json(slots);
   } catch (err) {
+    console.error('[getMyAvailability]', err);
     res.status(500).json({ error: err.message });
   }
 };
@@ -407,7 +473,19 @@ const getExceptionDates = async (req, res) => {
       'SELECT * FROM availability_exceptions WHERE doctor_id = $1 ORDER BY exception_date',
       [doctorId]
     );
-    res.json(result.rows);
+    
+    // Format exception_date as YYYY-MM-DD string to avoid timezone issues
+    const formattedExceptions = result.rows.map(ex => {
+      if (ex.exception_date) {
+        const exDate = new Date(ex.exception_date);
+        ex.exception_date = exDate.getFullYear() + '-' + 
+          String(exDate.getMonth() + 1).padStart(2, '0') + '-' + 
+          String(exDate.getDate()).padStart(2, '0');
+      }
+      return ex;
+    });
+    
+    res.json(formattedExceptions);
   } catch (err) {
     res.status(500).json({ error: err.message });
   }

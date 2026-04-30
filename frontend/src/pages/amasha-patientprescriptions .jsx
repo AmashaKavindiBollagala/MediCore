@@ -75,52 +75,230 @@ function Sidebar({ user }) {
 function PrescriptionCard({ rx, onView }) {
   const meds = rx.prescription_data?.medications || [];
   const isNew = (new Date() - new Date(rx.issued_at)) < 3 * 86400000;
+  const isFinished = rx.is_finished === true;
+  
   return (
-    <div style={{ background: C.white, borderRadius: 20, border: `1.5px solid ${C.border}`, padding: '24px', boxShadow: '0 2px 12px rgba(15,52,96,0.06)', transition: 'all 0.15s', position: 'relative', overflow: 'hidden' }}>
-      {isNew && (
-        <div style={{ position: 'absolute', top: 16, right: 16, background: C.teal, color: 'white', fontSize: 10, fontWeight: 800, padding: '3px 10px', borderRadius: 20, letterSpacing: 0.5 }}>NEW</div>
-      )}
-      <div style={{ display: 'flex', alignItems: 'flex-start', gap: 16, marginBottom: 16 }}>
-        <div style={{ width: 54, height: 54, borderRadius: 16, background: C.tealLight, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 26, flexShrink: 0 }}>💊</div>
+    <div style={{ 
+      background: C.white, 
+      borderRadius: 20, 
+      border: `1.5px solid ${isFinished ? '#93C5FD' : C.border}`, 
+      padding: '24px', 
+      boxShadow: isFinished ? '0 2px 12px rgba(16,185,129,0.08)' : '0 2px 12px rgba(15,52,96,0.06)', 
+      transition: 'all 0.2s', 
+      position: 'relative', 
+      overflow: 'hidden',
+      opacity: isFinished ? 0.95 : 1
+    }}
+    onMouseEnter={(e) => {
+      e.currentTarget.style.transform = 'translateY(-3px)';
+      e.currentTarget.style.boxShadow = isFinished 
+        ? '0 8px 24px rgba(16,185,129,0.15)' 
+        : '0 8px 24px rgba(15,52,96,0.12)';
+    }}
+    onMouseLeave={(e) => {
+      e.currentTarget.style.transform = 'translateY(0)';
+      e.currentTarget.style.boxShadow = isFinished 
+        ? '0 2px 12px rgba(16,185,129,0.08)' 
+        : '0 2px 12px rgba(15,52,96,0.06)';
+    }}
+    >
+      {/* Accent bar at top */}
+      <div style={{
+        position: 'absolute',
+        top: 0,
+        left: 0,
+        right: 0,
+        height: 4,
+        background: isFinished 
+          ? 'linear-gradient(90deg, #10B981, #059669)'
+          : 'linear-gradient(90deg, #3B82F6, #2563EB)'
+      }} />
+      
+      {/* Status badges */}
+      <div style={{ position: 'absolute', top: 16, right: 16, display: 'flex', gap: 8 }}>
+        {isFinished && (
+          <div style={{ 
+            background: 'linear-gradient(135deg, #D1FAE5, #A7F3D0)', 
+            color: '#059669', 
+            fontSize: 10, 
+            fontWeight: 800, 
+            padding: '4px 12px', 
+            borderRadius: 20, 
+            letterSpacing: 0.5 
+          }}>✅ FINISHED</div>
+        )}
+        {isNew && !isFinished && (
+          <div style={{ 
+            background: 'linear-gradient(135deg, #3B82F6, #2563EB)', 
+            color: 'white', 
+            fontSize: 10, 
+            fontWeight: 800, 
+            padding: '4px 12px', 
+            borderRadius: 20, 
+            letterSpacing: 0.5 
+          }}>NEW</div>
+        )}
+      </div>
+      
+      <div style={{ display: 'flex', alignItems: 'flex-start', gap: 16, marginBottom: 16, marginTop: 8 }}>
+        <div style={{ 
+          width: 54, 
+          height: 54, 
+          borderRadius: 16, 
+          background: isFinished ? 'linear-gradient(135deg, #D1FAE5, #A7F3D0)' : C.tealLight, 
+          display: 'flex', 
+          alignItems: 'center', 
+          justifyContent: 'center', 
+          fontSize: 26, 
+          flexShrink: 0 
+        }}>💊</div>
         <div style={{ flex: 1 }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
             <h3 style={{ margin: 0, fontSize: 16, fontWeight: 700, color: C.navy }}>Dr. {rx.doctor_name || 'Your Doctor'}</h3>
           </div>
           <p style={{ margin: 0, fontSize: 13, color: C.slate }}>
-            {rx.diagnosis && <><strong style={{ color: C.navy }}>Diagnosis:</strong> {rx.diagnosis} · </>}
+            {rx.doctor_specialty && <span style={{ color: C.teal }}>{rx.doctor_specialty}</span>}
+            {rx.doctor_specialty && rx.diagnosis && <span> · </span>}
+            {rx.diagnosis && <><strong style={{ color: C.navy }}>Diagnosis:</strong> {rx.diagnosis}</>}
+          </p>
+          <p style={{ margin: '4px 0 0 0', fontSize: 12, color: C.slate }}>
             Issued {new Date(rx.issued_at).toLocaleDateString('en-US', { day: 'numeric', month: 'long', year: 'numeric' })}
           </p>
         </div>
       </div>
 
+      {/* Patient and Symptoms Info */}
+      {rx.patient_name && (
+        <div style={{
+          background: isFinished ? '#F0FDF4' : '#EFF6FF',
+          padding: '12px 14px',
+          borderRadius: 10,
+          marginBottom: 16,
+          border: `1px solid ${isFinished ? '#A7F3D0' : '#BFDBFE'}`
+        }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 6 }}>
+            <div style={{
+              width: 32,
+              height: 32,
+              borderRadius: '50%',
+              background: isFinished ? '#10B981' : '#3B82F6',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              color: 'white',
+              fontSize: 14,
+              fontWeight: 700
+            }}>
+              {(rx.patient_name || 'P').charAt(0).toUpperCase()}
+            </div>
+            <div>
+              <p style={{ margin: 0, fontSize: 11, color: C.slate, fontWeight: 600, textTransform: 'uppercase', letterSpacing: 0.5 }}>Patient</p>
+              <p style={{ margin: 0, fontSize: 14, fontWeight: 600, color: C.navy }}>{rx.patient_name}</p>
+            </div>
+          </div>
+          {rx.symptoms && (
+            <div style={{ marginTop: 8, paddingTop: 8, borderTop: `1px solid ${isFinished ? '#D1FAE5' : '#DBEAFE'}` }}>
+              <p style={{ margin: '0 0 4px 0', fontSize: 11, color: C.slate, fontWeight: 600, textTransform: 'uppercase', letterSpacing: 0.5 }}>🩺 Symptoms</p>
+              <p style={{ margin: 0, fontSize: 13, color: isFinished ? '#059669' : '#2563EB', lineHeight: 1.5 }}>
+                {rx.symptoms}
+              </p>
+            </div>
+          )}
+        </div>
+      )}
+
       {/* Medications preview */}
       <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginBottom: 16 }}>
         {meds.slice(0, 3).map((m, i) => (
-          <div key={i} style={{ background: C.surface, borderRadius: 10, padding: '10px 14px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          <div key={i} style={{ 
+            background: isFinished ? '#F0FDF4' : C.surface, 
+            borderRadius: 10, 
+            padding: '10px 14px', 
+            display: 'flex', 
+            justifyContent: 'space-between', 
+            alignItems: 'center' 
+          }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-              <div style={{ width: 8, height: 8, borderRadius: '50%', background: C.teal, flexShrink: 0 }} />
+              <div style={{ 
+                width: 8, 
+                height: 8, 
+                borderRadius: '50%', 
+                background: isFinished ? '#10B981' : C.teal, 
+                flexShrink: 0 
+              }} />
               <div>
                 <span style={{ fontSize: 14, fontWeight: 600, color: C.navy }}>{m.name}</span>
                 {m.dosage && <span style={{ fontSize: 12, color: C.slate }}> · {m.dosage}</span>}
               </div>
             </div>
             {m.frequency && (
-              <span style={{ fontSize: 11, color: C.teal, background: C.tealLight, padding: '2px 10px', borderRadius: 20, fontWeight: 600 }}>{m.frequency}</span>
+              <span style={{ 
+                fontSize: 11, 
+                color: isFinished ? '#059669' : C.teal, 
+                background: isFinished ? '#D1FAE5' : C.tealLight, 
+                padding: '2px 10px', 
+                borderRadius: 20, 
+                fontWeight: 600 
+              }}>{m.frequency}</span>
             )}
           </div>
         ))}
         {meds.length > 3 && (
-          <div style={{ background: '#F8FAFC', borderRadius: 10, padding: '8px 14px', fontSize: 13, color: C.slate, textAlign: 'center' }}>+ {meds.length - 3} more medication{meds.length - 3 !== 1 ? 's' : ''}</div>
+          <div style={{ 
+            background: '#F8FAFC', 
+            borderRadius: 10, 
+            padding: '8px 14px', 
+            fontSize: 13, 
+            color: C.slate, 
+            textAlign: 'center' 
+          }}>+ {meds.length - 3} more medication{meds.length - 3 !== 1 ? 's' : ''}</div>
         )}
       </div>
 
       {rx.notes && (
-        <div style={{ background: C.goldLight, borderRadius: 10, padding: '10px 14px', borderLeft: `3px solid ${C.gold}`, marginBottom: 16 }}>
+        <div style={{ 
+          background: C.goldLight, 
+          borderRadius: 10, 
+          padding: '10px 14px', 
+          borderLeft: `3px solid ${C.gold}`, 
+          marginBottom: 16 
+        }}>
           <p style={{ margin: 0, fontSize: 12, color: '#92400E' }}>📝 <strong>Doctor's notes:</strong> {rx.notes}</p>
         </div>
       )}
 
-      <button onClick={() => onView(rx)} style={{ width: '100%', background: C.navy, color: 'white', border: 'none', borderRadius: 12, padding: '12px', fontSize: 14, fontWeight: 700, cursor: 'pointer' }}>
+      <button 
+        onClick={() => onView(rx)} 
+        style={{ 
+          width: '100%', 
+          background: isFinished 
+            ? 'linear-gradient(135deg, #10B981, #059669)' 
+            : C.navy, 
+          color: 'white', 
+          border: 'none', 
+          borderRadius: 12, 
+          padding: '12px', 
+          fontSize: 14, 
+          fontWeight: 700, 
+          cursor: 'pointer',
+          transition: 'all 0.2s',
+          boxShadow: isFinished 
+            ? '0 2px 8px rgba(16,185,129,0.3)' 
+            : '0 2px 8px rgba(15,52,96,0.2)'
+        }}
+        onMouseEnter={(e) => {
+          e.currentTarget.style.transform = 'translateY(-1px)';
+          e.currentTarget.style.boxShadow = isFinished 
+            ? '0 4px 12px rgba(16,185,129,0.4)' 
+            : '0 4px 12px rgba(15,52,96,0.3)';
+        }}
+        onMouseLeave={(e) => {
+          e.currentTarget.style.transform = 'translateY(0)';
+          e.currentTarget.style.boxShadow = isFinished 
+            ? '0 2px 8px rgba(16,185,129,0.3)' 
+            : '0 2px 8px rgba(15,52,96,0.2)';
+        }}
+      >
         View Full Prescription →
       </button>
     </div>
@@ -197,60 +375,219 @@ export default function AmashaPatientPrescriptions() {
   useEffect(() => {
     const stored = localStorage.getItem('user');
     if (!stored) { navigate('/login'); return; }
-    setUser(JSON.parse(stored));
-    fetchPrescriptions();
+    const userData = JSON.parse(stored);
+    setUser(userData);
+    fetchPrescriptions(userData.id);
+    
+    // Set up real-time polling every 5 seconds
+    const interval = setInterval(() => {
+      fetchPrescriptions(userData.id);
+    }, 5000);
+    
+    return () => clearInterval(interval);
   }, [navigate]);
 
-  const fetchPrescriptions = async () => {
-    setLoading(true);
+  const fetchPrescriptions = async (userId) => {
+    console.log('[PatientPrescriptions] Fetching prescriptions for user_id:', userId);
     try {
-      const res = await fetch(`${API_URL}/api/patients/prescriptions`, { headers: { Authorization: `Bearer ${token}` } });
-      if (res.ok) setPrescriptions(await res.json());
-    } catch {}
-    finally { setLoading(false); }
+      const url = `${API_URL}/api/patients/me/prescriptions?user_id=${userId}`;
+      console.log('[PatientPrescriptions] API URL:', url);
+      
+      const res = await fetch(url, { 
+        headers: { 
+          Authorization: `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        } 
+      });
+      
+      console.log('[PatientPrescriptions] Response status:', res.status);
+      
+      if (res.ok) {
+        const data = await res.json();
+        console.log('[PatientPrescriptions] Received', data.length, 'prescriptions');
+        console.log('[PatientPrescriptions] Prescription data:', data);
+        setPrescriptions(data);
+      } else {
+        const errorText = await res.text();
+        console.error('[PatientPrescriptions] Error response:', errorText);
+      }
+    } catch (err) {
+      console.error('[PatientPrescriptions] Error fetching prescriptions:', err);
+    } finally {
+      setLoading(false);
+    }
   };
+
+  // Separate prescriptions by finished status
+  const finishedPrescriptions = prescriptions.filter(rx => rx.is_finished === true);
+  const activePrescriptions = prescriptions.filter(rx => rx.is_finished !== true);
 
   return (
     <div style={{ display: 'flex', minHeight: '100vh', fontFamily: "'DM Sans', 'Inter', sans-serif" }}>
       <Sidebar user={user} />
-      <main style={{ flex: 1, background: C.surface, padding: '36px 40px', overflow: 'auto' }}>
+      <main style={{ flex: 1, background: 'linear-gradient(135deg, #F8FAFC 0%, #EFF6FF 100%)', padding: '36px 40px', overflow: 'auto' }}>
         {/* Header */}
-        <div style={{ marginBottom: 32 }}>
-          <h1 style={{ margin: '0 0 6px', fontSize: 28, fontWeight: 800, color: C.navy, letterSpacing: '-0.5px' }}>My Prescriptions</h1>
-          <p style={{ margin: 0, color: C.slate, fontSize: 14 }}>View all prescriptions issued by your doctors</p>
+        <div style={{ marginBottom: 36 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 16, marginBottom: 8 }}>
+            <div style={{
+              width: 56,
+              height: 56,
+              borderRadius: 16,
+              background: 'linear-gradient(135deg, #3B82F6, #2563EB)',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              fontSize: 28,
+              boxShadow: '0 4px 12px rgba(59,130,246,0.3)'
+            }}>
+              💊
+            </div>
+            <div>
+              <h1 style={{ margin: 0, fontSize: 32, fontWeight: 800, color: C.navy, letterSpacing: '-0.5px' }}>My Prescriptions</h1>
+              <p style={{ margin: 0, color: C.slate, fontSize: 15 }}>View all prescriptions from your doctors</p>
+            </div>
+          </div>
         </div>
 
-        {/* Stats */}
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 16, marginBottom: 32 }}>
+        {/* Stats Cards */}
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 20, marginBottom: 36 }}>
           {[
-            { label: 'Total Prescriptions', value: prescriptions.length, icon: '📋', bg: C.tealLight, color: C.teal },
-            { label: 'Active (< 1 month)', value: prescriptions.filter(rx => (new Date() - new Date(rx.issued_at)) < 30 * 86400000).length, icon: '✅', bg: C.successLight, color: '#065F46' },
-            { label: 'New (< 3 days)', value: prescriptions.filter(rx => (new Date() - new Date(rx.issued_at)) < 3 * 86400000).length, icon: '🆕', bg: C.goldLight, color: '#92400E' },
+            { 
+              label: 'Active Prescriptions', 
+              value: activePrescriptions.length, 
+              icon: '💙', 
+              bg: 'linear-gradient(135deg, #DBEAFE, #BFDBFE)', 
+              color: '#2563EB',
+              description: 'Current medications'
+            },
+            { 
+              label: 'Finished Consultations', 
+              value: finishedPrescriptions.length, 
+              icon: '✅', 
+              bg: 'linear-gradient(135deg, #D1FAE5, #A7F3D0)', 
+              color: '#059669',
+              description: 'Completed visits'
+            },
+            { 
+              label: 'Total Prescriptions', 
+              value: prescriptions.length, 
+              icon: '📋', 
+              bg: 'linear-gradient(135deg, #FEF3C7, #FDE68A)', 
+              color: '#D97706',
+              description: 'All time'
+            },
           ].map((s, i) => (
-            <div key={i} style={{ background: C.white, borderRadius: 16, padding: '20px 22px', border: `1px solid ${C.border}`, display: 'flex', alignItems: 'center', gap: 14 }}>
-              <div style={{ width: 46, height: 46, borderRadius: 14, background: s.bg, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 22 }}>{s.icon}</div>
+            <div key={i} style={{ 
+              background: C.white, 
+              borderRadius: 20, 
+              padding: '24px 26px', 
+              border: `1.5px solid ${C.border}`,
+              boxShadow: '0 2px 12px rgba(0,0,0,0.04)',
+              display: 'flex', 
+              alignItems: 'center', 
+              gap: 16,
+              transition: 'all 0.2s'
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.transform = 'translateY(-2px)';
+              e.currentTarget.style.boxShadow = '0 8px 24px rgba(0,0,0,0.08)';
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.transform = 'translateY(0)';
+              e.currentTarget.style.boxShadow = '0 2px 12px rgba(0,0,0,0.04)';
+            }}
+            >
+              <div style={{ 
+                width: 52, 
+                height: 52, 
+                borderRadius: 16, 
+                background: s.bg, 
+                display: 'flex', 
+                alignItems: 'center', 
+                justifyContent: 'center', 
+                fontSize: 24 
+              }}>{s.icon}</div>
               <div>
-                <div style={{ fontSize: 28, fontWeight: 800, color: C.navy, lineHeight: 1 }}>{s.value}</div>
-                <div style={{ fontSize: 13, color: C.slate, marginTop: 4 }}>{s.label}</div>
+                <div style={{ fontSize: 32, fontWeight: 800, color: C.navy, lineHeight: 1 }}>{s.value}</div>
+                <div style={{ fontSize: 14, fontWeight: 600, color: C.navy, marginTop: 4 }}>{s.label}</div>
+                <div style={{ fontSize: 12, color: C.slate, marginTop: 2 }}>{s.description}</div>
               </div>
             </div>
           ))}
         </div>
 
         {loading ? (
-          <div style={{ textAlign: 'center', padding: '80px', background: C.white, borderRadius: 20, border: `1px solid ${C.border}` }}>
-            <div style={{ fontSize: 40, marginBottom: 12 }}>⏳</div>
-            <p style={{ color: C.slate }}>Loading your prescriptions...</p>
+          <div style={{ textAlign: 'center', padding: '80px', background: C.white, borderRadius: 20, border: `1.5px solid ${C.border}` }}>
+            <div style={{ fontSize: 48, marginBottom: 16, animation: 'pulse 2s infinite' }}>⏳</div>
+            <p style={{ color: C.slate, fontSize: 15, fontWeight: 600 }}>Loading your prescriptions...</p>
           </div>
         ) : prescriptions.length === 0 ? (
-          <div style={{ textAlign: 'center', padding: '80px 40px', background: C.white, borderRadius: 20, border: `1px solid ${C.border}` }}>
-            <div style={{ width: 80, height: 80, borderRadius: '50%', background: C.tealLight, display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 20px', fontSize: 36 }}>💊</div>
-            <h3 style={{ margin: '0 0 8px', color: C.navy, fontSize: 20, fontWeight: 700 }}>No prescriptions yet</h3>
-            <p style={{ color: C.slate, margin: 0 }}>Your doctor's prescriptions will appear here once issued.</p>
+          <div style={{ textAlign: 'center', padding: '80px 40px', background: C.white, borderRadius: 20, border: `1.5px solid ${C.border}` }}>
+            <div style={{ width: 90, height: 90, borderRadius: '50%', background: 'linear-gradient(135deg, #E0F2FE, #BAE6FD)', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 24px', fontSize: 42 }}>💊</div>
+            <h3 style={{ margin: '0 0 12px', color: C.navy, fontSize: 22, fontWeight: 700 }}>No prescriptions yet</h3>
+            <p style={{ color: C.slate, margin: 0, fontSize: 15 }}>Your doctor's prescriptions will appear here once issued.</p>
           </div>
         ) : (
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(420px, 1fr))', gap: 20 }}>
-            {prescriptions.map(rx => <PrescriptionCard key={rx.id} rx={rx} onView={setViewRx} />)}
+          <div>
+            {/* Active Prescriptions Section */}
+            {activePrescriptions.length > 0 && (
+              <section style={{ marginBottom: 40 }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 20 }}>
+                  <div style={{
+                    width: 8,
+                    height: 28,
+                    borderRadius: 4,
+                    background: 'linear-gradient(135deg, #3B82F6, #2563EB)'
+                  }} />
+                  <h2 style={{ fontSize: 24, fontWeight: 700, color: C.navy, margin: 0 }}>
+                    Active Prescriptions
+                  </h2>
+                  <span style={{
+                    background: 'linear-gradient(135deg, #3B82F6, #2563EB)',
+                    color: 'white',
+                    padding: '4px 14px',
+                    borderRadius: 20,
+                    fontSize: 13,
+                    fontWeight: 700
+                  }}>
+                    {activePrescriptions.length}
+                  </span>
+                </div>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(440px, 1fr))', gap: 20 }}>
+                  {activePrescriptions.map(rx => <PrescriptionCard key={rx.id} rx={rx} onView={setViewRx} />)}
+                </div>
+              </section>
+            )}
+
+            {/* Finished Consultations Section */}
+            {finishedPrescriptions.length > 0 && (
+              <section style={{ marginBottom: 40 }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 20 }}>
+                  <div style={{
+                    width: 8,
+                    height: 28,
+                    borderRadius: 4,
+                    background: 'linear-gradient(135deg, #10B981, #059669)'
+                  }} />
+                  <h2 style={{ fontSize: 24, fontWeight: 700, color: C.navy, margin: 0 }}>
+                    Finished Consultations
+                  </h2>
+                  <span style={{
+                    background: 'linear-gradient(135deg, #10B981, #059669)',
+                    color: 'white',
+                    padding: '4px 14px',
+                    borderRadius: 20,
+                    fontSize: 13,
+                    fontWeight: 700
+                  }}>
+                    {finishedPrescriptions.length}
+                  </span>
+                </div>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(440px, 1fr))', gap: 20 }}>
+                  {finishedPrescriptions.map(rx => <PrescriptionCard key={rx.id} rx={rx} onView={setViewRx} />)}
+                </div>
+              </section>
+            )}
           </div>
         )}
       </main>

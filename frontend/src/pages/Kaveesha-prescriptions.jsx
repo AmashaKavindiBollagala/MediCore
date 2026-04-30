@@ -226,6 +226,7 @@ export default function KaveeshaPrescriptions() {
   const [successMessage, setSuccessMessage] = useState('');
   const [editingPrescription, setEditingPrescription] = useState(null);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(null);
+  const [consultationSearch, setConsultationSearch] = useState('');
 
   useEffect(() => {
     const storedUser = localStorage.getItem('user');
@@ -280,6 +281,8 @@ export default function KaveeshaPrescriptions() {
         
         // Load prescriptions for ALL completed appointments in PARALLEL
         const prescriptionsSet = new Set();
+        const finishedSet = new Set();
+        
         const prescriptionChecks = completed.map(async (appt) => {
           try {
             const rxResponse = await fetch(`/api/doctors/me/prescriptions/appointment/${appt.id}`, {
@@ -288,24 +291,30 @@ export default function KaveeshaPrescriptions() {
             if (rxResponse.ok) {
               const rxData = await rxResponse.json();
               if (rxData.length > 0) {
-                return appt.id;
+                prescriptionsSet.add(appt.id);
+                
+                // Check if ANY prescription for this appointment has is_finished = TRUE
+                const hasFinished = rxData.some(rx => rx.is_finished === true);
+                if (hasFinished) {
+                  finishedSet.add(appt.id);
+                }
               }
             }
           } catch (err) {
             console.error(`Error loading prescriptions for appointment ${appt.id}:`, err);
           }
-          return null;
         });
         
         // Wait for all checks to complete in parallel
-        const results = await Promise.all(prescriptionChecks);
-        results.forEach(id => {
-          if (id) prescriptionsSet.add(id);
-        });
+        await Promise.all(prescriptionChecks);
         
         // Save to localStorage for persistence
         localStorage.setItem('appointmentsWithPrescriptions', JSON.stringify([...prescriptionsSet]));
         setAppointmentsWithPrescriptions(prescriptionsSet);
+        
+        // ONLY use database is_finished status, not localStorage
+        setFinishedConsultations(finishedSet);
+        localStorage.setItem('finishedConsultations', JSON.stringify([...finishedSet]));
       }
     } catch (err) {
       console.error('Error fetching completed appointments:', err);
@@ -315,6 +324,9 @@ export default function KaveeshaPrescriptions() {
   const handleSelectForPrescription = async (appt) => {
     setSelectedAppointment(appt);
     setShowPrescriptionForm(true);
+    
+    // CRITICAL: Clear editing state when starting a new prescription
+    setEditingPrescription(null);
     
     // Load existing prescriptions for this appointment
     setLoadingPrescriptions(true);
@@ -336,7 +348,7 @@ export default function KaveeshaPrescriptions() {
       setLoadingPrescriptions(false);
     }
     
-    // Reset form
+    // Reset form to create mode
     setForm({
       patient_id: appt.patient_id,
       diagnosis: appt.symptoms || '',
@@ -345,27 +357,52 @@ export default function KaveeshaPrescriptions() {
     });
   };
 
+  const handleClosePrescriptionForm = () => {
+    setShowPrescriptionForm(false);
+    setEditingPrescription(null);
+    setSelectedAppointment(null);
+    setAppointmentPrescriptions([]);
+  };
+
   const handleMarkFinished = async (appt) => {
-    // Add to finished consultations set and save to localStorage
-    setFinishedConsultations(prev => {
-      const newSet = new Set(prev);
-      newSet.add(appt.id);
-      // Persist to localStorage
-      localStorage.setItem('finishedConsultations', JSON.stringify([...newSet]));
-      return newSet;
-    });
-    
-    // Show success notification
-    setSuccessMessage('✅ Consultation marked as finished successfully!');
-    setShowSuccessNotification(true);
-    setTimeout(() => setShowSuccessNotification(false), 3000);
+    try {
+      // Call API to mark as finished in database
+      const response = await fetch(`/api/doctors/me/prescriptions/appointment/${appt.id}/finish`, {
+        method: 'PATCH',
+        headers: { 
+          Authorization: `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        }
+      });
+      
+      if (response.ok) {
+        // Update local state
+        setFinishedConsultations(prev => {
+          const newSet = new Set(prev);
+          newSet.add(appt.id);
+          // Persist to localStorage as backup
+          localStorage.setItem('finishedConsultations', JSON.stringify([...newSet]));
+          return newSet;
+        });
+        
+        // Show success notification
+        setSuccessMessage('✅ Consultation marked as finished successfully!');
+        setShowSuccessNotification(true);
+        setTimeout(() => setShowSuccessNotification(false), 3000);
+      } else {
+        const errorText = await response.text();
+        alert('❌ Failed to mark as finished: ' + errorText);
+      }
+    } catch (error) {
+      console.error('Error marking as finished:', error);
+      alert('❌ Failed to mark as finished. Please try again.');
+    }
   };
 
   const handleViewPrescription = async (appt) => {
     setSelectedAppointment(appt);
-    setShowPrescriptionForm(true);
     
-    // Load existing prescriptions for this appointment
+    // Load existing prescriptions for this appointment BEFORE showing the modal
     setLoadingPrescriptions(true);
     try {
       const response = await fetch(`/api/doctors/me/prescriptions/appointment/${appt.id}?t=${Date.now()}`, {
@@ -387,16 +424,30 @@ export default function KaveeshaPrescriptions() {
             notes: firstRx.notes || '',
             medications: meds.length > 0 ? meds : [{ name: '', dosage: '', frequency: '', duration: '', instructions: '' }]
           });
+        } else {
+          // No prescriptions - reset to create mode
+          setEditingPrescription(null);
+          setForm({
+            patient_id: appt.patient_id,
+            diagnosis: appt.symptoms || '',
+            notes: '',
+            medications: [{ name: '', dosage: '', frequency: '', duration: '', instructions: '' }]
+          });
         }
       } else {
         setAppointmentPrescriptions([]);
+        setEditingPrescription(null);
       }
     } catch (error) {
       console.error('Error loading prescriptions:', error);
       setAppointmentPrescriptions([]);
+      setEditingPrescription(null);
     } finally {
       setLoadingPrescriptions(false);
     }
+    
+    // NOW show the modal after state is set
+    setShowPrescriptionForm(true);
   };
 
   const handleViewReports = async (appt) => {
@@ -586,11 +637,18 @@ export default function KaveeshaPrescriptions() {
   const handleDeletePrescription = async (rxId) => {
     if (!confirm('Are you sure you want to delete this prescription?')) return;
     
+    console.log('🔴 Deleting prescription:', rxId);
+    console.log('🔴 URL:', `/api/doctors/me/prescriptions/${rxId}`);
+    
     try {
       const res = await fetch(`/api/doctors/me/prescriptions/${rxId}`, {
         method: 'DELETE',
         headers: { Authorization: `Bearer ${token}` }
       });
+      
+      console.log('🔴 Response status:', res.status);
+      const responseText = await res.text();
+      console.log('🔴 Response body:', responseText);
       
       if (res.ok) {
         // Reload prescriptions
@@ -640,10 +698,12 @@ export default function KaveeshaPrescriptions() {
         setSuccessMessage('🗑️ Prescription deleted successfully!');
         setShowSuccessNotification(true);
         setTimeout(() => setShowSuccessNotification(false), 3000);
+      } else {
+        alert('❌ Failed to delete prescription: ' + responseText);
       }
     } catch (error) {
       console.error('Error deleting prescription:', error);
-      alert('❌ Failed to delete prescription');
+      alert('❌ Failed to delete prescription: ' + error.message);
     }
   };
 
@@ -652,6 +712,14 @@ export default function KaveeshaPrescriptions() {
       alert('Please fill in all required fields');
       return;
     }
+    
+    console.log('🟡 Updating prescription:', editingPrescription.id);
+    console.log('🟡 URL:', `/api/doctors/me/prescriptions/${editingPrescription.id}`);
+    console.log('🟡 Body:', JSON.stringify({
+      prescription_data: { medications: form.medications },
+      notes: form.notes,
+      diagnosis: form.diagnosis
+    }, null, 2));
     
     setIsSubmitting(true);
     try {
@@ -664,6 +732,10 @@ export default function KaveeshaPrescriptions() {
           diagnosis: form.diagnosis
         }),
       });
+      
+      console.log('🟡 Response status:', res.status);
+      const responseText = await res.text();
+      console.log('🟡 Response body:', responseText);
       
       if (res.ok) {
         // Reload prescriptions
@@ -688,10 +760,12 @@ export default function KaveeshaPrescriptions() {
           notes: '',
           medications: [{ name: '', dosage: '', frequency: '', duration: '', instructions: '' }]
         });
+      } else {
+        alert('❌ Failed to update prescription: ' + responseText);
       }
     } catch (error) {
       console.error('Error updating prescription:', error);
-      alert('❌ Failed to update prescription');
+      alert('❌ Failed to update prescription: ' + error.message);
     } finally {
       setIsSubmitting(false);
     }
@@ -757,7 +831,21 @@ export default function KaveeshaPrescriptions() {
           </div>
         </div>
       )}
-      <aside style={{ width: sidebarOpen ? 260 : 78, minHeight: '100vh', background: COLORS.navy, display: 'flex', flexDirection: 'column', transition: 'width 0.3s cubic-bezier(.4,0,.2,1)', overflow: 'hidden', flexShrink: 0, boxShadow: '4px 0 24px rgba(24,78,119,0.15)' }}>
+      <aside style={{
+        width: sidebarOpen ? 260 : 78,
+        height: '100vh',
+        position: 'sticky',
+        top: 0,
+        left: 0,
+        background: COLORS.navy,
+        display: 'flex',
+        flexDirection: 'column',
+        transition: 'width 0.3s cubic-bezier(.4,0,.2,1)',
+        overflow: 'hidden',
+        flexShrink: 0,
+        boxShadow: '4px 0 24px rgba(24,78,119,0.15)',
+        zIndex: 100,
+      }}>
         <div style={{ padding: sidebarOpen ? '28px 22px 22px' : '28px 16px 22px', borderBottom: '1px solid rgba(255,255,255,0.1)', display: 'flex', alignItems: 'center', gap: 12 }}>
           <div style={{ width: 42, height: 42, borderRadius: 12, background: COLORS.teal, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
             <svg width="22" height="22" viewBox="0 0 24 24" fill="none"><path d="M12 5v14M5 12h14" stroke="white" strokeWidth="2.5" strokeLinecap="round"/></svg>
@@ -791,9 +879,41 @@ export default function KaveeshaPrescriptions() {
             );
           })}
         </nav>
-        <div style={{ padding: '14px 12px', borderTop: '1px solid rgba(255,255,255,0.1)' }}>
-          <button onClick={() => { localStorage.clear(); navigate('/login'); }} style={{ display: 'flex', alignItems: 'center', gap: 14, width: '100%', padding: '12px 14px', borderRadius: 12, border: 'none', cursor: 'pointer', background: 'transparent', color: COLORS.blush, fontSize: 15, fontWeight: 500 }}>
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none"><path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4M16 17l5-5-5-5M21 12H9" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/></svg>
+        <div style={{ padding: '14px 12px', borderTop: '1px solid rgba(255,255,255,0.08)' }}>
+          <button
+            onClick={() => { localStorage.clear(); navigate('/login'); }}
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: '12px',
+              width: '100%',
+              padding: '11px 14px',
+              borderRadius: '12px',
+              border: 'none',
+              cursor: 'pointer',
+              background: 'transparent',
+              color: '#FFB3C6',
+              fontSize: '14px',
+              fontWeight: '500',
+              textAlign: 'left',
+              justifyContent: sidebarOpen ? 'flex-start' : 'center',
+              transition: 'all 0.18s ease',
+              fontFamily: "'DM Sans', sans-serif",
+              position: 'relative',
+              overflow: 'hidden',
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.background = 'rgba(255,255,255,0.08)';
+              e.currentTarget.style.color = 'white';
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.background = 'transparent';
+              e.currentTarget.style.color = '#FFB3C6';
+            }}
+          >
+            <svg width="17" height="17" viewBox="0 0 24 24" fill="none">
+              <path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4M16 17l5-5-5-5M21 12H9" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/>
+            </svg>
             {sidebarOpen && 'Logout'}
           </button>
         </div>
@@ -818,23 +938,112 @@ export default function KaveeshaPrescriptions() {
       {/* Completed Video Consultations Section */}
       {completedAppointments.length > 0 && (
         <section style={{ marginBottom: 32 }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 20 }}>
-            <h2 style={{ fontSize: 22, fontWeight: 700, color: C.navy, margin: 0 }}>
-              Completed Video Consultations
-            </h2>
-            <span style={{
-              background: 'linear-gradient(135deg, #10B981, #059669)',
-              color: 'white',
-              padding: '4px 12px',
-              borderRadius: 20,
-              fontSize: 12,
-              fontWeight: 700
-            }}>
-              {completedAppointments.length}
-            </span>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20, flexWrap: 'wrap', gap: 16 }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+              <h2 style={{ fontSize: 22, fontWeight: 700, color: C.navy, margin: 0 }}>
+                Completed Video Consultations
+              </h2>
+              <span style={{
+                background: 'linear-gradient(135deg, #10B981, #059669)',
+                color: 'white',
+                padding: '4px 12px',
+                borderRadius: 20,
+                fontSize: 12,
+                fontWeight: 700
+              }}>
+                {completedAppointments.filter(appt => !finishedConsultations.has(appt.id)).length}
+              </span>
+            </div>
+            
+            {/* Search Input */}
+            <div style={{ position: 'relative', minWidth: 320 }}>
+              <svg 
+                style={{ 
+                  position: 'absolute', 
+                  left: 14, 
+                  top: '50%', 
+                  transform: 'translateY(-50%)', 
+                  pointerEvents: 'none',
+                  color: C.slate
+                }} 
+                width="18" 
+                height="18" 
+                viewBox="0 0 24 24" 
+                fill="none"
+              >
+                <circle cx="11" cy="11" r="8" stroke="currentColor" strokeWidth="2"/>
+                <path d="M21 21l-4.35-4.35" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
+              </svg>
+              <input
+                type="text"
+                placeholder="Search by patient name or symptoms..."
+                value={consultationSearch}
+                onChange={(e) => setConsultationSearch(e.target.value)}
+                style={{
+                  width: '100%',
+                  padding: '12px 16px 12px 44px',
+                  borderRadius: 12,
+                  border: `2px solid ${C.border}`,
+                  fontSize: 14,
+                  color: '#000000',
+                  outline: 'none',
+                  background: 'white',
+                  boxSizing: 'border-box',
+                  transition: 'all 0.2s'
+                }}
+                onFocus={(e) => {
+                  e.target.style.borderColor = C.accent;
+                  e.target.style.boxShadow = `0 0 0 3px ${C.accentLight}`;
+                }}
+                onBlur={(e) => {
+                  e.target.style.borderColor = C.border;
+                  e.target.style.boxShadow = 'none';
+                }}
+              />
+              {consultationSearch && (
+                <button
+                  onClick={() => setConsultationSearch('')}
+                  style={{
+                    position: 'absolute',
+                    right: 12,
+                    top: '50%',
+                    transform: 'translateY(-50%)',
+                    background: '#F1F5F9',
+                    border: 'none',
+                    borderRadius: '50%',
+                    width: 24,
+                    height: 24,
+                    cursor: 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    fontSize: 14,
+                    color: C.slate,
+                    transition: 'all 0.2s'
+                  }}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.background = '#E2E8F0';
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.background = '#F1F5F9';
+                  }}
+                >
+                  ×
+                </button>
+              )}
+            </div>
           </div>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(340px, 1fr))', gap: 18 }}>
-            {completedAppointments.map(appt => {
+            {completedAppointments
+              .filter(appt => !finishedConsultations.has(appt.id))
+              .filter(appt => {
+                if (!consultationSearch) return true;
+                const searchLower = consultationSearch.toLowerCase();
+                const patientName = (appt.patient_name || '').toLowerCase();
+                const symptoms = (appt.symptoms || '').toLowerCase();
+                return patientName.includes(searchLower) || symptoms.includes(searchLower);
+              })
+              .map(appt => {
               const isFinished = finishedConsultations.has(appt.id);
               const hasPrescription = appointmentsWithPrescriptions.has(appt.id);
               
@@ -1116,7 +1325,302 @@ export default function KaveeshaPrescriptions() {
                 </div>
               </div>
             );
-            })}
+              })}
+            
+            {/* No Results Message */}
+            {completedAppointments.filter(appt => !finishedConsultations.has(appt.id)).filter(appt => {
+              if (!consultationSearch) return true;
+              const searchLower = consultationSearch.toLowerCase();
+              const patientName = (appt.patient_name || '').toLowerCase();
+              const symptoms = (appt.symptoms || '').toLowerCase();
+              return patientName.includes(searchLower) || symptoms.includes(searchLower);
+            }).length === 0 && (
+              <div style={{ 
+                gridColumn: '1 / -1',
+                textAlign: 'center', 
+                padding: '60px 20px',
+                background: 'white',
+                borderRadius: 18,
+                border: `2px dashed ${C.border}`
+              }}>
+                <div style={{ fontSize: 48, marginBottom: 16 }}>🔍</div>
+                <h3 style={{ fontSize: 18, fontWeight: 700, color: C.navy, marginBottom: 8 }}>
+                  No consultations found
+                </h3>
+                <p style={{ fontSize: 14, color: C.slate, margin: 0 }}>
+                  Try adjusting your search for "{consultationSearch}"
+                </p>
+                <button
+                  onClick={() => setConsultationSearch('')}
+                  style={{
+                    marginTop: 16,
+                    background: C.accent,
+                    color: 'white',
+                    border: 'none',
+                    padding: '10px 20px',
+                    borderRadius: 10,
+                    fontSize: 13,
+                    fontWeight: 700,
+                    cursor: 'pointer'
+                  }}
+                >
+                  Clear Search
+                </button>
+              </div>
+            )}
+          </div>
+        </section>
+      )}
+
+      {/* Finished Consultations Section */}
+      {completedAppointments.filter(appt => finishedConsultations.has(appt.id)).length > 0 && (
+        <section style={{ marginBottom: 32 }}>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20, flexWrap: 'wrap', gap: 16 }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+              <h2 style={{ fontSize: 22, fontWeight: 700, color: C.navy, margin: 0 }}>
+                Finished Consultations
+              </h2>
+              <span style={{
+                background: 'linear-gradient(135deg, #3B82F6, #2563EB)',
+                color: 'white',
+                padding: '4px 12px',
+                borderRadius: 20,
+                fontSize: 12,
+                fontWeight: 700
+              }}>
+                {completedAppointments.filter(appt => finishedConsultations.has(appt.id)).length}
+              </span>
+            </div>
+          </div>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(340px, 1fr))', gap: 18 }}>
+            {completedAppointments
+              .filter(appt => finishedConsultations.has(appt.id))
+              .filter(appt => {
+                if (!consultationSearch) return true;
+                const searchLower = consultationSearch.toLowerCase();
+                const patientName = (appt.patient_name || '').toLowerCase();
+                const symptoms = (appt.symptoms || '').toLowerCase();
+                return patientName.includes(searchLower) || symptoms.includes(searchLower);
+              })
+              .map(appt => {
+                const hasPrescription = appointmentsWithPrescriptions.has(appt.id);
+                
+                return (
+                <div key={appt.id} style={{
+                  background: 'linear-gradient(135deg, #EFF6FF 0%, #DBEAFE 100%)',
+                  borderRadius: 18,
+                  padding: 22,
+                  border: '1.5px solid #93C5FD',
+                  cursor: 'pointer',
+                  transition: 'all 0.25s cubic-bezier(0.4, 0, 0.2, 1)',
+                  boxShadow: '0 2px 8px rgba(59,130,246,0.15)',
+                  position: 'relative',
+                  overflow: 'hidden'
+                }}
+                onClick={() => setSelectedAppointment(appt)}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.boxShadow = '0 8px 24px rgba(59,130,246,0.25)';
+                  e.currentTarget.style.transform = 'translateY(-4px)';
+                  e.currentTarget.style.borderColor = '#60A5FA';
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.boxShadow = '0 2px 8px rgba(59,130,246,0.15)';
+                  e.currentTarget.style.transform = 'translateY(0)';
+                  e.currentTarget.style.borderColor = '#93C5FD';
+                }}
+                >
+                  {/* Accent bar at top */}
+                  <div style={{
+                    position: 'absolute',
+                    top: 0,
+                    left: 0,
+                    right: 0,
+                    height: 4,
+                    background: 'linear-gradient(90deg, #3B82F6, #60A5FA)'
+                  }} />
+                  
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'start', marginBottom: 14 }}>
+                    <div style={{ flex: 1 }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 6 }}>
+                        <div style={{
+                          width: 40,
+                          height: 40,
+                          borderRadius: '50%',
+                          background: 'linear-gradient(135deg, #3B82F6, #60A5FA)',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          color: 'white',
+                          fontSize: 16,
+                          fontWeight: 700
+                        }}>
+                          {(appt.patient_name || 'P').charAt(0).toUpperCase()}
+                        </div>
+                        <div>
+                          <h3 style={{ fontSize: 16, fontWeight: 700, color: C.navy, marginBottom: 2, margin: 0 }}>
+                            {appt.patient_name || 'Patient'}
+                          </h3>
+                          <p style={{ fontSize: 12, color: C.slate, margin: 0 }}>
+                            {new Date(appt.scheduled_at).toLocaleDateString('en-US', { day: 'numeric', month: 'short', year: 'numeric' })}
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: 6, alignItems: 'flex-end' }}>
+                      <span style={{
+                        background: 'linear-gradient(135deg, #EFF6FF, #DBEAFE)',
+                        color: '#2563EB',
+                        padding: '5px 12px',
+                        borderRadius: 20,
+                        fontSize: 11,
+                        fontWeight: 700,
+                        border: '1px solid #93C5FD',
+                        whiteSpace: 'nowrap'
+                      }}>
+                        ✅ Finished
+                      </span>
+                      {hasPrescription && (
+                        <span style={{
+                          background: 'linear-gradient(135deg, #FFF7ED, #FFEDD5)',
+                          color: '#EA580C',
+                          padding: '5px 12px',
+                          borderRadius: 20,
+                          fontSize: 11,
+                          fontWeight: 700,
+                          border: '1px solid #FED7AA',
+                          whiteSpace: 'nowrap'
+                        }}>
+                          💊 Prescription Issued
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                  
+                  {appt.symptoms && (
+                    <div style={{
+                      background: '#F1F5F9',
+                      padding: '10px 12px',
+                      borderRadius: 10,
+                      marginBottom: 16,
+                      border: '1px solid #E2E8F0'
+                    }}>
+                      <p style={{ fontSize: 10, fontWeight: 700, color: C.slate, marginBottom: 4, textTransform: 'uppercase', letterSpacing: 0.5, margin: '0 0 4px 0' }}>
+                        🩺 Symptoms
+                      </p>
+                      <p style={{ fontSize: 13, color: C.navy, lineHeight: 1.5, margin: 0 }}>
+                        {appt.symptoms}
+                      </p>
+                    </div>
+                  )}
+                  
+                  <div style={{ display: 'flex', gap: 10 }}>
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleViewPrescription(appt);
+                      }}
+                      style={{
+                        flex: 1,
+                        background: 'linear-gradient(135deg, #3B82F6, #2563EB)',
+                        color: C.white,
+                        border: 'none',
+                        padding: '10px 14px',
+                        borderRadius: 10,
+                        fontSize: 12,
+                        fontWeight: 700,
+                        cursor: 'pointer',
+                        transition: 'all 0.2s',
+                        boxShadow: '0 2px 8px rgba(59,130,246,0.3)'
+                      }}
+                      onMouseEnter={(e) => {
+                        e.currentTarget.style.transform = 'translateY(-1px)';
+                        e.currentTarget.style.boxShadow = '0 4px 12px rgba(59,130,246,0.4)';
+                      }}
+                      onMouseLeave={(e) => {
+                        e.currentTarget.style.transform = 'translateY(0)';
+                        e.currentTarget.style.boxShadow = '0 2px 8px rgba(59,130,246,0.3)';
+                      }}
+                    >
+                      👁️ View Prescription
+                    </button>
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleViewReports(appt);
+                      }}
+                      style={{
+                        flex: 1,
+                        background: hasPrescription 
+                          ? 'linear-gradient(135deg, #FEF3C7, #FDE68A)'
+                          : 'linear-gradient(135deg, #E8FAF8, #D5F5F0)',
+                        color: hasPrescription ? '#D97706' : C.accent,
+                        border: `1.5px solid ${hasPrescription ? '#FCD34D' : '#B2EDE7'}`,
+                        padding: '10px 14px',
+                        borderRadius: 10,
+                        fontSize: 12,
+                        fontWeight: 700,
+                        cursor: 'pointer',
+                        transition: 'all 0.2s'
+                      }}
+                      onMouseEnter={(e) => {
+                        e.currentTarget.style.background = hasPrescription ? '#FDE68A' : '#D5F5F0';
+                        e.currentTarget.style.transform = 'translateY(-1px)';
+                      }}
+                      onMouseLeave={(e) => {
+                        e.currentTarget.style.background = hasPrescription 
+                          ? 'linear-gradient(135deg, #FEF3C7, #FDE68A)'
+                          : 'linear-gradient(135deg, #E8FAF8, #D5F5F0)';
+                        e.currentTarget.style.transform = 'translateY(0)';
+                      }}
+                    >
+                      📄 View Reports
+                    </button>
+                  </div>
+                </div>
+              );
+              })}
+            
+            {/* No Results Message for Finished */}
+            {completedAppointments.filter(appt => finishedConsultations.has(appt.id)).filter(appt => {
+              if (!consultationSearch) return true;
+              const searchLower = consultationSearch.toLowerCase();
+              const patientName = (appt.patient_name || '').toLowerCase();
+              const symptoms = (appt.symptoms || '').toLowerCase();
+              return patientName.includes(searchLower) || symptoms.includes(searchLower);
+            }).length === 0 && (
+              <div style={{ 
+                gridColumn: '1 / -1',
+                textAlign: 'center', 
+                padding: '60px 20px',
+                background: 'white',
+                borderRadius: 18,
+                border: `2px dashed ${C.border}`
+              }}>
+                <div style={{ fontSize: 48, marginBottom: 16 }}>🔍</div>
+                <h3 style={{ fontSize: 18, fontWeight: 700, color: C.navy, marginBottom: 8 }}>
+                  No finished consultations found
+                </h3>
+                <p style={{ fontSize: 14, color: C.slate, margin: 0 }}>
+                  Try adjusting your search for "{consultationSearch}"
+                </p>
+                <button
+                  onClick={() => setConsultationSearch('')}
+                  style={{
+                    marginTop: 16,
+                    background: C.accent,
+                    color: 'white',
+                    border: 'none',
+                    padding: '10px 20px',
+                    borderRadius: 10,
+                    fontSize: 13,
+                    fontWeight: 700,
+                    cursor: 'pointer'
+                  }}
+                >
+                  Clear Search
+                </button>
+              </div>
+            )}
           </div>
         </section>
       )}
@@ -1457,7 +1961,7 @@ export default function KaveeshaPrescriptions() {
           padding: '40px 24px',
           overflow: 'auto',
           animation: 'fadeIn 0.2s ease-out'
-        }} onClick={() => setShowPrescriptionForm(false)}>
+        }} onClick={handleClosePrescriptionForm}>
           <div style={{ 
             background: C.white, 
             borderRadius: 28, 
@@ -1503,7 +2007,7 @@ export default function KaveeshaPrescriptions() {
                   </div>
                 </div>
                 <button 
-                  onClick={() => setShowPrescriptionForm(false)} 
+                  onClick={handleClosePrescriptionForm} 
                   style={{ 
                     background: 'rgba(255,255,255,0.2)', 
                     backdropFilter: 'blur(10px)',
