@@ -6,6 +6,7 @@ const {
   sendAppointmentConfirmationEmail,
   sendDoctorAppointmentEmail,
   sendConsultationCompletionEmail,
+  sendPaymentConfirmationEmail,
 } = require('../services/emailService');
 
 const worker = new Worker(
@@ -19,13 +20,19 @@ const worker = new Worker(
       // ── SMS ────────────────────────────────────────────────────────────────
       case 'SEND_SMS': {
         const result = await sendSMS(data.to, data.message);
-        console.log('✅ SMS sent:', result.sid);
+        console.log('✅ SMS sent successfully');
         return result;
       }
 
       // ── Appointment booked: notify patient ─────────────────────────────────
       case 'APPOINTMENT_CONFIRMATION_EMAIL': {
         const result = await sendAppointmentConfirmationEmail(data.to, data);
+        return result;
+      }
+
+      // ── Payment Success: notify patient ──────────────────────────────────────
+      case 'PAYMENT_CONFIRMATION_EMAIL': {
+        const result = await sendPaymentConfirmationEmail(data.to, data);
         return result;
       }
 

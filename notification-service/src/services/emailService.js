@@ -135,8 +135,74 @@ const sendConsultationCompletionEmail = async (to, data) => {
   return result;
 };
 
+// ── Payment Success Confirmation ──────────────────────────────────────────────
+const sendPaymentConfirmationEmail = async (to, data) => {
+  const { patientName, doctorName, date, time, appointmentId, amount, transactionId } = data;
+
+  const mailOptions = {
+    from: process.env.EMAIL_FROM,
+    to,
+    subject: '💳 Payment Successful - MediCore',
+    html: `
+      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: auto; border: 1px solid #e0e0e0; border-radius: 8px; overflow: hidden;">
+        <div style="background-color: #198754; padding: 20px; text-align: center;">
+          <h1 style="color: white; margin: 0;">MediCore Health</h1>
+        </div>
+        <div style="padding: 30px;">
+          <h2 style="color: #198754;">Payment Successful ✅</h2>
+          <p>Dear <strong>${patientName}</strong>,</p>
+          <p>Your payment for the appointment has been successfully processed. Here are your payment details:</p>
+          <table style="width: 100%; border-collapse: collapse; margin: 20px 0;">
+            <tr style="background-color: #f8f9fa;">
+              <td style="padding: 10px; border: 1px solid #dee2e6;"><strong>Transaction ID</strong></td>
+              <td style="padding: 10px; border: 1px solid #dee2e6;">${transactionId || 'N/A'}</td>
+            </tr>
+            <tr>
+              <td style="padding: 10px; border: 1px solid #dee2e6;"><strong>Appointment ID</strong></td>
+              <td style="padding: 10px; border: 1px solid #dee2e6;">${appointmentId}</td>
+            </tr>
+            <tr style="background-color: #f8f9fa;">
+              <td style="padding: 10px; border: 1px solid #dee2e6;"><strong>Doctor</strong></td>
+              <td style="padding: 10px; border: 1px solid #dee2e6;">Dr. ${doctorName}</td>
+            </tr>
+            <tr>
+              <td style="padding: 10px; border: 1px solid #dee2e6;"><strong>Date</strong></td>
+              <td style="padding: 10px; border: 1px solid #dee2e6;">${date}</td>
+            </tr>
+            <tr style="background-color: #f8f9fa;">
+              <td style="padding: 10px; border: 1px solid #dee2e6;"><strong>Time</strong></td>
+              <td style="padding: 10px; border: 1px solid #dee2e6;">${time}</td>
+            </tr>
+            <tr>
+              <td style="padding: 10px; border: 1px solid #dee2e6;"><strong>Amount Paid</strong></td>
+              <td style="padding: 10px; border: 1px solid #dee2e6; color: #198754; font-weight: bold; font-size: 18px;">LKR ${parseFloat(amount).toLocaleString()}</td>
+            </tr>
+            <tr style="background-color: #f8f9fa;">
+              <td style="padding: 10px; border: 1px solid #dee2e6;"><strong>Payment Status</strong></td>
+              <td style="padding: 10px; border: 1px solid #dee2e6; color: #198754; font-weight: bold;">✅ SUCCESS</td>
+            </tr>
+          </table>
+          <div style="background-color: #d1e7dd; border-left: 4px solid #198754; padding: 15px; margin: 20px 0; border-radius: 4px;">
+            <strong>Appointment Confirmed!</strong>
+            <p style="margin: 5px 0 0 0;">Your appointment is now fully confirmed. Please log in to your MediCore dashboard to view appointment details.</p>
+          </div>
+          <p style="color: #6c757d; font-size: 14px;">If you have any questions about this payment, please contact our support team.</p>
+        </div>
+        <div style="background-color: #f8f9fa; padding: 15px; text-align: center; font-size: 12px; color: #6c757d;">
+          © 2025 MediCore Health. All rights reserved.
+        </div>
+      </div>
+    `,
+  };
+
+  const result = await transporter.sendMail(mailOptions);
+  console.log('✅ Payment confirmation email sent:', result.messageId);
+  return result;
+};
+
 module.exports = {
   sendAppointmentConfirmationEmail,
   sendDoctorAppointmentEmail,
   sendConsultationCompletionEmail,
+  sendPaymentConfirmationEmail,
 };

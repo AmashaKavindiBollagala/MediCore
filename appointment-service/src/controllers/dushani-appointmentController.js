@@ -213,6 +213,76 @@ class AppointmentController {
         return res.status(result.status).json({ error: result.error });
       }
 
+      // ─── TRIGGER CONSULTATION COMPLETION NOTIFICATIONS ───────────────────
+      const appointment = result.data;
+      
+      // Send notifications asynchronously (don't block the response)
+      setImmediate(async () => {
+        try {
+          console.log('📧 Triggering consultation completion notifications...');
+          
+          const notificationServiceUrl = process.env.NOTIFICATION_SERVICE_URL || 'http://localhost:3000';
+          const authServiceUrl = process.env.AUTH_SERVICE_URL || 'http://localhost:3001';
+          const doctorServiceUrl = process.env.DOCTOR_SERVICE_URL || 'http://localhost:3003';
+          
+          // Fetch patient info from auth-service
+          let patientInfo = null;
+          try {
+            const patientRes = await fetch(`${authServiceUrl}/api/auth/users/${appointment.patient_id}`);
+            if (patientRes.ok) {
+              patientInfo = await patientRes.json();
+              console.log('✅ Patient info fetched:', patientInfo.email, patientInfo.phone);
+            }
+          } catch (err) {
+            console.error('❌ Failed to fetch patient info:', err.message);
+          }
+          
+          // Fetch doctor info from doctor-service
+          let doctorInfo = null;
+          try {
+            const doctorRes = await fetch(`${doctorServiceUrl}/doctors/${appointment.doctor_id}`);
+            if (doctorRes.ok) {
+              const doctorData = await doctorRes.json();
+              doctorInfo = doctorData.success ? doctorData.data : doctorData;
+              console.log('✅ Doctor info fetched:', doctorInfo.email, doctorInfo.phone);
+            }
+          } catch (err) {
+            console.error('❌ Failed to fetch doctor info:', err.message);
+          }
+          
+          // Parse appointment date
+          const appointmentDate = new Date(appointment.scheduled_at).toLocaleDateString('en-US', {
+            year: 'numeric',
+            month: 'long',
+            day: 'numeric'
+          });
+          
+          // Send consultation completion email to patient
+          if (patientInfo?.email) {
+            const notificationRes = await fetch(`${notificationServiceUrl}/api/notifications/email/consultation-completion`, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                to: patientInfo.email,
+                patientName: patientInfo.name || appointment.patient_name,
+                doctorName: doctorInfo?.full_name || doctorInfo?.first_name + ' ' + doctorInfo?.last_name || 'Doctor',
+                date: appointmentDate,
+                notes: 'Thank you for choosing MediCore. Your consultation has been completed successfully.'
+              })
+            });
+            
+            if (notificationRes.ok) {
+              console.log('✅ Consultation completion notification sent');
+            } else {
+              console.error('❌ Failed to send completion notification:', await notificationRes.text());
+            }
+          }
+        } catch (err) {
+          console.error('❌ Consultation completion notification trigger error:', err.message);
+          console.error(err.stack);
+        }
+      });
+
       res.json({
         success: true,
         message: 'Appointment marked as completed',

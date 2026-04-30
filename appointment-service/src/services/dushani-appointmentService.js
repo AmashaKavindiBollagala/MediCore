@@ -119,10 +119,8 @@ class AppointmentService {
 
 
 
-      const patientIdStr = patientId.toString();
-      const finalPatientId = patientIdStr.includes('-') 
-        ? patientIdStr 
-        : `00000000-0000-0000-0000-${patientIdStr.padStart(12, '0')}`;
+      // Use the patient ID as-is (auth-service uses integer IDs, not UUIDs)
+      const finalPatientId = patientId.toString();
 
 
       const conflictQuery = `
@@ -158,7 +156,134 @@ class AppointmentService {
       ]);
 
       await client.query('COMMIT');
-      return { success: true, data: result.rows[0] };
+      
+      const appointment = result.rows[0];
+      
+      console.log('\n=== APPOINTMENT CREATED SUCCESSFULLY ===');
+      console.log('Appointment ID:', appointment.id);
+      console.log('Patient ID:', finalPatientId);
+      console.log('Doctor ID:', doctor_id);
+      console.log('Scheduled at:', appointment.scheduled_at);
+      console.log('=========================================\n');
+      
+      // ─── TRIGGER APPOINTMENT BOOKING NOTIFICATIONS ───────────────────
+      // Send notifications asynchronously (don't block the response)
+      console.log('🚀 About to trigger notifications...');
+      
+      setImmediate(async () => {
+        try {
+          console.log('\n📧 Triggering appointment booking notifications...');
+          
+          const notificationServiceUrl = process.env.NOTIFICATION_SERVICE_URL || 'http://localhost:3000';
+          const authServiceUrl = process.env.AUTH_SERVICE_URL || 'http://localhost:3001';
+          const doctorServiceUrl = process.env.DOCTOR_SERVICE_URL || 'http://localhost:3003';
+          
+          // Fetch patient info from auth-service
+          let patientInfo = null;
+          try {
+            console.log(`📡 Fetching patient info from: ${authServiceUrl}/api/auth/users/${finalPatientId}`);
+            const patientRes = await fetch(`${authServiceUrl}/api/auth/users/${finalPatientId}`);
+            if (patientRes.ok) {
+              patientInfo = await patientRes.json();
+              console.log('✅ Patient info fetched:', patientInfo.email, patientInfo.phone);
+            } else {
+              console.log(`⚠️  Auth-service returned ${patientRes.status} - will try alternative method`);
+            }
+          } catch (err) {
+            console.error('❌ Failed to fetch patient info:', err.message);
+            console.log('💡 Tip: Make sure auth-service is running on port 3001');
+          }
+          
+          // Fetch doctor info from doctor-service
+          let doctorInfo = null;
+          try {
+            console.log(`📡 Fetching doctor info from: ${doctorServiceUrl}/doctors/${doctor_id}`);
+            const doctorRes = await fetch(`${doctorServiceUrl}/doctors/${doctor_id}`);
+            if (doctorRes.ok) {
+              const doctorData = await doctorRes.json();
+              doctorInfo = doctorData.success ? doctorData.data : doctorData;
+              console.log('✅ Doctor info fetched:', doctorInfo.email, doctorInfo.phone);
+            } else {
+              console.log(`⚠️  Doctor-service returned ${doctorRes.status}`);
+            }
+          } catch (err) {
+            console.error('❌ Failed to fetch doctor info:', err.message);
+            console.log('💡 Tip: Make sure doctor-service is running on port 3003');
+          }
+          
+          // If patient info not available, use appointment data as fallback
+          if (!patientInfo?.email) {
+            console.log('⚠️  Patient email not available from auth-service');
+            console.log('💡 Using fallback: Check if patient_email column exists in appointments table');
+          }
+          
+          // If doctor info not available, use minimal data
+          if (!doctorInfo?.email) {
+            console.log('⚠️  Doctor email not available from doctor-service');
+            console.log('💡 Notification will be sent with limited doctor info');
+          }
+          
+          // Only send notifications if we have at least one email
+          if (patientInfo?.email || doctorInfo?.email) {
+            // Parse appointment date and time
+            const appointmentDate = new Date(appointment.scheduled_at).toLocaleDateString('en-US', {
+              year: 'numeric',
+              month: 'long',
+              day: 'numeric'
+            });
+            const appointmentTime = new Date(appointment.scheduled_at).toLocaleTimeString('en-US', {
+              hour: '2-digit',
+              minute: '2-digit'
+            });
+            
+            console.log('\n📨 Sending notification request...');
+            console.log(`   Patient Email: ${patientInfo?.email || 'NOT AVAILABLE'}`);
+            console.log(`   Doctor Email: ${doctorInfo?.email || 'NOT AVAILABLE'}`);
+            console.log(`   Appointment ID: ${appointment.id}`);
+            console.log(`   Date: ${appointmentDate} ${appointmentTime}`);
+            
+            const notificationRes = await fetch(`${notificationServiceUrl}/api/notifications/appointment-booking`, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                patientEmail: patientInfo?.email || null,
+                patientPhone: patientInfo?.phone || null,
+                patientName: patientInfo?.name || appointment.patient_name || 'Patient',
+                doctorEmail: doctorInfo?.email || null,
+                doctorPhone: doctorInfo?.phone || null,
+                doctorName: doctorInfo?.full_name || doctorInfo?.first_name + ' ' + doctorInfo?.last_name || 'Doctor',
+                appointmentId: appointment.id,
+                appointmentDate,
+                appointmentTime,
+                amount: appointment.consultation_fee
+              })
+            });
+            
+            if (notificationRes.ok) {
+              const notificationResult = await notificationRes.json();
+              console.log('✅ Appointment booking notifications sent successfully!');
+              console.log('   Jobs queued:', notificationResult.jobsQueued);
+              console.log('   Details:', JSON.stringify(notificationResult.jobs, null, 2));
+            } else {
+              const errorText = await notificationRes.text();
+              console.error('❌ Failed to send booking notifications');
+              console.error('   Error:', errorText);
+            }
+          } else {
+            console.log('\n⚠️  SKIPPING NOTIFICATIONS: No email addresses available');
+            console.log('   To fix this, ensure:');
+            console.log('   1. Auth-service is running (port 3001)');
+            console.log('   2. Doctor-service is running (port 3003)');
+            console.log('   3. Patient has an email in the users table');
+            console.log('   4. Doctor has an email in the doctors table');
+          }
+        } catch (err) {
+          console.error('❌ Appointment booking notification trigger error:', err.message);
+          console.error(err.stack);
+        }
+      });
+      
+      return { success: true, data: appointment };
 
     } catch (error) {
       await client.query('ROLLBACK');
@@ -194,10 +319,8 @@ class AppointmentService {
 
   async getPatientAppointments(patientId, status) {
 
-    const patientIdStr = patientId.toString();
-    const finalPatientId = patientIdStr.includes('-') 
-      ? patientIdStr 
-      : `00000000-0000-0000-0000-${patientIdStr.padStart(12, '0')}`;
+    // Use the patient ID as-is (auth-service uses integer IDs, not UUIDs)
+    const finalPatientId = patientId.toString();
 
     let query = `
       SELECT a.*
@@ -352,15 +475,13 @@ class AppointmentService {
 
 
       if (userRole === 'patient') {
-
+        // Use the user ID as-is (auth-service uses integer IDs)
         const userIdStr = userId.toString();
-        const userIdUuid = userIdStr.includes('-')
-          ? userIdStr 
-          : `00000000-0000-0000-0000-${userIdStr.padStart(12, '0')}`;
         
-        console.log('Cancel appointment - Converted User ID to UUID:', userIdUuid);
+        console.log('Cancel appointment - User ID from JWT:', userIdStr);
+        console.log('Cancel appointment - Patient ID from DB:', appointment.patient_id);
         
-        if (appointment.patient_id !== userIdUuid) {
+        if (appointment.patient_id !== userIdStr) {
           console.log('Authorization failed - Patient IDs do not match');
           await client.query('ROLLBACK');
           return { error: 'Not authorized', status: 403 };
@@ -478,13 +599,10 @@ class AppointmentService {
 
 
       if (userRole === 'patient') {
-
+        // Use the user ID as-is (auth-service uses integer IDs)
         const userIdStr = userId.toString();
-        const userIdUuid = userIdStr.includes('-')
-          ? userIdStr 
-          : `00000000-0000-0000-0000-${userIdStr.padStart(12, '0')}`;
         
-        if (appointment.patient_id !== userIdUuid) {
+        if (appointment.patient_id !== userIdStr) {
           await client.query('ROLLBACK');
           return { error: 'Not authorized', status: 403 };
         }
@@ -685,12 +803,10 @@ class AppointmentService {
 
       // Verify user is part of this appointment
       if (userRole === 'patient') {
+        // Use the user ID as-is (auth-service uses integer IDs)
         const userIdStr = userId.toString();
-        const userIdUuid = userIdStr.includes('-')
-          ? userIdStr 
-          : `00000000-0000-0000-0000-${userIdStr.padStart(12, '0')}`;
         
-        if (appointment.patient_id !== userIdUuid) {
+        if (appointment.patient_id !== userIdStr) {
           return { error: 'Not authorized for this appointment', status: 403 };
         }
       } else if (userRole === 'doctor') {

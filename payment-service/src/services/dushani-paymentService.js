@@ -630,6 +630,85 @@ class PaymentService {
           appointment_id: payment.appointment_id
         });
         
+        // ─── TRIGGER NOTIFICATIONS ──────────────────────────────────────
+        // Send notifications asynchronously (don't block the webhook response)
+        setImmediate(async () => {
+          try {
+            console.log('📧 Triggering payment success notifications...');
+            
+            const appointment = appointmentResult.rows[0];
+            const notificationServiceUrl = process.env.NOTIFICATION_SERVICE_URL || 'http://localhost:3000';
+            const authServiceUrl = process.env.AUTH_SERVICE_URL || 'http://localhost:3001';
+            const doctorServiceUrl = process.env.DOCTOR_SERVICE_URL || 'http://localhost:3003';
+            
+            // Fetch patient info from auth-service
+            let patientInfo = null;
+            try {
+              const patientRes = await fetch(`${authServiceUrl}/api/auth/users/${appointment.patient_id}`);
+              if (patientRes.ok) {
+                patientInfo = await patientRes.json();
+                console.log('✅ Patient info fetched:', patientInfo.email, patientInfo.phone);
+              }
+            } catch (err) {
+              console.error('❌ Failed to fetch patient info:', err.message);
+            }
+            
+            // Fetch doctor info from doctor-service
+            let doctorInfo = null;
+            try {
+              const doctorRes = await fetch(`${doctorServiceUrl}/doctors/${appointment.doctor_id}`);
+              if (doctorRes.ok) {
+                const doctorData = await doctorRes.json();
+                doctorInfo = doctorData.success ? doctorData.data : doctorData;
+                console.log('✅ Doctor info fetched:', doctorInfo.email, doctorInfo.phone);
+              }
+            } catch (err) {
+              console.error('❌ Failed to fetch doctor info:', err.message);
+            }
+            
+            // Parse appointment date and time
+            const appointmentDate = new Date(appointment.scheduled_at).toLocaleDateString('en-US', {
+              year: 'numeric',
+              month: 'long',
+              day: 'numeric'
+            });
+            const appointmentTime = new Date(appointment.scheduled_at).toLocaleTimeString('en-US', {
+              hour: '2-digit',
+              minute: '2-digit'
+            });
+            
+            // Send notification request
+            if (patientInfo || doctorInfo) {
+              const notificationRes = await fetch(`${notificationServiceUrl}/api/notifications/payment-success`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                  patientEmail: patientInfo?.email,
+                  patientPhone: patientInfo?.phone,
+                  patientName: patientInfo?.name || appointment.patient_name,
+                  doctorEmail: doctorInfo?.email,
+                  doctorPhone: doctorInfo?.phone,
+                  doctorName: doctorInfo?.full_name || doctorInfo?.first_name + ' ' + doctorInfo?.last_name || 'Doctor',
+                  appointmentId: appointment.id,
+                  appointmentDate,
+                  appointmentTime,
+                  amount: payment.amount
+                })
+              });
+              
+              if (notificationRes.ok) {
+                const notificationResult = await notificationRes.json();
+                console.log('✅ Notifications sent successfully:', notificationResult);
+              } else {
+                console.error('❌ Failed to send notifications:', await notificationRes.text());
+              }
+            }
+          } catch (err) {
+            console.error('❌ Notification trigger error:', err.message);
+            console.error(err.stack);
+          }
+        });
+        
       } else if (paymentStatus === 'FAILED') {
         console.log('Processing failed payment:', payment.id);
         
@@ -758,21 +837,17 @@ class PaymentService {
     try {
       await client.query('BEGIN');
       
-      // Convert numeric patientId to UUID format (same as appointment-service)
-      const patientIdStr = patientId.toString();
-      const patientIdUuid = patientIdStr.includes('-')
-        ? patientIdStr 
-        : `00000000-0000-0000-0000-${patientIdStr.padStart(12, '0')}`;
+      // Use the patient ID as-is (auth-service uses integer IDs, not UUIDs)
+      const finalPatientId = patientId.toString();
       
-      console.log('Payment - Patient ID (original):', patientId);
-      console.log('Payment - Patient ID (UUID):', patientIdUuid);
+      console.log('Payment - Patient ID:', finalPatientId);
       console.log('Payment - Appointment ID:', appointmentId);
       
       const appointmentQuery = `
         SELECT * FROM public.appointments 
         WHERE id = $1 AND patient_id = $2 AND status = 'PENDING_PAYMENT'
       `;
-      const appointmentResult = await client.query(appointmentQuery, [appointmentId, patientIdUuid]);
+      const appointmentResult = await client.query(appointmentQuery, [appointmentId, finalPatientId]);
       
       if (appointmentResult.rows.length === 0) {
         await client.query('ROLLBACK');
@@ -879,6 +954,83 @@ class PaymentService {
       await client.query('COMMIT');
       
       console.log('=== Payment Completed Successfully ===');
+      
+      // Send payment success notifications asynchronously
+      setImmediate(async () => {
+        try {
+          console.log('📧 Triggering payment success notifications...');
+          
+          const appointment = updatedAppointment.rows[0] || transaction;
+          const notificationServiceUrl = process.env.NOTIFICATION_SERVICE_URL || 'http://notification-service:3000';
+          const authServiceUrl = process.env.AUTH_SERVICE_URL || 'http://auth-service:3000';
+          const doctorServiceUrl = process.env.DOCTOR_SERVICE_URL || 'http://doctor-service:3000';
+          
+          // Fetch patient info from auth-service
+          let patientInfo = null;
+          try {
+            const patientRes = await fetch(`${authServiceUrl}/api/auth/users/${appointment.patient_id || userId}`);
+            if (patientRes.ok) {
+              patientInfo = await patientRes.json();
+              console.log('✅ Patient info fetched:', patientInfo.email);
+            }
+          } catch (err) {
+            console.error('❌ Failed to fetch patient info:', err.message);
+          }
+          
+          // Fetch doctor info from doctor-service
+          let doctorInfo = null;
+          try {
+            const doctorRes = await fetch(`${doctorServiceUrl}/doctors/${appointment.doctor_id}`);
+            if (doctorRes.ok) {
+              doctorInfo = await doctorRes.json();
+              console.log('✅ Doctor info fetched:', doctorInfo.email, doctorInfo.full_name);
+            }
+          } catch (err) {
+            console.error('❌ Failed to fetch doctor info:', err.message);
+          }
+          
+          // Parse appointment date and time
+          const appointmentDate = new Date(appointment.scheduled_at || new Date()).toLocaleDateString('en-US', {
+            year: 'numeric',
+            month: 'long',
+            day: 'numeric'
+          });
+          const appointmentTime = new Date(appointment.scheduled_at || new Date()).toLocaleTimeString('en-US', {
+            hour: '2-digit',
+            minute: '2-digit'
+          });
+          
+          // Send notification request
+          if (patientInfo || doctorInfo) {
+            const notificationRes = await fetch(`${notificationServiceUrl}/api/notifications/payment-success`, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                patientEmail: patientInfo?.email,
+                patientPhone: patientInfo?.phone,
+                patientName: patientInfo?.name || 'Patient',
+                doctorEmail: doctorInfo?.email,
+                doctorPhone: doctorInfo?.phone,
+                doctorName: doctorInfo?.full_name || doctorInfo?.first_name + ' ' + doctorInfo?.last_name || 'Doctor',
+                appointmentId: appointmentId,
+                appointmentDate,
+                appointmentTime,
+                amount: transaction.amount
+              })
+            });
+            
+            if (notificationRes.ok) {
+              const notificationResult = await notificationRes.json();
+              console.log('✅ Payment notifications sent successfully:', notificationResult);
+            } else {
+              console.error('❌ Failed to send payment notifications:', await notificationRes.text());
+            }
+          }
+        } catch (err) {
+          console.error('❌ Payment notification trigger error:', err.message);
+          console.error(err.stack);
+        }
+      });
       
       return {
         success: true,

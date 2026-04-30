@@ -71,7 +71,7 @@ const register = async (req, res) => {
     }
 
     const hashedPassword = await bcrypt.hash(password, 10);
-    const user = await createUser(name, email, hashedPassword, role || 'patient');
+    const user = await createUser(name, email, hashedPassword, role || 'patient', phone);
 
     // If role is patient, also create profile in patient_db
     if (role === 'patient' || !role) {
@@ -176,4 +176,25 @@ const getMe = async (req, res) => {
   }
 };
 
-module.exports = { register, login, getMe };
+// Get user by ID (for other services to fetch contact info)
+const getUserById = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const user = await findById(id);
+    if (!user) return res.status(404).json({ message: 'User not found.' });
+    
+    // Return only necessary fields for notifications
+    res.json({
+      id: user.id,
+      name: user.name,
+      email: user.email,
+      phone: user.phone,
+      role: user.role
+    });
+  } catch (err) {
+    console.error('getUserById error:', err);
+    res.status(500).json({ message: 'Server error.' });
+  }
+};
+
+module.exports = { register, login, getMe, getUserById };

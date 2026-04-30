@@ -1,8 +1,8 @@
 const IORedis = require('ioredis');
 
 const connection = new IORedis({
-  host: 'redis',          // Docker service name
-  port: 6379,
+  host: process.env.REDIS_HOST || 'localhost',  // Use localhost for local development
+  port: parseInt(process.env.REDIS_PORT) || 6379,
   maxRetriesPerRequest: null, // ✅ REQUIRED for BullMQ
 });
 
