@@ -151,7 +151,7 @@ const listDoctors = async (req, res) => {
 const getDoctorById = async (req, res) => {
   try {
     const result = await pool.query(
-      `SELECT id, full_name, first_name, last_name, specialty, sub_specialty,
+      `SELECT id, email, phone, full_name, first_name, last_name, specialty, sub_specialty,
         hospital, years_of_experience, bio, consultation_fee_online,
         consultation_fee_physical, profile_photo_url
        FROM profiles WHERE id = $1 AND verification_status = 'approved'`,

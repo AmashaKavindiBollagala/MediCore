@@ -396,6 +396,9 @@ router.get('/appointments/doctors/:doctorId/availability', (req, res) => {
 });
 
 router.post('/appointments/book', (req, res) => {
+  console.log('\n[API Gateway] POST /appointments/book - Proxying to appointment service');
+  console.log('[API Gateway] Target:', SERVICES.appointment + '/api/appointments/book');
+  console.log('[API Gateway] Request body:', JSON.stringify(req.body).substring(0, 200));
   proxyRequest(req, res, SERVICES.appointment, '/api/appointments/book');
 });
 
