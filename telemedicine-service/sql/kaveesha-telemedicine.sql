@@ -99,10 +99,10 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
-CREATE TRIGGER update_telemedicine_sessions_updated_at
+CREATE OR REPLACE TRIGGER update_telemedicine_sessions_updated_at
   BEFORE UPDATE ON telemedicine_sessions
   FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 
-CREATE TRIGGER update_telemedicine_notes_updated_at
+CREATE OR REPLACE TRIGGER update_telemedicine_notes_updated_at
   BEFORE UPDATE ON telemedicine_session_notes
   FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();

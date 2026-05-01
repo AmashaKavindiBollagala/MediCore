@@ -80,6 +80,9 @@ export async function getSessionByAppointment(req, res) {
 // Start/join session for an appointment (auto-creates if needed)
 export async function startSessionForAppointment(req, res) {
   try {
+    console.log('[startSessionForAppointment] Starting with appointmentId:', req.params.appointmentId);
+    console.log('[startSessionForAppointment] Request body:', req.body);
+    
     const { appointmentId } = req.params;
     const userId = req.user.id;
     const userRole = req.user.role;
@@ -88,16 +91,40 @@ export async function startSessionForAppointment(req, res) {
     const { doctor_id, patient_id, scheduled_at } = req.body;
     
     if (!doctor_id || !patient_id || !scheduled_at) {
+      console.log('[startSessionForAppointment] Missing required fields:', { doctor_id, patient_id, scheduled_at });
       return res.status(400).json({
         success: false,
         error: 'doctor_id, patient_id, and scheduled_at are required',
       });
     }
     
+    // Validate UUID format for doctor_id and patient_id
+    const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+    if (!uuidRegex.test(doctor_id)) {
+      console.log('[startSessionForAppointment] Invalid doctor_id format:', doctor_id);
+      return res.status(400).json({
+        success: false,
+        error: `Invalid doctor_id format: ${doctor_id}. Expected UUID format (e.g., a6e30974-8fdf-40aa-aff2-ac1502caee37)`
+      });
+    }
+    
+    if (!uuidRegex.test(patient_id)) {
+      console.log('[startSessionForAppointment] Invalid patient_id format:', patient_id);
+      return res.status(400).json({
+        success: false,
+        error: `Invalid patient_id format: ${patient_id}. Expected UUID format (e.g., a6e30974-8fdf-40aa-aff2-ac1502caee37)`
+      });
+    }
+    
+    console.log('[startSessionForAppointment] About to check for existing session with appointmentId:', appointmentId);
+    
     // Check if session already exists
     let session = await SessionModel.findByAppointmentId(appointmentId);
     
+    console.log('[startSessionForAppointment] Found existing session:', session);
+    
     if (!session) {
+      console.log('[startSessionForAppointment] No existing session found, creating new one');
       // Create new session
       const channelName = `medicore_${appointmentId.replace(/-/g, '').substring(0, 16)}_${Date.now().toString(36)}`;
       
@@ -109,16 +136,20 @@ export async function startSessionForAppointment(req, res) {
         scheduledAt: new Date(scheduled_at),
         agoraAppId: process.env.AGORA_APP_ID,
       });
+      console.log('[startSessionForAppointment] Created new session:', session);
     } else if (session.status === 'ENDED' || session.status === 'CANCELLED') {
+      console.log('[startSessionForAppointment] Session is ended/cancelled:', session.status);
       return res.status(400).json({
         success: false,
         error: 'Session is no longer active',
       });
     }
     
+    console.log('[startSessionForAppointment] Returning success with session:', session);
     return res.json({ success: true, data: session, created: !session.created_at });
   } catch (err) {
-    console.error('[startSessionForAppointment] Error:', err.message);
+    console.error('[startSessionForAppointment] Unexpected error:', err);
+    console.error('[startSessionForAppointment] Error stack:', err.stack);
     return res.status(500).json({ success: false, error: err.message });
   }
 }

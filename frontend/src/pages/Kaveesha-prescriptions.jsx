@@ -525,12 +525,16 @@ export default function KaveeshaPrescriptions() {
     if (!form.patient_id || form.medications.some(m => !m.name)) return;
     setSubmitting(true);
     try {
+      // Convert patient_id to UUID format: 00000000-0000-0000-0000-0000000000XX
+      const patientIdInt = parseInt(form.patient_id);
+      const uuidPatientId = `00000000-0000-0000-0000-${patientIdInt.toString().padStart(12, '0')}`;
+      
       const res = await fetch('/api/doctors/me/prescriptions', {
         method: 'POST',
         headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
         body: JSON.stringify({
           appointment_id: selectedAppointment?.id,
-          patient_id: form.patient_id,
+          patient_id: uuidPatientId,
           diagnosis: form.diagnosis,
           notes: form.notes,
           prescription_data: { medications: form.medications },
@@ -552,12 +556,16 @@ export default function KaveeshaPrescriptions() {
       return;
     }
     
+    // Convert patient_id to UUID format: 00000000-0000-0000-0000-0000000000XX
+    const patientIdInt = parseInt(form.patient_id);
+    const uuidPatientId = `00000000-0000-0000-0000-${patientIdInt.toString().padStart(12, '0')}`;
+    
     console.log('🔵 Submitting prescription...');
     console.log('🔵 URL:', '/api/doctors/me/prescriptions');
     console.log('🔵 Token:', token ? token.substring(0, 20) + '...' : 'NONE');
     console.log('🔵 Body:', JSON.stringify({
       appointment_id: selectedAppointment.id,
-      patient_id: form.patient_id,
+      patient_id: uuidPatientId,
       diagnosis: form.diagnosis,
       notes: form.notes,
       prescription_data: { medications: form.medications },
@@ -570,7 +578,7 @@ export default function KaveeshaPrescriptions() {
         headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
         body: JSON.stringify({
           appointment_id: selectedAppointment.id,
-          patient_id: form.patient_id,
+          patient_id: uuidPatientId,
           diagnosis: form.diagnosis,
           notes: form.notes,
           prescription_data: { medications: form.medications },

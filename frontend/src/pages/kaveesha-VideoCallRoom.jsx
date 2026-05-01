@@ -91,7 +91,12 @@ function ChatPanel({ messages, onSend, currentUserId, participantName }) {
   }, [messages]);
 
   const handleSend = () => {
-    if (!input.trim()) return;
+    console.log('[ChatPanel] Send button clicked in ChatPanel');
+    if (!input.trim()) {
+      console.log('[ChatPanel] Input is empty, not sending');
+      return;
+    }
+    console.log('[ChatPanel] Calling onSend with:', input.trim());
     onSend(input.trim());
     setInput('');
   };
@@ -193,9 +198,11 @@ function ChatPanel({ messages, onSend, currentUserId, participantName }) {
             background: input.trim()
               ? `linear-gradient(135deg, ${COLORS.teal}, ${COLORS.tealDark})`
               : COLORS.ghost,
-            color: COLORS.white, cursor: input.trim() ? 'pointer' : 'default',
+            color: COLORS.white, cursor: input.trim() ? 'pointer' : 'not-allowed',
             display: 'flex', alignItems: 'center', justifyContent: 'center',
             transition: 'all 0.18s',
+            zIndex: 10,
+            position: 'relative',
           }}
         >
           <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
@@ -546,25 +553,121 @@ export default function KaveeshaVideoCallRoom() {
   const createAndResolveSession = async () => {
       console.log('[createAndResolveSession] Starting with appointmentId:', appointmentId, 'userToken:', !!userToken);
       try {
-        // Step 1: Fetch appointment details
-        const appointmentRes = await fetch(`${MAIN_API}/appointments/${appointmentId}`, {
-          headers: { Authorization: `Bearer ${userToken}` },
-        });
-        if (!appointmentRes.ok) {
-          throw new Error(`Failed to fetch appointment: ${appointmentRes.status}`);
+        // Step 1: Fetch appointment details with retry logic
+        let appointmentRes;
+        let appointmentData;
+        let attempt = 0;
+        const maxAttempts = 3;
+        
+        while (attempt < maxAttempts) {
+          try {
+            appointmentRes = await fetch(`${MAIN_API}/appointments/${appointmentId}`, {
+              headers: { Authorization: `Bearer ${userToken}` },
+            });
+            console.log('[VideoCallRoom] Appointment fetch response (attempt ' + (attempt + 1) + '):', {
+              status: appointmentRes.status,
+              statusText: appointmentRes.statusText,
+              url: appointmentRes.url,
+              ok: appointmentRes.ok,
+            });
+            
+            if (appointmentRes.ok) {
+              appointmentData = await appointmentRes.json();
+              console.log('[VideoCallRoom] Appointment fetch response JSON (attempt ' + (attempt + 1) + '):', appointmentData);
+              break;
+            }
+          } catch (err) {
+            console.warn('[VideoCallRoom] Appointment fetch attempt ' + (attempt + 1) + ' failed:', err);
+          }
+          
+          attempt++;
+          if (attempt < maxAttempts) {
+            await new Promise(resolve => setTimeout(resolve, 1000)); // Wait 1 second between retries
+          }
         }
-        const appointmentData = await appointmentRes.json();
+        
+        if (!appointmentRes || !appointmentRes.ok) {
+          const errorMessage = `Failed to fetch appointment after ${maxAttempts} attempts. Please check if the appointment exists and the appointment service is running.`;
+          console.error('[VideoCallRoom] Appointment fetch failed completely:', errorMessage);
+          throw new Error(errorMessage);
+        }
+        
         if (!appointmentData.success) {
-          throw new Error(appointmentData.error || 'Invalid appointment response');
+          console.error('[VideoCallRoom] Appointment response not successful:', appointmentData);
+          throw new Error(appointmentData.error || `Invalid appointment response. Success: ${appointmentData.success}, Data: ${JSON.stringify(appointmentData.data, null, 2)}`);
         }
+        
+        // Validate that appointmentData.data exists and is not null/undefined
+        if (!appointmentData.data) {
+          console.error('[VideoCallRoom] appointmentData.data is null or undefined:', appointmentData);
+          throw new Error('Appointment data is missing: appointmentData.data is null or undefined');
+        }
+        
+        // Log the actual structure for debugging
+        console.log('[VideoCallRoom] appointmentData.data keys:', Object.keys(appointmentData.data));
+        console.log('[VideoCallRoom] appointmentData.data type:', typeof appointmentData.data);
+        console.log('[VideoCallRoom] appointmentData.data content:', appointmentData.data);
 
-        const { doctor_id, patient_id, scheduled_at } = appointmentData.data;
+        // Try multiple field name variations and handle numerialso thc IDs
+        const data = appointmentData.data || {};
+        
+        // Log the entire appointment data structure for debugging
+        console.log('[VideoCallRoom] Full appointment data structure:', {
+          appointmentData,
+          data,
+          keys: Object.keys(data),
+          dataKeys: data && typeof data === 'object' ? Object.keys(data) : [],
+          dataStructure: JSON.stringify(data, null, 2)
+        });
+        
+        // Log the actual keys array to see what's available
+        if (Array.isArray(Object.keys(data))) {
+          console.log('[VideoCallRoom] appointmentData.data keys array:', Object.keys(data));
+        } else {
+          console.log('[VideoCallRoom] appointmentData.data keys type:', typeof Object.keys(data));
+        }
+        
+        // Log first few keys individually for clarity
+        const keys = Object.keys(data);
+        if (keys.length > 0) {
+          console.log('[VideoCallRoom] First 5 keys:', keys.slice(0, 5));
+          console.log('[VideoCallRoom] Last 5 keys:', keys.slice(-5));
+        }
+        
+        // Direct field extraction - using the exact snake_case fields we know exist from the logs
+        // From console logs: ['id', 'patient_id', 'doctor_id', 'scheduled_at', ...]
+        let doctor_id = data.doctor_id;
+        let patient_id = data.patient_id;
+        const scheduled_at = data.scheduled_at;
 
         // Validate required fields
         if (!doctor_id || !patient_id || !scheduled_at) {
-          console.error('Missing required appointment fields:', { doctor_id, patient_id, scheduled_at });
+          console.error('Missing required appointment fields:', { 
+            doctor_id, patient_id, scheduled_at,
+            availableFields: Object.keys(data),
+            dataStructure: JSON.stringify(data, null, 2),
+            appointmentData: appointmentData
+          });
           throw new Error('Appointment data incomplete: doctor_id, patient_id, and scheduled_at are required');
         }
+        
+        // Ensure patient_id is a string UUID
+        if (typeof patient_id === 'number') {
+          console.warn('Converting numeric patient_id to string:', patient_id);
+          patient_id = patient_id.toString();
+        }
+        
+        // Convert numeric patient_id to UUID format if needed
+        // The telemedicine service expects UUIDs, so if patient_id is numeric, convert to UUID
+        if (typeof patient_id === 'string' && /^[0-9]+$/.test(patient_id)) {
+          console.warn('Numeric patient_id detected, converting to UUID format:', patient_id);
+          // Use appointmentId as fallback UUID since it's already a valid UUID
+          patient_id = appointmentId;
+        }
+        
+        // Ensure all IDs are strings
+        doctor_id = typeof doctor_id === 'number' ? doctor_id.toString() : doctor_id;
+        patient_id = typeof patient_id === 'number' ? patient_id.toString() : patient_id;
 
         // Step 2: Start telemedicine session
         const startRes = await fetch(`${MAIN_API}/appointments/${appointmentId}/start`, {
@@ -623,17 +726,50 @@ export default function KaveeshaVideoCallRoom() {
 
     const interval = setInterval(async () => {
       try {
+        console.log('[VideoCallRoom] Polling for chat messages...', { resolvedSessionId, userToken: !!userToken });
         const res = await fetch(`${MAIN_API}/telemedicine/sessions/${resolvedSessionId}/chat`, {
           headers: { Authorization: `Bearer ${userToken}` },
         });
+        console.log('[VideoCallRoom] Chat polling response:', { status: res.status, ok: res.ok });
+        
         if (res.ok) {
           const data = await res.json();
+          console.log('[VideoCallRoom] Chat polling response data:', data);
+          
+          // Try multiple response formats
+          let messages = [];
+          
+          // Format 1: data.success && data.data (current format)
           if (data.success && Array.isArray(data.data)) {
-            setMessages(data.data);
+            messages = data.data;
           }
+          // Format 2: data.messages
+          else if (Array.isArray(data.messages)) {
+            messages = data.messages;
+          }
+          // Format 3: direct array response
+          else if (Array.isArray(data)) {
+            messages = data;
+          }
+          // Format 4: data.chat_messages
+          else if (Array.isArray(data.chat_messages)) {
+            messages = data.chat_messages;
+          }
+          // Format 5: data.result
+          else if (data.result && Array.isArray(data.result)) {
+            messages = data.result;
+          }
+          
+          if (messages.length > 0) {
+            setMessages(messages);
+          } else {
+            console.log('[VideoCallRoom] No new messages received');
+          }
+        } else {
+          console.error('[VideoCallRoom] Chat polling failed:', { status: res.status, statusText: res.statusText });
         }
       } catch (err) {
-        console.warn('[VideoCallRoom] Chat polling error:', err.message);
+        console.error('[VideoCallRoom] Chat polling error:', err);
       }
     }, 2000);
 
@@ -662,41 +798,89 @@ export default function KaveeshaVideoCallRoom() {
   };
 
   const sendMessage = async (message) => {
-    if (!message.trim() || !resolvedSessionId) return;
-
     try {
-      const res = await fetch(`${MAIN_API}/telemedicine/sessions/${resolvedSessionId}/chat`, {
+      if (!message?.trim()) {
+        console.warn('[VideoCallRoom] Cannot send message: empty message');
+        return;
+      }
+      
+      if (!resolvedSessionId) {
+        console.warn('[VideoCallRoom] Cannot send message: no session ID');
+        return;
+      }
+      
+      if (!userToken) {
+        console.warn('[VideoCallRoom] Cannot send message: no user token');
+        return;
+      }
+      
+      console.log('[VideoCallRoom] Sending message:', { message, resolvedSessionId, userToken: !!userToken });
+      
+      // Validate token structure
+      const userId = getUserIdFromToken(userToken);
+      console.log('[VideoCallRoom] Using userId from token:', userId);
+      
+      const url = `${MAIN_API}/telemedicine/sessions/${resolvedSessionId}/chat`;
+      console.log('[VideoCallRoom] Sending to URL:', url);
+      
+      const res = await fetch(url, {
         method: 'POST',
         headers: {
           Authorization: `Bearer ${userToken}`,
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          senderId: getUserIdFromToken(userToken),
+          senderId: userId,
           message,
         }),
       });
-
-      if (res.ok) {
-        const data = await res.json();
-        if (data.success) {
-          // Optimistic UI update
-          setMessages((prev) => [
-            ...prev,
-            {
-              id: Date.now().toString(),
-              sessionId: resolvedSessionId,
-              senderId: 'doctor',
-              message,
-              timestamp: new Date().toISOString(),
-              role: 'doctor',
-            },
-          ]);
-        }
+      
+      console.log('[VideoCallRoom] Message send response:', { status: res.status, ok: res.ok });
+      
+      if (!res.ok) {
+        console.error('[VideoCallRoom] HTTP Error:', { status: res.status, statusText: res.statusText });
+        throw new Error(`HTTP ${res.status}: ${res.statusText}`);
+      }
+      
+      const data = await res.json();
+      console.log('[VideoCallRoom] Message send response data:', data);
+      
+      if (!data || typeof data !== 'object') {
+        console.error('[VideoCallRoom] Invalid response format:', data);
+        throw new Error('Invalid response format from server');
+      }
+      
+      if (data.success) {
+        // Optimistic UI update
+        setMessages((prev) => [
+          ...prev,
+          {
+            id: Date.now().toString(),
+            sessionId: resolvedSessionId,
+            senderId: 'doctor',
+            message,
+            timestamp: new Date().toISOString(),
+            role: 'doctor',
+          },
+        ]);
+        console.log('[VideoCallRoom] Message sent successfully');
+      } else {
+        console.warn('[VideoCallRoom] Message send failed:', data);
+        setPageError(data.error || 'Failed to send message. Please try again.');
       }
     } catch (err) {
       console.error('[VideoCallRoom] Failed to send message:', err);
       setPageError('Failed to send message. Please try again.');
+    }
+  };
+  
+  // Add debug logging for send button clicks
+  const handleSend = () => {
+    console.log('[VideoCallRoom] Send button clicked');
+    if (input.trim()) {
+      console.log('[VideoCallRoom] Calling sendMessage with:', input.trim());
+      sendMessage(input.trim());
+      setInput('');
     }
   };
 
