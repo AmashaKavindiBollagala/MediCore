@@ -92,7 +92,23 @@ export const AgoraService = {
    * Handle user leaving a session
    */
   async handleLeave(sessionId, userId, userRole) {
-    await SessionModel.logEvent(sessionId, userId, userRole, 'LEAVE', { timestamp: new Date() });
+    const session = await SessionModel.findById(sessionId);
+    if (!session) throw new Error('Session not found');
+
+    // Calculate duration
+    const now = new Date();
+    const startedAt = new Date(session.started_at || session.created_at);
+    const durationSeconds = Math.floor((now - startedAt) / 1000);
+
+    // Update session
+    await SessionModel.update(sessionId, {
+      ended_at: now,
+      duration_seconds: durationSeconds,
+      status: 'ENDED',
+      [userRole === 'doctor' ? 'doctor_left_at' : 'patient_left_at']: now,
+    });
+
+    await SessionModel.logEvent(sessionId, userId, userRole, 'LEAVE', { timestamp: now });
   },
 
   /**

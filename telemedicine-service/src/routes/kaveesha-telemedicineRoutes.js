@@ -14,6 +14,7 @@ import {
   getDoctorSessions,
   getPatientSessions,
   getChatMessages,
+  saveChatMessage,
   saveSessionNotes,
   getSessionNotes,
   healthCheck,
@@ -44,6 +45,7 @@ router.post('/sessions/:sessionId/end', authenticate, endSession);
 
 // ── Chat ─────────────────────────────────────────────────────────────────────
 router.get('/sessions/:sessionId/chat', authenticate, requireDoctorOrPatient, getChatMessages);
+router.post('/sessions/:sessionId/chat', authenticate, requireDoctorOrPatient, saveChatMessage);
 
 // ── Clinical notes ───────────────────────────────────────────────────────────
 router.post('/sessions/:sessionId/notes', authenticate, requireDoctor, saveSessionNotes);

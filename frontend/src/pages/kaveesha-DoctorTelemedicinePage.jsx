@@ -9,7 +9,8 @@ import KaveeshaDoctorProfile from './kaveesha-doctorProfile';
 import KaveeshaPrescriptions from './Kaveesha-prescriptions';
 import KaveeshaPatientReports from './Kaveesha-patientreports';
 
-const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:8080';
+const API_BASE = import.meta.env.VITE_TELEMEDICINE_URL || 'http://localhost:3007';
+const MAIN_API = import.meta.env.VITE_API_URL || 'http://localhost:8080';
 
 const COLORS = {
   navy: '#184E77',
@@ -729,7 +730,7 @@ const DushaniDoctorTelemedicinePage = () => {
     setError('');
     try {
       const token = localStorage.getItem('token');
-      const response = await fetch(`${API_BASE}/appointments/doctor/my-appointments`, {
+      const response = await fetch(`${MAIN_API}/appointments/doctor/my-appointments`, {
         headers: { Authorization: `Bearer ${token}` },
       });
       const data = await response.json();
@@ -750,14 +751,14 @@ const DushaniDoctorTelemedicinePage = () => {
   };
 
   const handleJoinVideoCall = (appointmentId) => {
-    navigate(`/telemedicine/${appointmentId}`);
+    navigate(`/telemedicine/appointment/${appointmentId}`);
   };
 
   const handleCancelAppointment = async (appointmentId) => {
     if (!window.confirm('Are you sure you want to cancel this appointment?')) return;
     try {
       const token = localStorage.getItem('token');
-      const response = await fetch(`${API_BASE}/appointments/${appointmentId}/cancel`, {
+      const response = await fetch(`${MAIN_API}/appointments/${appointmentId}/cancel`, {
         method: 'DELETE',
         headers: {
           'Content-Type': 'application/json',
@@ -781,7 +782,7 @@ const DushaniDoctorTelemedicinePage = () => {
     if (!window.confirm('Mark this appointment as completed?')) return;
     try {
       const token = localStorage.getItem('token');
-      const response = await fetch(`${API_BASE}/appointments/${appointmentId}/complete`, {
+      const response = await fetch(`${MAIN_API}/appointments/${appointmentId}/complete`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
@@ -904,6 +905,9 @@ const DushaniDoctorTelemedicinePage = () => {
                 <>
                   <button className="btn-video" onClick={() => handleJoinVideoCall(appt.id)}>
                     🎥 Start Video Call
+                  </button>
+                  <button className="btn-complete" onClick={() => handleMarkComplete(appt.id)}>
+                    ✓ Mark Complete
                   </button>
                   <button className="btn-cancel" onClick={() => handleCancelAppointment(appt.id)}>
                     ✕ Cancel
