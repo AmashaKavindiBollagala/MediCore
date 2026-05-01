@@ -4,10 +4,11 @@
 
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
-import { useAgoraCall } from './kaveesha-useAgoraCall';
-import { useTelemedicineSocket } from './kaveesha-useTelemedicineSocket';
+import { useAgoraCall } from '../hooks/kaveesha-useAgoraCall';
+import { useTelemedicineSocket } from '../hooks/kaveesha-useTelemedicineSocket';
 
-const API_BASE = import.meta.env.VITE_TELEMEDICINE_URL || 'http://localhost:4000';
+const API_BASE = import.meta.env.VITE_TELEMEDICINE_URL || 'http://localhost:3007/telemedicine';
+const MAIN_API = import.meta.env.VITE_API_URL || 'http://localhost:8080';
 
 const COLORS = {
   navy: '#0A1628',
@@ -215,7 +216,7 @@ function NotesPanel({ sessionId, userToken }) {
   const handleSave = async () => {
     setSaving(true);
     try {
-      await fetch(`${API_BASE}/telemedicine/sessions/${sessionId}/notes`, {
+      await fetch(`${API_BASE}/sessions/${resolvedSessionId}/notes`, {
         method: 'POST',
         headers: { Authorization: `Bearer ${userToken}`, 'Content-Type': 'application/json' },
         body: JSON.stringify(notes),
@@ -453,7 +454,7 @@ function WaitingScreen({ userRole, participantRole, onJoin, loading }) {
 
 // ── Main VideoCallRoom ─────────────────────────────────────────────────────────
 export default function KaveeshaVideoCallRoom() {
-  const { sessionId } = useParams();
+  const { appointmentId } = useParams();
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
 
@@ -466,11 +467,22 @@ export default function KaveeshaVideoCallRoom() {
   const [sessionData, setSessionData] = useState(null);
   const [agoraCredentials, setAgoraCredentials] = useState(null);
   const [inCall, setInCall] = useState(false);
+  const [resolvedSessionId, setResolvedSessionId] = useState(null);
   const [loading, setLoading] = useState(false);
   const [activePanel, setActivePanel] = useState('chat'); // 'chat' | 'notes' | 'participants'
   const [panelOpen, setPanelOpen] = useState(true);
   const [callEnded, setCallEnded] = useState(false);
   const [sessionDuration, setSessionDuration] = useState(0);
+
+
+
+  // Resolve session ID from appointment ID (with auto-creation)
+  useEffect(() => {
+    if (!appointmentId || resolvedSessionId) return;
+    createAndResolveSession();
+  }, [appointmentId, resolvedSessionId]);
+  const [pageError, setPageError] = useState(null);
+  const [messages, setMessages] = useState([]);
 
   const {
     joined, localTracks, remoteUsers,
@@ -478,33 +490,160 @@ export default function KaveeshaVideoCallRoom() {
     connectionState, error,
     callDuration, localVideoRef, remoteVideoRef,
     joinCall, leaveCall, toggleAudio, toggleVideo, toggleScreenShare,
-  } = useAgoraCall({ sessionId, token: agoraCredentials?.token, userToken });
+  } = useAgoraCall({ resolvedSessionId, token: agoraCredentials?.token, userToken });
+
+  // Auto-play local video when track is ready
+  useEffect(() => {
+    if (localTracks.video && localVideoRef.current) {
+      localTracks.video.play(localVideoRef.current);
+    }
+  }, [localTracks.video]);
+
+  // Defensive retry: play local video if ref becomes available later
+  useEffect(() => {
+    const playIfReady = () => {
+      if (localTracks.video && localVideoRef.current) {
+        try {
+                  localTracks.video.play(localVideoRef.current);
+                } catch (err) {
+                  console.warn('[VideoCallRoom] Local video play failed:', err);
+                }
+      }
+    };
+    playIfReady();
+    const interval = setInterval(() => {
+      if (localTracks.video && localVideoRef.current) {
+        try {
+          localTracks.video.play(localVideoRef.current);
+          clearInterval(interval);
+        } catch (err) {
+          console.warn('[VideoCallRoom] Local video play failed:', err);
+        }
+      }
+    }, 500);
+    return () => clearInterval(interval);
+  }, [localTracks.video]);
 
   const {
-    connected: socketConnected, messages, participantStatus,
-    sendMessage, emitVideoToggle, emitAudioToggle, emitEndSession, emitScreenShare,
+    connected: socketConnected, participantStatus,
+    emitVideoToggle, emitAudioToggle, emitEndSession, emitScreenShare,
   } = useTelemedicineSocket({
-    sessionId,
+    resolvedSessionId,
     userToken,
     onParticipantJoined: (data) => console.log('Participant joined:', data),
     onParticipantLeft: (data) => console.log('Participant left:', data),
     onSessionEnded: () => setCallEnded(true),
   });
 
-  // Fetch session data
+
+
+  // Resolve session ID from appointment ID (with auto-creation)
   useEffect(() => {
-    if (!sessionId || !userToken) return;
-    fetch(`${API_BASE}/telemedicine/sessions/${sessionId}`, {
-      headers: { Authorization: `Bearer ${userToken}` },
-    })
-      .then((r) => r.json())
-      .then((d) => { if (d.success) setSessionData(d.data); })
-      .catch(console.error);
-  }, [sessionId, userToken]);
+    if (!appointmentId || resolvedSessionId) return;
+    createAndResolveSession();
+  }, [appointmentId, resolvedSessionId]);
+
+  const createAndResolveSession = async () => {
+      console.log('[createAndResolveSession] Starting with appointmentId:', appointmentId, 'userToken:', !!userToken);
+      try {
+        // Step 1: Fetch appointment details
+        const appointmentRes = await fetch(`${MAIN_API}/appointments/${appointmentId}`, {
+          headers: { Authorization: `Bearer ${userToken}` },
+        });
+        if (!appointmentRes.ok) {
+          throw new Error(`Failed to fetch appointment: ${appointmentRes.status}`);
+        }
+        const appointmentData = await appointmentRes.json();
+        if (!appointmentData.success) {
+          throw new Error(appointmentData.error || 'Invalid appointment response');
+        }
+
+        const { doctor_id, patient_id, scheduled_at } = appointmentData.data;
+
+        // Validate required fields
+        if (!doctor_id || !patient_id || !scheduled_at) {
+          console.error('Missing required appointment fields:', { doctor_id, patient_id, scheduled_at });
+          throw new Error('Appointment data incomplete: doctor_id, patient_id, and scheduled_at are required');
+        }
+
+        // Step 2: Start telemedicine session
+        const startRes = await fetch(`${MAIN_API}/appointments/${appointmentId}/start`, {
+          method: 'POST',
+          headers: {
+            Authorization: `Bearer ${userToken}`,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            doctor_id,
+            patient_id,
+            scheduled_at,
+          }),
+        });
+
+        if (!startRes.ok) {
+          console.error('Start request failed:', {
+            status: startRes.status,
+            statusText: startRes.statusText,
+            url: startRes.url,
+          });
+          throw new Error(`Session start failed: ${startRes.status} ${startRes.statusText}`);
+        }
+
+        const startData = await startRes.json();
+        console.log('Backend start response (full):', JSON.stringify(startData, null, 2));
+
+        if (!startData.success || !startData.data?.id) {
+          throw new Error(startData.error || `Failed to create session. Status: ${startRes.status}`);
+        }
+
+        // Step 3: Update state
+        console.log('[createAndResolveSession] Got session ID:', startData.data.id);
+        setResolvedSessionId(startData.data.id);
+        setSessionData(startData.data);
+        setPageError(null);
+      } catch (err) {
+        console.error('Failed to create/resume session:', err);
+        setPageError(
+          err.message.includes('404') 
+            ? 'Appointment not found or expired' 
+            : 'Unable to start consultation. Please try again.'
+        );
+      }
+    };
+
+    // Resolve session ID from appointment ID (with auto-creation)
+    useEffect(() => {
+      if (!appointmentId || !userToken || resolvedSessionId) return;
+      createAndResolveSession();
+    }, [appointmentId, resolvedSessionId, userToken]);
+
+  // Poll for new chat messages
+  useEffect(() => {
+    if (!resolvedSessionId) return;
+
+    const interval = setInterval(async () => {
+      try {
+        const res = await fetch(`${MAIN_API}/telemedicine/sessions/${resolvedSessionId}/chat`, {
+          headers: { Authorization: `Bearer ${userToken}` },
+        });
+        if (res.ok) {
+          const data = await res.json();
+          if (data.success && Array.isArray(data.data)) {
+            setMessages(data.data);
+          }
+        }
+      } catch (err) {
+        console.warn('[VideoCallRoom] Chat polling error:', err.message);
+      }
+    }, 2000);
+
+    return () => clearInterval(interval);
+  }, [resolvedSessionId, userToken]);
 
   // Fetch Agora token
   const fetchToken = async () => {
-    const res = await fetch(`${API_BASE}/telemedicine/sessions/${sessionId}/token`, {
+    if (!resolvedSessionId) throw new Error('Session ID not resolved');
+    const res = await fetch(`${MAIN_API}/telemedicine/sessions/${resolvedSessionId}/token`, {
       method: 'POST',
       headers: { Authorization: `Bearer ${userToken}`, 'Content-Type': 'application/json' },
     });
@@ -513,10 +652,63 @@ export default function KaveeshaVideoCallRoom() {
     throw new Error(data.error || 'Failed to get token');
   };
 
+  const getUserIdFromToken = (token) => {
+    try {
+      const payload = JSON.parse(atob(token.split('.')[1]));
+      return payload.userId || payload.id || 'doctor';
+    } catch (e) {
+      return 'doctor';
+    }
+  };
+
+  const sendMessage = async (message) => {
+    if (!message.trim() || !resolvedSessionId) return;
+
+    try {
+      const res = await fetch(`${MAIN_API}/telemedicine/sessions/${resolvedSessionId}/chat`, {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${userToken}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          senderId: getUserIdFromToken(userToken),
+          message,
+        }),
+      });
+
+      if (res.ok) {
+        const data = await res.json();
+        if (data.success) {
+          // Optimistic UI update
+          setMessages((prev) => [
+            ...prev,
+            {
+              id: Date.now().toString(),
+              sessionId: resolvedSessionId,
+              senderId: 'doctor',
+              message,
+              timestamp: new Date().toISOString(),
+              role: 'doctor',
+            },
+          ]);
+        }
+      }
+    } catch (err) {
+      console.error('[VideoCallRoom] Failed to send message:', err);
+      setPageError('Failed to send message. Please try again.');
+    }
+  };
+
   // Handle join
   const handleJoin = async () => {
+    console.log('appointmentId:', appointmentId);
     setLoading(true);
     try {
+      if (!resolvedSessionId) {
+        setPageError('Consultation session not ready. Please wait...');
+        return;
+      }
       const creds = await fetchToken();
       setAgoraCredentials(creds);
       await joinCall({
@@ -524,6 +716,7 @@ export default function KaveeshaVideoCallRoom() {
         channelName: creds.channelName,
         agoraToken: creds.token,
         uid: creds.uid,
+        sessionId: resolvedSessionId,
       });
       setInCall(true);
     } catch (err) {
@@ -539,7 +732,7 @@ export default function KaveeshaVideoCallRoom() {
     await leaveCall();
     if (userRole === 'doctor') {
       try {
-        await fetch(`${API_BASE}/telemedicine/sessions/${sessionId}/end`, {
+        await fetch(`${MAIN_API}/telemedicine/sessions/${resolvedSessionId}/end`, {
           method: 'POST',
           headers: { Authorization: `Bearer ${userToken}`, 'Content-Type': 'application/json' },
         });
@@ -581,7 +774,7 @@ export default function KaveeshaVideoCallRoom() {
           Consultation Complete
         </h1>
         <p style={{ color: 'rgba(255,255,255,0.5)', fontSize: 15, margin: '0 0 32px' }}>
-          Duration: {callDuration} · Session #{sessionId?.substring(0, 8)}
+          Duration: {callDuration} · Session #{resolvedSessionId?.substring(0, 8) || '—'}
         </p>
         <div style={{ display: 'flex', gap: 12 }}>
           <button
@@ -608,6 +801,34 @@ export default function KaveeshaVideoCallRoom() {
         onJoin={handleJoin}
         loading={loading}
       />
+    );
+  }
+
+  // ── End Screen ─────────────────────────────────────────────────────────────
+  if (callEnded) {
+    return (
+      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: '100vh', background: COLORS.navy, color: COLORS.white, fontFamily: "'DM Sans', sans-serif", textAlign: 'center', padding: 24 }}>
+        <h2 style={{ fontSize: '2rem', marginBottom: 16 }}>Call Ended</h2>
+        <p style={{ fontSize: '1.25rem', marginBottom: 24 }}>Duration: {callDuration}</p>
+        <button
+          onClick={() => navigate('/telemedicine')}
+          style={{
+            background: COLORS.teal,
+            color: COLORS.white,
+            border: 'none',
+            borderRadius: 8,
+            padding: '12px 32px',
+            fontSize: '1rem',
+            cursor: 'pointer',
+            fontWeight: '600',
+            transition: 'all 0.2s',
+          }}
+          onMouseEnter={(e) => e.currentTarget.style.background = COLORS.tealDark}
+          onMouseLeave={(e) => e.currentTarget.style.background = COLORS.teal}
+        >
+          Return to Consultations
+        </button>
+      </div>
     );
   }
 
@@ -915,7 +1136,7 @@ export default function KaveeshaVideoCallRoom() {
               />
             )}
             {activePanel === 'notes' && userRole === 'doctor' && (
-              <NotesPanel sessionId={sessionId} userToken={userToken} />
+              <NotesPanel sessionId={resolvedSessionId} userToken={userToken} />
             )}
           </div>
         </div>

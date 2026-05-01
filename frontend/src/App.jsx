@@ -17,6 +17,7 @@ import KaveeshaDoctorProfile from './pages/kaveesha-doctorProfile';
 import KaveeshaPrescriptions from './pages/Kaveesha-prescriptions';
 import KaveeshaPatientReports from './pages/Kaveesha-patientreports';
 import KaveeshaVideoCallPage from './pages/kaveesha-VideoCallPage';
+import KaveeshaVideoCallRoom from './pages/kaveesha-VideoCallRoom';
 import KaveeshaTelemedicinePage from './pages/kaveesha-TelemedicinePage';
 import KaveeshaDoctorTelemedicinePage from './pages/kaveesha-DoctorTelemedicinePage';
 import RegisterDetails from './pages/amasha-patientRegister';
@@ -154,7 +155,7 @@ function App() {
           } />
 
           {/* ── Telemedicine Video Call — NO shared layout (fullscreen) ── */}
-          <Route path="/telemedicine/:appointmentId" element={<KaveeshaVideoCallPage />} />
+          <Route path="/telemedicine/appointment/:appointmentId" element={<KaveeshaVideoCallRoom />} />
 
           {/* ── Telemedicine Dashboard (Patient) — WITH shared layout ── */}
           <Route path="/telemedicine" element={

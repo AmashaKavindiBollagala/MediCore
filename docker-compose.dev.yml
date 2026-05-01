@@ -24,3 +24,9 @@ services:
       - ./appointment-service:/app
       - /app/node_modules
     command: npx nodemon src/index.js
+
+  telemedicine-service:
+    volumes:
+      - ./telemedicine-service:/app
+      - /app/node_modules
+    command: npx nodemon src/index.js

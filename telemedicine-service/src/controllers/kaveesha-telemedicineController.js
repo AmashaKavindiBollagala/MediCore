@@ -307,3 +307,34 @@ export async function healthCheck(req, res) {
     },
   });
 }
+
+// ── POST /telemedicine/sessions/:sessionId/chat ───────────────────────────────
+// Save a chat message for a session
+export async function saveChatMessage(req, res) {
+  try {
+    const { sessionId } = req.params;
+    const { senderId, message, messageType = 'text', fileUrl } = req.body;
+
+    if (!senderId || !message) {
+      return res.status(400).json({ success: false, error: 'senderId and message are required' });
+    }
+
+    // Get user role and name from auth
+    const { role, name } = req.user;
+
+    await ChatModel.save({
+      sessionId,
+      senderId,
+      senderRole: role,
+      senderName: name,
+      message,
+      messageType,
+      fileUrl,
+    });
+
+    return res.json({ success: true, message: 'Message saved' });
+  } catch (err) {
+    console.error('[saveChatMessage] Error:', err.message);
+    return res.status(500).json({ success: false, error: err.message });
+  }
+}

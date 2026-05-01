@@ -480,6 +480,11 @@ router.patch('/appointments/:appointmentId/reject', (req, res) => {
   proxyRequest(req, res, SERVICES.appointment, `/api/appointments/${req.params.appointmentId}/reject`);
 });
 
+// Telemedicine session start for appointment (correct plural form)
+router.post('/appointments/:appointmentId/start', (req, res) => {
+  proxyRequest(req, res, SERVICES.telemedicine, `/telemedicine/appointment/${req.params.appointmentId}/start`);
+});
+
 router.delete('/appointments/:appointmentId/cancel', (req, res) => {
   proxyRequest(req, res, SERVICES.appointment, `/api/appointments/${req.params.appointmentId}/cancel`);
 });
@@ -765,6 +770,10 @@ router.get('/telemedicine/sessions/:sessionId/chat', (req, res) => {
   proxyRequest(req, res, SERVICES.telemedicine, `/telemedicine/sessions/${req.params.sessionId}/chat`);
 });
 
+router.post('/telemedicine/sessions/:sessionId/chat', (req, res) => {
+  proxyRequest(req, res, SERVICES.telemedicine, `/telemedicine/sessions/${req.params.sessionId}/chat`);
+});
+
 // Clinical notes
 router.post('/telemedicine/sessions/:sessionId/notes', (req, res) => {
   proxyRequest(req, res, SERVICES.telemedicine, `/telemedicine/sessions/${req.params.sessionId}/notes`);
@@ -787,7 +796,7 @@ router.get('/telemedicine/patient/sessions', (req, res) => {
 
 // Health check
 router.get('/telemedicine/health', (req, res) => {
-  proxyRequest(req, res, SERVICES.telemedicine, '/telemedicine/health');
+  proxyRequest(req, res, SERVICES.telemedicine, '/health');
 });
 
 module.exports = router;
